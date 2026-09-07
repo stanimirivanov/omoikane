@@ -33,9 +33,11 @@ SET LOCAL ROLE service_role;
 
 SELECT lives_ok(
     format(
-        'SELECT public.start_analysis_run(%L, %L, %L, %L, %L)',
+        'SELECT public.start_analysis_run(%L, %L, %L, %L, %L, %L, %L)',
         :'workspace_workspace_id'::UUID,
         :'channel_channel_id'::UUID,
+        clock_timestamp() - INTERVAL '7 days',
+        clock_timestamp(),
         '10000000-0000-4000-8000-000000000001'::UUID,
         '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01',
         'omoikane=test'
@@ -146,9 +148,11 @@ SET LOCAL ROLE service_role;
 
 SELECT throws_ok(
     format(
-        'SELECT public.start_analysis_run(%L, %L, %L, %L, NULL)',
+        'SELECT public.start_analysis_run(%L, %L, %L, %L, %L, %L, NULL)',
         :'workspace_workspace_id'::UUID,
         :'channel_channel_id'::UUID,
+        clock_timestamp() - INTERVAL '7 days',
+        clock_timestamp(),
         '10000000-0000-4000-8000-000000000001'::UUID,
         'not-a-traceparent'
     ),

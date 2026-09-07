@@ -7,6 +7,16 @@ import type {
   AnalysisRunStatus,
 } from '@omoikane/domain/analysis';
 
+class AnalysisTimeRangeResponse {
+  @ApiProperty({ format: 'date-time' }) readonly start: string;
+  @ApiProperty({ format: 'date-time' }) readonly end: string;
+
+  constructor(timeRange: NonNullable<AnalysisRun['timeRange']>) {
+    this.start = timeRange.start.toISOString();
+    this.end = timeRange.end.toISOString();
+  }
+}
+
 class AnalysisResultSourceResponse {
   @ApiProperty({ format: 'uuid' }) readonly messageId: string;
   @ApiProperty({ format: 'uuid' }) readonly messageRevisionId: string;
@@ -77,6 +87,8 @@ export class AnalysisRunResponse {
   @ApiProperty({ format: 'uuid' }) readonly workspaceId: string;
   @ApiProperty({ format: 'uuid', nullable: true })
   readonly channelId: string | null;
+  @ApiProperty({ nullable: true, type: () => AnalysisTimeRangeResponse })
+  readonly timeRange: AnalysisTimeRangeResponse | null;
   @ApiProperty({ format: 'uuid' }) readonly requestedBy: string;
   @ApiProperty({
     enum: ['created', 'queued', 'running', 'succeeded', 'failed'],
@@ -92,6 +104,10 @@ export class AnalysisRunResponse {
     this.id = run.id;
     this.workspaceId = run.workspaceId;
     this.channelId = run.channelId;
+    this.timeRange =
+      run.timeRange === null
+        ? null
+        : new AnalysisTimeRangeResponse(run.timeRange);
     this.requestedBy = run.requestedBy;
     this.status = run.status;
     this.failureCategory = run.failureCategory;

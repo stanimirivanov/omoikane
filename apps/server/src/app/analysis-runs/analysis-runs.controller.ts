@@ -72,7 +72,8 @@ export class AnalysisRunsController {
   async start(
     @Req() request: RequestWithIdentity,
     @Param('workspaceId') workspaceId: string,
-    @Body('channelId') channelId: unknown
+    @Body('channelId') channelId: unknown,
+    @Body('timeRange') timeRange: unknown
   ): Promise<AnalysisRunResponse> {
     const traceContext = this.telemetry.processingTraceContext(request);
     if (traceContext === undefined) {
@@ -85,6 +86,7 @@ export class AnalysisRunsController {
         identity: requireIdentity(request),
         workspaceId,
         channelId,
+        timeRange,
         traceContext,
       })
     );

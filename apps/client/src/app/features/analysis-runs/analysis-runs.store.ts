@@ -1,11 +1,15 @@
 import { DestroyRef, inject } from '@angular/core';
 import { patchState, signalStore, withMethods, withState } from '@ngrx/signals';
-import { Either } from 'effect';
-import type { AnalysisRunStatus } from '@omoikane/domain/analysis';
+import { Either, Schema } from 'effect';
+import {
+  AnalysisTimeRangeSchema,
+  type AnalysisRunStatus,
+  type AnalysisTimeRange,
+} from '@omoikane/domain/analysis';
 import type { ChannelId } from '@omoikane/domain/channel';
 import type { WorkspaceId } from '@omoikane/domain/workspace';
 import { AnalysisRunApiService } from '@client/core/analysis-run/analysis-run-api.service';
-import { initialAnalysisRunsState } from './analysis-runs.state';
+import { createInitialAnalysisRunsState } from './analysis-runs.state';
 
 export const ANALYSIS_RUN_POLL_INTERVAL_MS = 1_000;
 
@@ -14,7 +18,7 @@ const isTerminal = (status: AnalysisRunStatus): boolean =>
 
 /** Feature-scoped state for starting and observing one current run. */
 export const AnalysisRunsStore = signalStore(
-  withState(initialAnalysisRunsState),
+  withState(() => createInitialAnalysisRunsState()),
   withMethods(
     (
       store,
@@ -39,7 +43,23 @@ export const AnalysisRunsStore = signalStore(
           ? 'This channel is no longer available for analysis.'
           : kind === 'authentication'
             ? 'Your session can no longer access the analysis server.'
-            : 'The Analysis Run service is currently unavailable.';
+            : kind === 'invalid-request'
+              ? 'Choose a valid past time range of no more than 31 days.'
+              : 'The Analysis Run service is currently unavailable.';
+
+      const decodeTimeRange = (): Either.Either<AnalysisTimeRange, unknown> =>
+        Schema.decodeUnknownEither(AnalysisTimeRangeSchema)({
+          start: store.timeRangeStart(),
+          end: store.timeRangeEnd(),
+        });
+
+      const hasActiveRun = (): boolean => {
+        const currentRun = store.run();
+        return (
+          store.status() === 'starting' ||
+          (currentRun !== null && !isTerminal(currentRun.status))
+        );
+      };
 
       const observe = async (expectedRevision: number): Promise<boolean> => {
         const workspaceId = store.workspaceId();
@@ -117,6 +137,37 @@ export const AnalysisRunsStore = signalStore(
       });
 
       return {
+        canEditTimeRange(): boolean {
+          return !hasActiveRun();
+        },
+
+        canStart(): boolean {
+          const timeRange = decodeTimeRange();
+          return (
+            store.workspaceId() !== null &&
+            store.channelId() !== null &&
+            !hasActiveRun() &&
+            Either.isRight(timeRange) &&
+            timeRange.right.end.getTime() <= Date.now()
+          );
+        },
+
+        setTimeRangeStart(start: Date): boolean {
+          if (hasActiveRun() || Number.isNaN(start.getTime())) {
+            return false;
+          }
+          patchState(store, { timeRangeStart: start, error: null });
+          return true;
+        },
+
+        setTimeRangeEnd(end: Date): boolean {
+          if (hasActiveRun() || Number.isNaN(end.getTime())) {
+            return false;
+          }
+          patchState(store, { timeRangeEnd: end, error: null });
+          return true;
+        },
+
         selectScope(workspaceId: WorkspaceId, channelId: ChannelId): void {
           if (
             store.workspaceId() !== workspaceId ||
@@ -138,19 +189,34 @@ export const AnalysisRunsStore = signalStore(
         async start(): Promise<boolean> {
           const workspaceId = store.workspaceId();
           const channelId = store.channelId();
+          const timeRange = decodeTimeRange();
           const currentRun = store.run();
           if (
             workspaceId === null ||
             channelId === null ||
+            Either.isLeft(timeRange) ||
+            timeRange.right.end.getTime() > Date.now() ||
             store.status() === 'starting' ||
             (currentRun !== null && !isTerminal(currentRun.status))
           ) {
+            if (workspaceId !== null && channelId !== null && !hasActiveRun()) {
+              patchState(store, {
+                error: {
+                  message:
+                    'Choose a valid past time range of no more than 31 days.',
+                },
+              });
+            }
             return false;
           }
 
           const startedAt = revision;
           patchState(store, { status: 'starting', error: null });
-          const result = await api.start(workspaceId, channelId);
+          const result = await api.start(
+            workspaceId,
+            channelId,
+            timeRange.right
+          );
           if (startedAt !== revision) {
             return false;
           }

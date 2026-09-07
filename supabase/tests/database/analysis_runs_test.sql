@@ -1,13 +1,13 @@
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
-SELECT plan(12);
+SELECT plan(17);
 
 SELECT has_table('public', 'analysis_runs', 'Analysis Runs are persisted');
 SELECT has_function(
     'public',
     'start_analysis_run',
-    ARRAY['uuid', 'uuid', 'uuid', 'text', 'text'],
+    ARRAY['uuid', 'uuid', 'timestamp with time zone', 'timestamp with time zone', 'uuid', 'text', 'text'],
     'The privileged start command exists'
 );
 
@@ -30,9 +30,11 @@ SET LOCAL ROLE service_role;
 
 SELECT lives_ok(
     format(
-        'SELECT public.start_analysis_run(%L, %L, %L, %L, %L)',
+        'SELECT public.start_analysis_run(%L, %L, %L, %L, %L, %L, %L)',
         :'workspace_workspace_id'::UUID,
         :'channel_channel_id'::UUID,
+        statement_timestamp() - INTERVAL '7 days',
+        statement_timestamp(),
         '10000000-0000-4000-8000-000000000001'::UUID,
         '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01',
         'omoikane=test'
@@ -67,6 +69,16 @@ SELECT is(
     'The command records the selected channel as immutable request scope'
 );
 
+SELECT is(
+    (
+        SELECT time_range_end - time_range_start
+        FROM public.analysis_runs
+        WHERE analysis_run_id = :'analysis_analysis_run_id'
+    ),
+    INTERVAL '7 days',
+    'The command records the bounded time range as immutable request scope'
+);
+
 SET LOCAL ROLE service_role;
 
 SELECT results_eq(
@@ -82,9 +94,11 @@ SELECT results_eq(
 
 SELECT throws_ok(
     format(
-        'SELECT public.start_analysis_run(%L, %L, %L, %L, NULL)',
+        'SELECT public.start_analysis_run(%L, %L, %L, %L, %L, %L, NULL)',
         :'workspace_workspace_id'::UUID,
         :'channel_channel_id'::UUID,
+        clock_timestamp() - INTERVAL '7 days',
+        clock_timestamp(),
         '10000000-0000-4000-8000-000000000003'::UUID,
         '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
     ),
@@ -99,15 +113,79 @@ SET LOCAL ROLE service_role;
 
 SELECT throws_ok(
     format(
-        'SELECT public.start_analysis_run(%L, %L, %L, %L, NULL)',
+        'SELECT public.start_analysis_run(%L, %L, %L, %L, %L, %L, NULL)',
         :'workspace_workspace_id'::UUID,
         'ffffffff-ffff-4fff-8fff-ffffffffffff'::UUID,
+        clock_timestamp() - INTERVAL '7 days',
+        clock_timestamp(),
         '10000000-0000-4000-8000-000000000001'::UUID,
         '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
     ),
     'P0002',
     'Analysis Run resource is not accessible.',
     'An unknown or cross-workspace channel is deliberately indistinguishable from inaccessible scope'
+);
+
+RESET ROLE;
+
+SET LOCAL ROLE service_role;
+
+SELECT throws_ok(
+    format(
+        'SELECT public.start_analysis_run(%L, %L, %L, %L, %L, %L, NULL)',
+        :'workspace_workspace_id'::UUID,
+        :'channel_channel_id'::UUID,
+        clock_timestamp(),
+        clock_timestamp() - INTERVAL '1 day',
+        '10000000-0000-4000-8000-000000000001'::UUID,
+        '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
+    ),
+    '22023',
+    'Analysis Run time range is invalid.',
+    'A reversed time range is rejected'
+);
+
+SELECT throws_ok(
+    format(
+        'SELECT public.start_analysis_run(%L, %L, %L, %L, %L, %L, NULL)',
+        :'workspace_workspace_id'::UUID,
+        :'channel_channel_id'::UUID,
+        clock_timestamp() - INTERVAL '31 days 1 second',
+        clock_timestamp(),
+        '10000000-0000-4000-8000-000000000001'::UUID,
+        '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
+    ),
+    '22023',
+    'Analysis Run time range is invalid.',
+    'A time range longer than 31 days is rejected'
+);
+
+SELECT throws_ok(
+    format(
+        'SELECT public.start_analysis_run(%L, %L, %L, %L, %L, %L, NULL)',
+        :'workspace_workspace_id'::UUID,
+        :'channel_channel_id'::UUID,
+        clock_timestamp(),
+        clock_timestamp() + INTERVAL '1 day',
+        '10000000-0000-4000-8000-000000000001'::UUID,
+        '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
+    ),
+    '22023',
+    'Analysis Run time range is invalid.',
+    'A future time-range end is rejected'
+);
+
+SELECT throws_ok(
+    format(
+        'SELECT public.start_analysis_run(%L, %L, NULL, NULL, %L, %L, NULL)',
+        :'workspace_workspace_id'::UUID,
+        :'channel_channel_id'::UUID,
+        '10000000-0000-4000-8000-000000000001'::UUID,
+        '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
+    ),
+    '22023',
+    'Analysis Run time range is invalid.',
+    'A missing time range is rejected'
 );
 
 RESET ROLE;

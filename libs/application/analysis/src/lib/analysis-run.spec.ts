@@ -26,6 +26,10 @@ const run = {
   id: '30000000-0000-4000-8000-000000000001',
   workspaceId: '20000000-0000-4000-8000-000000000001',
   channelId: '40000000-0000-4000-8000-000000000001',
+  timeRange: {
+    start: new Date('2026-07-01T00:00:00.000Z'),
+    end: new Date('2026-07-08T00:00:00.000Z'),
+  },
   requestedBy: '10000000-0000-4000-8000-000000000001',
   status: 'created',
   failureCategory: null,
@@ -36,6 +40,10 @@ const run = {
 const traceContext = {
   traceparent: '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01',
   tracestate: 'omoikane=test',
+};
+const timeRangeInput = {
+  start: '2026-07-01T00:00:00.000Z',
+  end: '2026-07-08T00:00:00.000Z',
 };
 
 const layer = (repository: AnalysisRunRepository) =>
@@ -67,6 +75,7 @@ describe('Analysis Run use cases', () => {
           identity: { userId: run.requestedBy },
           workspaceId: run.workspaceId,
           channelId: run.channelId,
+          timeRange: timeRangeInput,
           traceContext,
         }).pipe(Effect.provide(layer(testRepository)))
       )
@@ -76,6 +85,7 @@ describe('Analysis Run use cases', () => {
       identity: { userId: run.requestedBy },
       workspaceId: run.workspaceId,
       channelId: run.channelId,
+      timeRange: run.timeRange,
       traceContext,
     });
   });
@@ -88,6 +98,7 @@ describe('Analysis Run use cases', () => {
         identity: null,
         workspaceId: '',
         channelId: null,
+        timeRange: null,
         traceContext: null,
       }).pipe(Effect.provide(layer(testRepository)), Effect.either)
     );
@@ -107,6 +118,7 @@ describe('Analysis Run use cases', () => {
         identity: { userId: run.requestedBy },
         workspaceId: run.workspaceId,
         channelId: run.channelId,
+        timeRange: timeRangeInput,
         traceContext: {
           traceparent: 'not-a-traceparent',
           tracestate: null,
@@ -130,6 +142,7 @@ describe('Analysis Run use cases', () => {
       startAnalysisRun({
         identity: { userId: run.requestedBy },
         workspaceId: run.workspaceId,
+        timeRange: timeRangeInput,
         traceContext,
       }).pipe(Effect.provide(layer(repository({ start }))), Effect.either)
     );
@@ -140,6 +153,43 @@ describe('Analysis Run use cases', () => {
     });
     expect(start).not.toHaveBeenCalled();
   });
+
+  it.each([
+    ['missing', undefined],
+    ['malformed', { start: 'invalid', end: '2026-07-08T00:00:00.000Z' }],
+    [
+      'reversed',
+      { start: '2026-07-08T00:00:00.000Z', end: '2026-07-01T00:00:00.000Z' },
+    ],
+    [
+      'oversized',
+      { start: '2026-07-01T00:00:00.000Z', end: '2026-08-01T00:00:00.001Z' },
+    ],
+    [
+      'future',
+      { start: '2999-01-01T00:00:00.000Z', end: '2999-01-02T00:00:00.000Z' },
+    ],
+  ])(
+    'rejects a %s time range before repository access',
+    async (_kind, timeRange) => {
+      const start = vi.fn(() => Effect.succeed(run));
+      const result = await Effect.runPromise(
+        startAnalysisRun({
+          identity: { userId: run.requestedBy },
+          workspaceId: run.workspaceId,
+          channelId: run.channelId,
+          timeRange,
+          traceContext,
+        }).pipe(Effect.provide(layer(repository({ start }))), Effect.either)
+      );
+
+      expect(result).toMatchObject({
+        _tag: 'Left',
+        left: { _tag: 'InvalidAnalysisRunInputError', field: 'timeRange' },
+      });
+      expect(start).not.toHaveBeenCalled();
+    }
+  );
 
   it('gets a run through the same explicit scope', async () => {
     const get = vi.fn(() => Effect.succeed(run));

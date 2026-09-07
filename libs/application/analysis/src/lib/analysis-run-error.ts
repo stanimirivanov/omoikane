@@ -4,6 +4,7 @@ export type AnalysisRunInputField =
   | 'requestIdentity'
   | 'workspaceId'
   | 'channelId'
+  | 'timeRange'
   | 'analysisRunId'
   | 'traceContext'
   | 'dispatcherId';

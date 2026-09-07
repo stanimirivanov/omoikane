@@ -205,7 +205,8 @@ Exit criteria:
 Implementation scope:
 
 - Let a user select a channel and time range and start an authorized analysis.
-  **Channel selection completed; bounded time-range selection remains next.**
+  **Completed with an immutable, authorized channel and bounded UTC time
+  range.**
 - Extract decision candidates, claims, assumptions, participants, and linked
   source messages.
 - Persist evidence-backed proposed findings with confidence and model and prompt

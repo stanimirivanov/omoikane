@@ -73,6 +73,8 @@ SELECT analysis_run_id
 FROM public.start_analysis_run(
     :'workspace_workspace_id'::UUID,
     :'channel_channel_id'::UUID,
+    clock_timestamp() - INTERVAL '7 days',
+    clock_timestamp(),
     '10000000-0000-4000-8000-000000000001'::UUID,
     '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01',
     'omoikane=retry'
@@ -314,6 +316,8 @@ SELECT analysis_run_id
 FROM public.start_analysis_run(
     :'workspace_workspace_id'::UUID,
     :'channel_channel_id'::UUID,
+    clock_timestamp() - INTERVAL '7 days',
+    clock_timestamp(),
     '10000000-0000-4000-8000-000000000001'::UUID,
     '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01',
     'omoikane=exhaustion'

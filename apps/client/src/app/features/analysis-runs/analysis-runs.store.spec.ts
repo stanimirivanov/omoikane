@@ -17,6 +17,10 @@ const run: AnalysisRun = Schema.decodeUnknownSync(AnalysisRunSchema)({
   id: '30000000-0000-4000-8000-000000000001',
   workspaceId,
   channelId,
+  timeRange: {
+    start: new Date('2026-08-02T12:00:00.000Z'),
+    end: new Date('2026-08-09T12:00:00.000Z'),
+  },
   requestedBy: '10000000-0000-4000-8000-000000000001',
   status: 'created',
   failureCategory: null,
@@ -50,10 +54,18 @@ describe('AnalysisRunsStore', () => {
   it('starts and retains the canonical run for the selected channel', async () => {
     const { store, start } = configureStore();
     store.selectScope(workspaceId, channelId);
+    const timeRange = {
+      start: store.timeRangeStart(),
+      end: store.timeRangeEnd(),
+    };
 
     await expect(store.start()).resolves.toBe(true);
 
-    expect(start).toHaveBeenCalledExactlyOnceWith(workspaceId, channelId);
+    expect(start).toHaveBeenCalledExactlyOnceWith(
+      workspaceId,
+      channelId,
+      timeRange
+    );
     expect(store.run()).toEqual(run);
     expect(store.status()).toBe('observing');
   });
@@ -182,5 +194,30 @@ describe('AnalysisRunsStore', () => {
     }
     completeRefresh(Either.right(run));
     await expect(refreshing).resolves.toBe(true);
+  });
+
+  it('starts with a fresh seven-day historical range', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-07T12:00:00.000Z'));
+    const { store } = configureStore();
+    store.selectScope(workspaceId, channelId);
+
+    expect(store.timeRangeStart()).toEqual(
+      new Date('2026-08-31T12:00:00.000Z')
+    );
+    expect(store.timeRangeEnd()).toEqual(new Date('2026-09-07T12:00:00.000Z'));
+    expect(store.canStart()).toBe(true);
+  });
+
+  it('does not call the API for an invalid draft range', async () => {
+    const { store, start } = configureStore();
+    store.selectScope(workspaceId, channelId);
+    store.setTimeRangeStart(new Date('2026-08-09T12:00:00.000Z'));
+    store.setTimeRangeEnd(new Date('2026-08-08T12:00:00.000Z'));
+
+    await expect(store.start()).resolves.toBe(false);
+
+    expect(start).not.toHaveBeenCalled();
+    expect(store.error()?.message).toContain('valid past time range');
   });
 });

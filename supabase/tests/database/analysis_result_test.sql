@@ -1,7 +1,7 @@
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
-SELECT plan(22);
+SELECT plan(23);
 
 SELECT has_table('public', 'analysis_results', 'Analysis results are durable');
 SELECT has_table('public', 'analysis_result_sources', 'Result evidence is durable');
@@ -34,6 +34,8 @@ SELECT analysis_run_id
 FROM public.start_analysis_run(
     :'workspace_workspace_id'::UUID,
     :'channel_channel_id'::UUID,
+    clock_timestamp() - INTERVAL '7 days',
+    clock_timestamp(),
     '10000000-0000-4000-8000-000000000001'::UUID,
     '00-11111111111111111111111111111111-2222222222222222-01',
     'omoikane=result'
@@ -82,6 +84,21 @@ SELECT ok(
            OR message.channel_id <> :'channel_channel_id'::UUID
     ),
     'Every selected source belongs to the run channel'
+);
+SELECT ok(
+    NOT EXISTS (
+        SELECT 1
+        FROM selected_analysis_sources AS source
+        INNER JOIN public.messages AS message
+            ON message.message_id = source.message_id
+        CROSS JOIN public.analysis_runs AS run
+        WHERE run.analysis_run_id = :'run_analysis_run_id'::UUID
+          AND (
+              message.created_at < run.time_range_start
+              OR message.created_at >= run.time_range_end
+          )
+    ),
+    'Every selected source is inside the inclusive-start exclusive-end run range'
 );
 SELECT ok(
     NOT EXISTS (
@@ -281,6 +298,8 @@ SELECT analysis_run_id
 FROM public.start_analysis_run(
     :'workspace_workspace_id'::UUID,
     :'channel_channel_id'::UUID,
+    clock_timestamp() - INTERVAL '7 days',
+    clock_timestamp(),
     '10000000-0000-4000-8000-000000000002'::UUID,
     '00-33333333333333333333333333333333-4444444444444444-01',
     NULL
@@ -331,6 +350,8 @@ SELECT analysis_run_id
 FROM public.start_analysis_run(
     :'workspace_workspace_id'::UUID,
     :'channel_channel_id'::UUID,
+    clock_timestamp() - INTERVAL '7 days',
+    clock_timestamp(),
     '10000000-0000-4000-8000-000000000001'::UUID,
     '00-55555555555555555555555555555555-6666666666666666-01',
     NULL

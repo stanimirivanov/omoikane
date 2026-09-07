@@ -1,6 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 import { Either, Schema } from 'effect';
-import { AnalysisRunSchema, type AnalysisRun } from '@omoikane/domain/analysis';
+import {
+  AnalysisRunSchema,
+  type AnalysisRun,
+  type AnalysisTimeRange,
+} from '@omoikane/domain/analysis';
 import { environment } from '@client-environments/environment';
 import { AuthenticationApplicationService } from '../authentication/authentication-application.service';
 
@@ -22,10 +26,19 @@ const decodeResponse = (value: unknown) => {
           createdAt: new Date(String(Reflect.get(result, 'createdAt') ?? '')),
         }
       : result;
+  const timeRange = Reflect.get(record, 'timeRange');
+  const decodedTimeRange =
+    typeof timeRange === 'object' && timeRange !== null
+      ? {
+          start: new Date(String(Reflect.get(timeRange, 'start') ?? '')),
+          end: new Date(String(Reflect.get(timeRange, 'end') ?? '')),
+        }
+      : timeRange;
   return Schema.decodeUnknownEither(AnalysisRunSchema)({
     id: Reflect.get(record, 'id'),
     workspaceId: Reflect.get(record, 'workspaceId'),
     channelId: Reflect.get(record, 'channelId'),
+    timeRange: decodedTimeRange,
     requestedBy: Reflect.get(record, 'requestedBy'),
     status: Reflect.get(record, 'status'),
     failureCategory: Reflect.get(record, 'failureCategory'),
@@ -41,9 +54,16 @@ export class AnalysisRunApiService {
 
   start(
     workspaceId: string,
-    channelId: string
+    channelId: string,
+    timeRange: AnalysisTimeRange
   ): Promise<Either.Either<AnalysisRun, AnalysisRunApiError>> {
-    return this.request('POST', workspaceId, undefined, { channelId });
+    return this.request('POST', workspaceId, undefined, {
+      channelId,
+      timeRange: {
+        start: timeRange.start.toISOString(),
+        end: timeRange.end.toISOString(),
+      },
+    });
   }
 
   get(

@@ -45,6 +45,14 @@ const mapAnalysisResult = (value: unknown): unknown => {
   };
 };
 
+const mapTimeRange = (start: string | null, end: string | null): unknown =>
+  start === null && end === null
+    ? null
+    : {
+        start: new Date(start ?? ''),
+        end: new Date(end ?? ''),
+      };
+
 const mapResult = (
   result: SupabaseAnalysisRunResult | SupabaseAnalysisRunProjectionResult,
   operation: 'start' | 'get'
@@ -69,10 +77,16 @@ const mapResult = (
     );
   }
 
-  if (operation === 'start' && row.channel_id === null) {
+  if (
+    operation === 'start' &&
+    (row.channel_id === null ||
+      row.time_range_start === null ||
+      row.time_range_end === null)
+  ) {
     return Effect.fail(
       new InvalidAnalysisRunDataError({
-        cause: 'A newly started Analysis Run must include its channel scope.',
+        cause:
+          'A newly started Analysis Run must include its channel and time-range scope.',
       })
     );
   }
@@ -81,6 +95,7 @@ const mapResult = (
     id: row.analysis_run_id,
     workspaceId: row.workspace_id,
     channelId: row.channel_id,
+    timeRange: mapTimeRange(row.time_range_start, row.time_range_end),
     requestedBy: row.requested_by,
     status: row.status,
     failureCategory:
@@ -352,11 +367,13 @@ const mapFailedJob = (
 export const makeSupabaseAnalysisRunRepository = (
   client: SupabaseAnalysisClient
 ): AnalysisRunRepository => ({
-  start: ({ identity, workspaceId, channelId, traceContext }) =>
+  start: ({ identity, workspaceId, channelId, timeRange, traceContext }) =>
     execute('start', () =>
       client.start({
         p_workspace_id: workspaceId,
         p_channel_id: channelId,
+        p_time_range_start: timeRange.start.toISOString(),
+        p_time_range_end: timeRange.end.toISOString(),
         p_requested_by: identity.userId,
         p_traceparent: traceContext.traceparent,
         ...(traceContext.tracestate === null

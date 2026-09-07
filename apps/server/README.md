@@ -8,7 +8,7 @@ runtime. The current runtime exposes liveness, dependency-aware readiness,
 OpenAPI, authenticated entry, and OpenTelemetry boundaries for trusted capabilities.
 The first product capability starts and observes a workspace-authorized,
 channel-scoped deterministic Analysis Run, including its completed immutable
-result projection.
+result projection and bounded source-message time range.
 
 ## Responsibilities
 
@@ -21,7 +21,7 @@ result projection.
 - attach only an immutable, provider-independent user identity to requests;
 - deny access by default and render safe problem-details responses;
 - atomically authorize workspace/channel scope and persist immutable Analysis
-  Run acceptance records,
+  Run acceptance records with an inclusive-start, exclusive-end UTC interval,
   initial lifecycle facts, and requested outbox events;
 - expose authorized lifecycle and completed-result projections without direct
   browser access to worker-owned tables;

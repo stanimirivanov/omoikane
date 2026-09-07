@@ -2,16 +2,30 @@
   <h3 id="analysis-runs-title">Analysis Runs</h3>
   <p>Start a deterministic trusted workflow for this channel.</p>
 
-  <button
-    type="button"
-    [disabled]="
-      store.status() === 'starting' ||
-      (store.run() !== null &&
-        store.run()?.status !== 'succeeded' &&
-        store.run()?.status !== 'failed')
-    "
-    (click)="store.start()"
-  >
+  <fieldset [disabled]="!store.canEditTimeRange()">
+    <legend>Message time range</legend>
+    <p>
+      The start is included, the end is excluded, and the maximum is 31 days.
+    </p>
+    <label>
+      Start
+      <input
+        type="datetime-local"
+        [value]="toLocalDateTime(store.timeRangeStart())"
+        (change)="setTimeRangeStart($event)"
+      />
+    </label>
+    <label>
+      End
+      <input
+        type="datetime-local"
+        [value]="toLocalDateTime(store.timeRangeEnd())"
+        (change)="setTimeRangeEnd($event)"
+      />
+    </label>
+  </fieldset>
+
+  <button type="button" [disabled]="!store.canStart()" (click)="store.start()">
     @if (store.status() === 'starting') {
       Starting&hellip;
     } @else {
@@ -21,6 +35,19 @@
 
   @if (store.run(); as run) {
     <div aria-live="polite" aria-atomic="true">
+      @if (run.timeRange; as timeRange) {
+        <p>
+          Source interval:
+          <time [attr.datetime]="toUtcDateTime(timeRange.start)">
+            {{ toUtcDateTime(timeRange.start) }}
+          </time>
+          through
+          <time [attr.datetime]="toUtcDateTime(timeRange.end)">
+            {{ toUtcDateTime(timeRange.end) }}
+          </time>
+          (end excluded).
+        </p>
+      }
       @switch (run.status) {
         @case ('created') {
           <p>Run {{ run.id }} was accepted and is waiting to be queued.</p>
