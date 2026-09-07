@@ -1,8 +1,10 @@
-import { Effect, Schema } from 'effect';
+import { Clock, Effect, Schema } from 'effect';
 import type { AuthenticatedRequestIdentity } from '@omoikane/application/authentication';
 import { ChannelIdSchema, type ChannelId } from '@omoikane/domain/channel';
 import {
+  AnalysisTimeRangeSchema,
   AnalysisRunIdSchema,
+  type AnalysisTimeRange,
   type AnalysisRunId,
 } from '@omoikane/domain/analysis';
 import { ProfileIdSchema } from '@omoikane/domain/profile';
@@ -39,8 +41,14 @@ interface ScopedRequest {
 
 interface StartRequest extends ScopedRequest {
   readonly channelId: ChannelId;
+  readonly timeRange: AnalysisTimeRange;
   readonly traceContext: AnalysisRunProcessingTraceContext;
 }
+
+const AnalysisTimeRangeRequestSchema = Schema.Struct({
+  start: Schema.DateFromString,
+  end: Schema.DateFromString,
+});
 
 export const readInputProperty = (input: unknown, key: string): unknown =>
   typeof input === 'object' && input !== null
@@ -54,6 +62,7 @@ const decodeField = <A, I>(
     | 'requestIdentity'
     | 'workspaceId'
     | 'channelId'
+    | 'timeRange'
     | 'analysisRunId'
     | 'traceContext'
     | 'dispatcherId'
@@ -91,13 +100,30 @@ export const decodeStartRequest = (
       readInputProperty(input, 'channelId'),
       'channelId'
     );
+    const decodedTimeRange = yield* decodeField(
+      AnalysisTimeRangeRequestSchema,
+      readInputProperty(input, 'timeRange'),
+      'timeRange'
+    );
+    const timeRange = yield* decodeField(
+      AnalysisTimeRangeSchema,
+      decodedTimeRange,
+      'timeRange'
+    );
+    const currentTime = yield* Clock.currentTimeMillis;
+    if (timeRange.end.getTime() > currentTime) {
+      return yield* new InvalidAnalysisRunInputError({
+        field: 'timeRange',
+        cause: 'An analysis time range cannot end in the future.',
+      });
+    }
     const traceContext = yield* decodeField(
       ProcessingTraceContextSchema,
       readInputProperty(input, 'traceContext'),
       'traceContext'
     );
 
-    return { ...request, channelId, traceContext };
+    return { ...request, channelId, timeRange, traceContext };
   });
 
 export const decodeAnalysisRunId = (

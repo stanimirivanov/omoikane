@@ -13,6 +13,13 @@ import { createServer } from './create-server';
 const supabaseUrl = 'http://127.0.0.1:54321';
 const supabaseAnonKey = 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH';
 const supabaseSecretKey = process.env['SUPABASE_SECRET_KEY']?.trim();
+const pastWeek = () => {
+  const end = new Date();
+  return {
+    start: new Date(end.getTime() - 7 * 24 * 60 * 60 * 1_000).toISOString(),
+    end: end.toISOString(),
+  };
+};
 
 const signIn = async (email: string) => {
   const client = createClient<Database>(supabaseUrl, supabaseAnonKey, {
@@ -112,11 +119,12 @@ describe('authenticated server entry against local Supabase', () => {
     }
 
     app = await createServer();
+    const timeRange = pastWeek();
     const started = await app.inject({
       method: 'POST',
       url: `/api/v1/workspaces/${workspaceId}/analysis-runs`,
       headers: { authorization: `Bearer ${token}` },
-      payload: { channelId },
+      payload: { channelId, timeRange },
     });
 
     expect(started.statusCode).toBe(201);
@@ -125,12 +133,14 @@ describe('authenticated server entry against local Supabase', () => {
       readonly id: string;
       readonly workspaceId: string;
       readonly channelId: string;
+      readonly timeRange: { readonly start: string; readonly end: string };
       readonly requestedBy: string;
       readonly status: string;
     }>();
     expect(run).toMatchObject({
       workspaceId,
       channelId,
+      timeRange,
       requestedBy: '10000000-0000-4000-8000-000000000001',
       status: 'created',
     });
@@ -174,7 +184,7 @@ describe('authenticated server entry against local Supabase', () => {
       method: 'POST',
       url: `/api/v1/workspaces/${workspaceId}/analysis-runs`,
       headers: { authorization: `Bearer ${outsider.token}` },
-      payload: { channelId },
+      payload: { channelId, timeRange: pastWeek() },
     });
 
     expect(response.statusCode).toBe(404);

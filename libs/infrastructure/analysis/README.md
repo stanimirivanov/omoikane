@@ -2,13 +2,16 @@
 
 Implements the Analysis Run application repository with narrowly privileged
 Supabase RPCs. PostgreSQL atomically checks active workspace membership and the
-selected active channel, then creates the immutable run or reads its current
-lifecycle/result projection. A
+selected active channel and bounded historical UTC interval, then creates the
+immutable run or reads its current lifecycle/result projection. A
 separate lease-fenced pair of commands claims a requested outbox event and
 idempotently dispatches it into one durable, versioned job plus its `queued`
 lifecycle fact. The worker adapter rechecks that scope, loads bounded immutable
 source identities from only the selected channel, and atomically commits the
 result, evidence, finding, attempt, and terminal fact.
+Only messages created at or after the inclusive start and before the exclusive
+end can become result sources. PostgreSQL independently rejects missing,
+reversed, future-ending, or longer-than-31-day intervals.
 Provider rows and errors are translated before crossing into application code.
 
 ```text

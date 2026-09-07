@@ -12,10 +12,11 @@ export interface StartAnalysisRunInput {
   readonly identity: AuthenticatedRequestIdentity;
   readonly workspaceId: unknown;
   readonly channelId: unknown;
+  readonly timeRange: unknown;
   readonly traceContext: unknown;
 }
 
-/** Validates identity and channel scope before atomically starting one run. */
+/** Validates identity, channel, and historical time scope before starting. */
 export const startAnalysisRun = (
   input: unknown
 ): Effect.Effect<AnalysisRun, AnalysisRunError, AnalysisRunRepository> =>

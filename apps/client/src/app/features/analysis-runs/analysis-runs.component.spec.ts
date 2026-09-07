@@ -20,6 +20,10 @@ describe('AnalysisRunsComponent', () => {
       id: '30000000-0000-4000-8000-000000000001',
       workspaceId,
       channelId,
+      timeRange: {
+        start: new Date('2026-08-04T12:00:00.000Z'),
+        end: new Date('2026-08-11T12:00:00.000Z'),
+      },
       requestedBy: '10000000-0000-4000-8000-000000000001',
       status: 'succeeded',
       failureCategory: null,
@@ -58,6 +62,12 @@ describe('AnalysisRunsComponent', () => {
       run: signal(run),
       status: signal('idle'),
       error: signal(null),
+      timeRangeStart: signal(new Date('2026-08-04T12:00:00.000Z')),
+      timeRangeEnd: signal(new Date('2026-08-11T12:00:00.000Z')),
+      canStart: vi.fn(() => true),
+      canEditTimeRange: vi.fn(() => true),
+      setTimeRangeStart: vi.fn(),
+      setTimeRangeEnd: vi.fn(),
       selectScope: vi.fn(),
       start: vi.fn(),
     };
@@ -84,5 +94,12 @@ describe('AnalysisRunsComponent', () => {
       'Evidence: 2 immutable message revisions.'
     );
     expect(fixture.nativeElement.textContent).toContain('Status: proposed');
+    expect(fixture.nativeElement.textContent).toContain(
+      '2026-08-04T12:00:00.000Z'
+    );
+    expect(fixture.nativeElement.textContent).toContain(
+      '2026-08-11T12:00:00.000Z'
+    );
+    expect(fixture.nativeElement.querySelectorAll('time')).toHaveLength(2);
   });
 });

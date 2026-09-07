@@ -1,9 +1,9 @@
 # Analysis Run Processing Contracts
 
-> **Document ID:** OMO-ARC-004  
-> **Version:** 1.0  
-> **Status:** Approved Phase 4 implementation contract  
-> **Date:** 9 August 2026  
+> **Document ID:** OMO-ARC-004
+> **Version:** 1.1
+> **Status:** Approved Phase 4 foundation and Phase 5 scope extension
+> **Date:** 7 September 2026
 > **Product:** Omoikane - The Collaborative Intelligence Platform
 
 ## 1. Purpose and scope
@@ -16,7 +16,7 @@ workflow platform or designing AI product features ahead of use.
 The completed processing foundation now proves this flow:
 
 ```text
-authenticated member request with selected channel
+authenticated member request with selected channel and UTC time range
   -> atomic workspace membership and active-channel authorization
   -> immutable analysis_runs row and append-only lifecycle
   -> durable dispatch and lease-fenced worker execution
@@ -24,15 +24,16 @@ authenticated member request with selected channel
 ```
 
 The run row remains the immutable record that the trusted server accepted a
-user request, including its selected channel. Historical pre-scope runs retain
-a null channel rather than receiving fabricated scope. Lifecycle facts, the
+user request, including its selected channel and inclusive-start,
+exclusive-end source interval. Historical runs retain null for scope added
+after their acceptance rather than receiving fabricated values. Lifecycle facts, the
 outbox, durable jobs, and the worker surround
 it; they do not turn that row into a mutable job record.
 
 The first result extension defines deterministic inventory findings and exact
-message-revision source references. Source loading now reauthorizes and limits
-that inventory to the run's active channel. It does not yet define time ranges,
-prompts, hosted model
+message-revision source references. Source loading reauthorizes and limits
+that inventory to messages created in the run's active channel and immutable
+time range. It does not yet define prompts, hosted model
 providers, retrieval, embeddings, human review, Server-Sent Events, Redis, or a
 general-purpose workflow engine. Those enter only with a consuming vertical
 slice.
@@ -168,11 +169,15 @@ Generated database types remain inside infrastructure.
 - `analysis_run_id`;
 - `workspace_id`;
 - `channel_id` for all post-scope runs (historical rows remain null);
+- inclusive `time_range_start` and exclusive `time_range_end` for all
+  post-range runs (historical rows remain null);
 - `requested_by`;
 - acceptance status during compatibility;
 - `created_at`.
 
-The existing update/delete rejection stays in force.
+New intervals must be positive, at most 31 days long, and cannot end in the
+future when accepted. The existing update/delete rejection stays in force, so
+later processing cannot widen or shift the accepted evidence boundary.
 
 ### 6.2 Lifecycle event ledger
 
@@ -369,7 +374,8 @@ The receipt and workspace-message-inventory result are sufficient to prove that:
 - duplicate delivery cannot commit twice;
 - success advances lifecycle state once;
 - telemetry correlates the server request, outbox dispatch, and job attempt;
-- bounded source selection records exact immutable message revision evidence;
+- bounded source selection records exact immutable message revision evidence
+  created inside the accepted inclusive-start, exclusive-end interval;
 - the result and proposed finding commit before the terminal success fact.
 
 The processor port belongs in the analysis application library because the

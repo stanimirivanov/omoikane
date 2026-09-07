@@ -438,6 +438,8 @@ export type Database = {
           created_at: string
           requested_by: string
           status: string
+          time_range_end: string | null
+          time_range_start: string | null
           workspace_id: string
         }
         Insert: {
@@ -446,6 +448,8 @@ export type Database = {
           created_at?: string
           requested_by: string
           status?: string
+          time_range_end?: string | null
+          time_range_start?: string | null
           workspace_id: string
         }
         Update: {
@@ -454,6 +458,8 @@ export type Database = {
           created_at?: string
           requested_by?: string
           status?: string
+          time_range_end?: string | null
+          time_range_start?: string | null
           workspace_id?: string
         }
         Relationships: [
@@ -2111,6 +2117,8 @@ export type Database = {
           requested_by: string
           result: Json
           status: string
+          time_range_end: string
+          time_range_start: string
           workspace_id: string
         }[]
       }
@@ -2281,6 +2289,8 @@ export type Database = {
         Args: {
           p_channel_id: string
           p_requested_by: string
+          p_time_range_end: string
+          p_time_range_start: string
           p_traceparent: string
           p_tracestate?: string
           p_workspace_id: string
@@ -2291,6 +2301,8 @@ export type Database = {
           created_at: string
           requested_by: string
           status: string
+          time_range_end: string | null
+          time_range_start: string | null
           workspace_id: string
         }[]
         SetofOptions: {

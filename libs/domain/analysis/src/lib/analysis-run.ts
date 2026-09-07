@@ -3,6 +3,7 @@ import { ChannelIdSchema } from '@omoikane/domain/channel';
 import { ProfileIdSchema } from '@omoikane/domain/profile';
 import { WorkspaceIdSchema } from '@omoikane/domain/workspace';
 import { AnalysisResultSchema } from './analysis-result';
+import { AnalysisTimeRangeSchema } from './analysis-time-range';
 import { AnalysisRunIdSchema } from './analysis-run-id';
 
 export const AnalysisRunStatusSchema = Schema.Literal(
@@ -20,13 +21,14 @@ export const AnalysisRunFailureCategorySchema = Schema.String.pipe(
 /**
  * Immutable acceptance identity enriched with its latest lifecycle fact.
  *
- * `channelId` is nullable only for runs accepted before channel-scoped
- * analysis was introduced. Every new start command requires a channel.
+ * `channelId` and `timeRange` are nullable only for historical runs accepted
+ * before those scopes were introduced. Every new start command requires both.
  */
 export const AnalysisRunSchema = Schema.Struct({
   id: AnalysisRunIdSchema,
   workspaceId: WorkspaceIdSchema,
   channelId: Schema.NullOr(ChannelIdSchema),
+  timeRange: Schema.NullOr(AnalysisTimeRangeSchema),
   requestedBy: ProfileIdSchema,
   status: AnalysisRunStatusSchema,
   failureCategory: Schema.NullOr(AnalysisRunFailureCategorySchema),

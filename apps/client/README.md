@@ -76,9 +76,12 @@ state only after two implemented features require coordinated ownership.
 
 Analysis Runs are owned by the selected-channel presentation subtree. Their
 feature store receives explicit workspace and channel identities, clears its
-current run when either identity changes, and sends the selected channel to the
-trusted server. Channel authorization and source filtering remain server and
-database responsibilities.
+current run when either identity changes, and sends the selected channel plus a
+validated UTC time range to the trusted server. A fresh store defaults to the
+previous seven days; the user may choose a positive interval of at most 31
+days, with an inclusive start and exclusive end. The accepted immutable range
+is rendered with the run. Channel authorization and authoritative source
+filtering remain server and database responsibilities.
 
 ## Feature structure
 
