@@ -17,7 +17,12 @@ export const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
 export const dockerCommand =
   process.platform === 'win32' ? 'docker.exe' : 'docker';
 
-export const runCommand = (command, args, stdio = 'pipe') => {
+export const runCommand = (
+  command,
+  args,
+  stdio = 'pipe',
+  environment = process.env
+) => {
   const isWindowsCommandScript =
     process.platform === 'win32' && command.endsWith('.cmd');
 
@@ -27,6 +32,7 @@ export const runCommand = (command, args, stdio = 'pipe') => {
     {
       encoding: 'utf8',
       stdio,
+      env: environment,
       windowsHide: true,
     }
   );

@@ -1,8 +1,8 @@
 # Analysis Application
 
 Orchestrates the first deterministic Analysis Run workflow. It validates the
-authenticated request identity, workspace ID, run ID, dispatcher identity, and
-safe W3C processing trace carrier before invoking the capability-oriented
+authenticated request identity, workspace and channel IDs, run ID, dispatcher
+identity, and safe W3C processing trace carrier before invoking the capability-oriented
 `AnalysisRunRepository` Effect service.
 
 ```text
@@ -20,7 +20,7 @@ ownership and transactional idempotency remain PostgreSQL responsibilities.
 Processor failures cross this boundary only as bounded retryable or terminal
 categories; unexpected defects are classified by the worker runtime. The
 deterministic processor consumes only immutable message/revision/author
-identities, selects at most 100 sources, and produces a versioned proposed
+identities from the run's authorized channel, selects at most 100 sources, and produces a versioned proposed
 inventory finding without reading content or calling a model. Polling, worker
 lifecycle, hosted model execution, review workflows, and streaming remain
 outside this package.

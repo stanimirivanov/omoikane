@@ -25,6 +25,7 @@ const decodeResponse = (value: unknown) => {
   return Schema.decodeUnknownEither(AnalysisRunSchema)({
     id: Reflect.get(record, 'id'),
     workspaceId: Reflect.get(record, 'workspaceId'),
+    channelId: Reflect.get(record, 'channelId'),
     requestedBy: Reflect.get(record, 'requestedBy'),
     status: Reflect.get(record, 'status'),
     failureCategory: Reflect.get(record, 'failureCategory'),
@@ -39,9 +40,10 @@ export class AnalysisRunApiService {
   private readonly authentication = inject(AuthenticationApplicationService);
 
   start(
-    workspaceId: string
+    workspaceId: string,
+    channelId: string
   ): Promise<Either.Either<AnalysisRun, AnalysisRunApiError>> {
-    return this.request('POST', workspaceId);
+    return this.request('POST', workspaceId, undefined, { channelId });
   }
 
   get(
@@ -54,7 +56,8 @@ export class AnalysisRunApiService {
   private async request(
     method: 'GET' | 'POST',
     workspaceId: string,
-    analysisRunId?: string
+    analysisRunId?: string,
+    body?: Readonly<Record<string, unknown>>
   ): Promise<Either.Either<AnalysisRun, AnalysisRunApiError>> {
     const tokenResult = await this.authentication.currentAccessToken();
     if (Either.isLeft(tokenResult)) {
@@ -71,7 +74,11 @@ export class AnalysisRunApiService {
           headers: {
             Authorization: `Bearer ${tokenResult.right}`,
             'X-Request-Id': crypto.randomUUID(),
+            ...(body === undefined
+              ? {}
+              : { 'Content-Type': 'application/json' }),
           },
+          ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         }
       );
     } catch {

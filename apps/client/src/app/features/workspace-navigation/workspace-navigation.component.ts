@@ -15,7 +15,6 @@ import { WorkspaceMemberDirectoryComponent } from '@client/features/workspace-me
 import { WorkspaceInvitationsComponent } from '@client/features/workspace-invitations/workspace-invitations.component';
 import { WorkspacePresenceComponent } from '@client/features/workspace-presence/workspace-presence.component';
 import { WorkspaceMessageSearchComponent } from '@client/features/workspace-message-search/workspace-message-search.component';
-import { AnalysisRunsComponent } from '@client/features/analysis-runs/analysis-runs.component';
 import { WorkspaceNavigationStore } from './workspace-navigation.store';
 import type { WorkspaceLoadStatus } from './workspace-navigation.state';
 
@@ -32,7 +31,6 @@ import type { WorkspaceLoadStatus } from './workspace-navigation.state';
     WorkspaceMemberDirectoryComponent,
     WorkspacePresenceComponent,
     WorkspaceMessageSearchComponent,
-    AnalysisRunsComponent,
   ],
   providers: [WorkspaceNavigationStore],
   templateUrl: './workspace-navigation.component.html',

@@ -13,6 +13,7 @@ import { Schema } from 'effect';
 import type { Channel } from '@omoikane/domain/channel';
 import { MessageIdSchema } from '@omoikane/domain/message';
 import type { WorkspaceId } from '@omoikane/domain/workspace';
+import { AnalysisRunsComponent } from '@client/features/analysis-runs/analysis-runs.component';
 import { ArchivedChannelListComponent } from '@client/features/archived-channel-list/archived-channel-list.component';
 import { ChannelMessagesComponent } from '@client/features/channel-messages/channel-messages.component';
 import { ChannelNavigationStore } from './channel-navigation.store';
@@ -27,7 +28,11 @@ import { ChannelNavigationStore } from './channel-navigation.store';
 @Component({
   selector: 'app-channel-navigation',
   standalone: true,
-  imports: [ArchivedChannelListComponent, ChannelMessagesComponent],
+  imports: [
+    ArchivedChannelListComponent,
+    ChannelMessagesComponent,
+    AnalysisRunsComponent,
+  ],
   providers: [ChannelNavigationStore],
   templateUrl: './channel-navigation.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,

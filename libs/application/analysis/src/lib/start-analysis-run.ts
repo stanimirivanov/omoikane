@@ -11,10 +11,11 @@ import { decodeStartRequest } from './decode-analysis-run-request';
 export interface StartAnalysisRunInput {
   readonly identity: AuthenticatedRequestIdentity;
   readonly workspaceId: unknown;
+  readonly channelId: unknown;
   readonly traceContext: unknown;
 }
 
-/** Validates identity and workspace scope before atomically starting one run. */
+/** Validates identity and channel scope before atomically starting one run. */
 export const startAnalysisRun = (
   input: unknown
 ): Effect.Effect<AnalysisRun, AnalysisRunError, AnalysisRunRepository> =>

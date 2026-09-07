@@ -16,19 +16,23 @@ workflow platform or designing AI product features ahead of use.
 The completed processing foundation now proves this flow:
 
 ```text
-authenticated member request
-  -> atomic workspace authorization
+authenticated member request with selected channel
+  -> atomic workspace membership and active-channel authorization
   -> immutable analysis_runs row and append-only lifecycle
   -> durable dispatch and lease-fenced worker execution
   -> authorized current-status projection
 ```
 
 The run row remains the immutable record that the trusted server accepted a
-user request. Lifecycle facts, the outbox, durable jobs, and the worker surround
+user request, including its selected channel. Historical pre-scope runs retain
+a null channel rather than receiving fabricated scope. Lifecycle facts, the
+outbox, durable jobs, and the worker surround
 it; they do not turn that row into a mutable job record.
 
 The first result extension defines deterministic inventory findings and exact
-message-revision source references. It does not yet define prompts, hosted model
+message-revision source references. Source loading now reauthorizes and limits
+that inventory to the run's active channel. It does not yet define time ranges,
+prompts, hosted model
 providers, retrieval, embeddings, human review, Server-Sent Events, Redis, or a
 general-purpose workflow engine. Those enter only with a consuming vertical
 slice.
@@ -163,6 +167,7 @@ Generated database types remain inside infrastructure.
 
 - `analysis_run_id`;
 - `workspace_id`;
+- `channel_id` for all post-scope runs (historical rows remain null);
 - `requested_by`;
 - acceptance status during compatibility;
 - `created_at`.
@@ -379,8 +384,9 @@ and human review remain later Phase 5 capabilities.
   internals.
 - Server and worker call narrowly granted PostgreSQL commands; neither receives
   a generic database operation through application code.
-- Every worker command re-establishes the Analysis Run and workspace scope from
-  authoritative rows. Stored job data is not trusted as authorization input.
+- Every worker command re-establishes the Analysis Run, workspace, and selected
+  active-channel scope from authoritative rows. Stored job data is not trusted
+  as authorization input.
 - Access revocation after acceptance does not delete or rewrite the audit
   record. Whether queued work may continue after revocation is checked by the
   processor policy introduced with the first content-reading analysis slice.
@@ -459,11 +465,13 @@ Each item is one reviewable vertical slice:
    the service-role-only read command derives current status from the latest
    ordered lifecycle event, the server exposes the validated projection, and
    feature-scoped Angular state polls active runs until success or failure while
-   cancelling observation when its workspace scope is replaced or destroyed.
+   cancelling observation when its workspace/channel scope is replaced or
+   destroyed.
 6. **First result-bearing analysis.** Define source selection, immutable result
    records, findings, provider metadata, and evaluation fixtures in the product
    slice that consumes them. **Completed:** the deterministic workspace message
-   inventory selects at most the 100 newest active immutable revisions, records
+   inventory selects at most the 100 newest active immutable revisions from the
+   run's selected channel, records
    exact evidence references and bounded processor metadata, and atomically
    commits one proposed finding with terminal success. Access is rechecked when
    the lease loads sources; evaluation fixtures cover empty, participant-count,

@@ -12,6 +12,7 @@ import { createServer } from './create-server';
 
 const supabaseUrl = 'http://127.0.0.1:54321';
 const supabaseAnonKey = 'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH';
+const supabaseSecretKey = process.env['SUPABASE_SECRET_KEY']?.trim();
 
 const signIn = async (email: string) => {
   const client = createClient<Database>(supabaseUrl, supabaseAnonKey, {
@@ -49,8 +50,14 @@ describe('authenticated server entry against local Supabase', () => {
   let app: NestFastifyApplication | undefined;
 
   beforeEach(() => {
+    if (!supabaseSecretKey) {
+      throw new Error(
+        'Expected the integration runner to provide the local Supabase server key.'
+      );
+    }
+
     vi.stubEnv('OMOIKANE_ENV', 'integration');
-    vi.stubEnv('SUPABASE_SECRET_KEY', 'integration-test-secret');
+    vi.stubEnv('SUPABASE_SECRET_KEY', supabaseSecretKey);
     vi.stubEnv('SUPABASE_URL', supabaseUrl);
     vi.stubEnv('SUPABASE_ANON_KEY', supabaseAnonKey);
   });
@@ -78,7 +85,7 @@ describe('authenticated server entry against local Supabase', () => {
     });
   });
 
-  it('starts and observes one workspace-authorized deterministic Analysis Run', async () => {
+  it('starts and observes one channel-scoped deterministic Analysis Run', async () => {
     const { client, token } = await signIn('owner@omoikane.local');
     const { data: workspaces, error } = await client
       .from('current_workspaces')
@@ -88,12 +95,28 @@ describe('authenticated server entry against local Supabase', () => {
     expect(error).toBeNull();
     const workspaceId = workspaces?.[0]?.workspace_id;
     expect(workspaceId).toBeTruthy();
+    if (typeof workspaceId !== 'string') {
+      throw new Error('Expected an active workspace fixture.');
+    }
+    const { data: channels, error: channelError } = await client
+      .from('current_channels')
+      .select('channel_id')
+      .eq('workspace_id', workspaceId)
+      .eq('channel_status', 'active')
+      .limit(1);
+    expect(channelError).toBeNull();
+    const channelId = channels?.[0]?.channel_id;
+    expect(channelId).toBeTruthy();
+    if (typeof channelId !== 'string') {
+      throw new Error('Expected an active channel fixture.');
+    }
 
     app = await createServer();
     const started = await app.inject({
       method: 'POST',
       url: `/api/v1/workspaces/${workspaceId}/analysis-runs`,
       headers: { authorization: `Bearer ${token}` },
+      payload: { channelId },
     });
 
     expect(started.statusCode).toBe(201);
@@ -101,11 +124,13 @@ describe('authenticated server entry against local Supabase', () => {
     const run = started.json<{
       readonly id: string;
       readonly workspaceId: string;
+      readonly channelId: string;
       readonly requestedBy: string;
       readonly status: string;
     }>();
     expect(run).toMatchObject({
       workspaceId,
+      channelId,
       requestedBy: '10000000-0000-4000-8000-000000000001',
       status: 'created',
     });
@@ -128,6 +153,20 @@ describe('authenticated server entry against local Supabase', () => {
       .limit(1);
     const workspaceId = workspaces?.[0]?.workspace_id;
     expect(workspaceId).toBeTruthy();
+    if (typeof workspaceId !== 'string') {
+      throw new Error('Expected an active workspace fixture.');
+    }
+    const { data: channels } = await owner.client
+      .from('current_channels')
+      .select('channel_id')
+      .eq('workspace_id', workspaceId)
+      .eq('channel_status', 'active')
+      .limit(1);
+    const channelId = channels?.[0]?.channel_id;
+    expect(channelId).toBeTruthy();
+    if (typeof channelId !== 'string') {
+      throw new Error('Expected an active channel fixture.');
+    }
     const outsider = await signIn('outsider@omoikane.local');
 
     app = await createServer();
@@ -135,6 +174,7 @@ describe('authenticated server entry against local Supabase', () => {
       method: 'POST',
       url: `/api/v1/workspaces/${workspaceId}/analysis-runs`,
       headers: { authorization: `Bearer ${outsider.token}` },
+      payload: { channelId },
     });
 
     expect(response.statusCode).toBe(404);

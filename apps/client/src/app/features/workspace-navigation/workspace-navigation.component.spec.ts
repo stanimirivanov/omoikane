@@ -17,7 +17,6 @@ import { WorkspaceMemberDirectoryComponent } from '@client/features/workspace-me
 import { WorkspaceInvitationsComponent } from '@client/features/workspace-invitations/workspace-invitations.component';
 import { WorkspacePresenceComponent } from '@client/features/workspace-presence/workspace-presence.component';
 import { WorkspaceMessageSearchComponent } from '@client/features/workspace-message-search/workspace-message-search.component';
-import { AnalysisRunsComponent } from '@client/features/analysis-runs/analysis-runs.component';
 import type { WorkspaceMessageSearchResult } from '@omoikane/application/message';
 import { WorkspaceNavigationComponent } from './workspace-navigation.component';
 import { WorkspaceNavigationStore } from './workspace-navigation.store';
@@ -57,15 +56,6 @@ class ChannelNavigationStubComponent {
 class WorkspaceMemberDirectoryStubComponent {
   readonly workspaceId = input.required<typeof workspace.id>();
   readonly canManageMembersChange = output<boolean>();
-}
-
-@Component({
-  selector: 'app-analysis-runs',
-  standalone: true,
-  template: '',
-})
-class AnalysisRunsStubComponent {
-  readonly workspaceId = input.required<typeof workspace.id>();
 }
 
 @Component({
@@ -169,7 +159,6 @@ const configureComponent = async ({
         WorkspaceMemberDirectoryComponent,
         WorkspacePresenceComponent,
         WorkspaceMessageSearchComponent,
-        AnalysisRunsComponent,
       ],
     },
     add: {
@@ -180,7 +169,6 @@ const configureComponent = async ({
         WorkspaceMemberDirectoryStubComponent,
         WorkspacePresenceStubComponent,
         WorkspaceMessageSearchStubComponent,
-        AnalysisRunsStubComponent,
       ],
     },
   });

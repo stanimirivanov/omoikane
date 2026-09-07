@@ -434,6 +434,7 @@ export type Database = {
       analysis_runs: {
         Row: {
           analysis_run_id: string
+          channel_id: string | null
           created_at: string
           requested_by: string
           status: string
@@ -441,6 +442,7 @@ export type Database = {
         }
         Insert: {
           analysis_run_id?: string
+          channel_id?: string | null
           created_at?: string
           requested_by: string
           status?: string
@@ -448,12 +450,27 @@ export type Database = {
         }
         Update: {
           analysis_run_id?: string
+          channel_id?: string | null
           created_at?: string
           requested_by?: string
           status?: string
           workspace_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "analysis_runs_channel_workspace_fkey"
+            columns: ["channel_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "channels"
+            referencedColumns: ["channel_id", "workspace_id"]
+          },
+          {
+            foreignKeyName: "analysis_runs_channel_workspace_fkey"
+            columns: ["channel_id", "workspace_id"]
+            isOneToOne: false
+            referencedRelation: "current_channels"
+            referencedColumns: ["channel_id", "workspace_id"]
+          },
           {
             foreignKeyName: "analysis_runs_requested_by_fkey"
             columns: ["requested_by"]
@@ -2088,6 +2105,7 @@ export type Database = {
         }
         Returns: {
           analysis_run_id: string
+          channel_id: string
           created_at: string
           failure_category: string
           requested_by: string
@@ -2261,6 +2279,7 @@ export type Database = {
       }
       start_analysis_run: {
         Args: {
+          p_channel_id: string
           p_requested_by: string
           p_traceparent: string
           p_tracestate?: string
@@ -2268,6 +2287,7 @@ export type Database = {
         }
         Returns: {
           analysis_run_id: string
+          channel_id: string | null
           created_at: string
           requested_by: string
           status: string

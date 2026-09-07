@@ -1,5 +1,6 @@
 import { Context, type Effect, type Option } from 'effect';
 import type { AuthenticatedRequestIdentity } from '@omoikane/application/authentication';
+import type { ChannelId } from '@omoikane/domain/channel';
 import type { AnalysisRun, AnalysisRunId } from '@omoikane/domain/analysis';
 import type { WorkspaceId } from '@omoikane/domain/workspace';
 import type {
@@ -22,6 +23,7 @@ interface ScopedAnalysisRunRequest {
 }
 
 export interface StartAnalysisRunCommand extends ScopedAnalysisRunRequest {
+  readonly channelId: ChannelId;
   readonly traceContext: AnalysisRunProcessingTraceContext;
 }
 

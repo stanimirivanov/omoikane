@@ -339,7 +339,7 @@ existing collaboration operations behind the server. See
 Seeded users
 
 | Role               | Email                     | Password       |
-|:-------------------|:--------------------------|:---------------|
+| :----------------- | :------------------------ | :------------- |
 | Workspace owner    | `owner@omoikane.local`    | `Password123!` |
 | Workspace member   | `member@omoikane.local`   | `Password123!` |
 | Workspace outsider | `outsider@omoikane.local` | `Password123!` |

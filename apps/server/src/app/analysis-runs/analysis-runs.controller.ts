@@ -1,6 +1,7 @@
-import { Controller, Get, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBody,
   ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
@@ -28,6 +29,7 @@ import {
 } from '../platform/http/http-boundary-error';
 import { AnalysisRunResponse } from './analysis-run-response';
 import { ServerTelemetry } from '../platform/observability/server-telemetry.service';
+import { StartAnalysisRunRequest } from './start-analysis-run-request';
 
 const requireIdentity = (request: RequestWithIdentity) => {
   const identity = getRequestIdentity(request);
@@ -62,13 +64,15 @@ export class AnalysisRunsController {
   @Post()
   @ApiOperation({ summary: 'Start a deterministic Analysis Run' })
   @ApiParam({ name: 'workspaceId', format: 'uuid' })
+  @ApiBody({ type: StartAnalysisRunRequest })
   @ApiCreatedResponse({ type: AnalysisRunResponse })
   @ApiBadRequestResponse({ description: 'The workspace ID is malformed.' })
   @ApiNotFoundResponse({ description: 'The workspace is inaccessible.' })
   @ApiServiceUnavailableResponse({ description: 'Persistence is unavailable.' })
   async start(
     @Req() request: RequestWithIdentity,
-    @Param('workspaceId') workspaceId: string
+    @Param('workspaceId') workspaceId: string,
+    @Body('channelId') channelId: unknown
   ): Promise<AnalysisRunResponse> {
     const traceContext = this.telemetry.processingTraceContext(request);
     if (traceContext === undefined) {
@@ -80,6 +84,7 @@ export class AnalysisRunsController {
       startAnalysisRun({
         identity: requireIdentity(request),
         workspaceId,
+        channelId,
         traceContext,
       })
     );

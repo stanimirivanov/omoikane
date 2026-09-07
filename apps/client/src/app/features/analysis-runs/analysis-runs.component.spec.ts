@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { Schema } from 'effect';
 import { describe, expect, it, vi } from 'vitest';
 import { AnalysisRunSchema } from '@omoikane/domain/analysis';
+import { ChannelIdSchema } from '@omoikane/domain/channel';
 import { WorkspaceIdSchema } from '@omoikane/domain/workspace';
 import { AnalysisRunsComponent } from './analysis-runs.component';
 import { AnalysisRunsStore } from './analysis-runs.store';
@@ -12,9 +13,13 @@ describe('AnalysisRunsComponent', () => {
     const workspaceId = Schema.decodeUnknownSync(WorkspaceIdSchema)(
       '20000000-0000-4000-8000-000000000001'
     );
+    const channelId = Schema.decodeUnknownSync(ChannelIdSchema)(
+      '40000000-0000-4000-8000-000000000001'
+    );
     const run = Schema.decodeUnknownSync(AnalysisRunSchema)({
       id: '30000000-0000-4000-8000-000000000001',
       workspaceId,
+      channelId,
       requestedBy: '10000000-0000-4000-8000-000000000001',
       status: 'succeeded',
       failureCategory: null,
@@ -41,7 +46,7 @@ describe('AnalysisRunsComponent', () => {
         finding: {
           kind: 'workspace-message-inventory',
           status: 'proposed',
-          title: 'Workspace message inventory',
+          title: 'Channel message inventory',
           summary: 'Analyzed 2 active messages from 1 participant.',
           confidence: 1,
         },
@@ -53,7 +58,7 @@ describe('AnalysisRunsComponent', () => {
       run: signal(run),
       status: signal('idle'),
       error: signal(null),
-      selectWorkspace: vi.fn(),
+      selectScope: vi.fn(),
       start: vi.fn(),
     };
 
@@ -66,10 +71,11 @@ describe('AnalysisRunsComponent', () => {
 
     const fixture = TestBed.createComponent(AnalysisRunsComponent);
     fixture.componentRef.setInput('workspaceId', workspaceId);
+    fixture.componentRef.setInput('channelId', channelId);
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain(
-      'Workspace message inventory'
+      'Channel message inventory'
     );
     expect(fixture.nativeElement.textContent).toContain(
       'Analyzed 2 active messages from 1 participant.'

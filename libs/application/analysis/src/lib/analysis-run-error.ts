@@ -3,6 +3,7 @@ import { Data } from 'effect';
 export type AnalysisRunInputField =
   | 'requestIdentity'
   | 'workspaceId'
+  | 'channelId'
   | 'analysisRunId'
   | 'traceContext'
   | 'dispatcherId';

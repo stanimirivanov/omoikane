@@ -76,7 +76,7 @@ const fingerprintSources = (
   ].join('/');
 };
 
-/** Builds the bounded, deterministic inventory persisted by the first result slice. */
+/** Builds the bounded inventory for the channel authorized by the run. */
 export const buildWorkspaceMessageInventory = (
   execution: AnalysisJobExecution,
   availableSources: ReadonlyArray<AnalysisJobSource>
@@ -105,7 +105,7 @@ export const buildWorkspaceMessageInventory = (
       finding: {
         kind: 'workspace-message-inventory',
         status: 'proposed',
-        title: 'Workspace message inventory',
+        title: 'Channel message inventory',
         summary,
         confidence: 1,
       },

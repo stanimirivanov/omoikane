@@ -11,6 +11,7 @@ import { makeSupabaseAnalysisRunRepository } from './supabase-analysis-run-repos
 const row = {
   analysis_run_id: '30000000-0000-4000-8000-000000000001',
   workspace_id: '20000000-0000-4000-8000-000000000001',
+  channel_id: '40000000-0000-4000-8000-000000000001',
   requested_by: '10000000-0000-4000-8000-000000000001',
   status: 'created',
   created_at: '2026-08-09T12:00:00.000Z',
@@ -59,6 +60,7 @@ const client = (
 const command = {
   identity: { userId: row.requested_by },
   workspaceId: row.workspace_id,
+  channelId: row.channel_id,
   traceContext: {
     traceparent: '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01',
     tracestate: 'omoikane=test',
@@ -80,6 +82,7 @@ describe('makeSupabaseAnalysisRunRepository', () => {
     });
     expect(start).toHaveBeenCalledExactlyOnceWith({
       p_workspace_id: row.workspace_id,
+      p_channel_id: row.channel_id,
       p_requested_by: row.requested_by,
       p_traceparent: command.traceContext.traceparent,
       p_tracestate: command.traceContext.tracestate,
@@ -99,6 +102,7 @@ describe('makeSupabaseAnalysisRunRepository', () => {
 
     expect(start).toHaveBeenCalledExactlyOnceWith({
       p_workspace_id: row.workspace_id,
+      p_channel_id: row.channel_id,
       p_requested_by: row.requested_by,
       p_traceparent: command.traceContext.traceparent,
     });
@@ -221,6 +225,21 @@ describe('makeSupabaseAnalysisRunRepository', () => {
       _tag: 'Left',
       left: { _tag: 'InvalidAnalysisRunDataError' },
     });
+  });
+
+  it('rejects a newly started run without its required channel scope', async () => {
+    const repository = makeSupabaseAnalysisRunRepository(
+      client({
+        start: vi.fn().mockResolvedValue({
+          data: [{ ...row, channel_id: null }],
+          error: null,
+        }),
+      })
+    );
+
+    await expect(
+      Effect.runPromise(repository.start(command).pipe(Effect.flip))
+    ).resolves.toMatchObject({ _tag: 'InvalidAnalysisRunDataError' });
   });
 
   it('maps an outbox claim and dispatches it with its fencing token', async () => {

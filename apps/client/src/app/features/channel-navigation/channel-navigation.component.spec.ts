@@ -14,6 +14,7 @@ import { ChannelIdSchema, type Channel } from '@omoikane/domain/channel';
 import { MessageIdSchema, type MessageId } from '@omoikane/domain/message';
 import { WorkspaceIdSchema } from '@omoikane/domain/workspace';
 import { ArchivedChannelListComponent } from '@client/features/archived-channel-list/archived-channel-list.component';
+import { AnalysisRunsComponent } from '@client/features/analysis-runs/analysis-runs.component';
 import { ChannelMessagesComponent } from '@client/features/channel-messages/channel-messages.component';
 import { ChannelNavigationComponent } from './channel-navigation.component';
 import { ChannelNavigationStore } from './channel-navigation.store';
@@ -69,6 +70,16 @@ class ArchivedChannelListStubComponent {
   readonly workspaceId = input.required<typeof workspaceId>();
   readonly activeChannels = input.required<readonly Channel[]>();
   readonly channelRestored = output<Channel>();
+}
+
+@Component({
+  selector: 'app-analysis-runs',
+  standalone: true,
+  template: '',
+})
+class AnalysisRunsStubComponent {
+  readonly workspaceId = input.required<typeof workspaceId>();
+  readonly channelId = input.required<typeof channelId>();
 }
 
 const configureComponent = async ({
@@ -135,10 +146,18 @@ const configureComponent = async ({
 
   TestBed.overrideComponent(ChannelNavigationComponent, {
     remove: {
-      imports: [ArchivedChannelListComponent, ChannelMessagesComponent],
+      imports: [
+        ArchivedChannelListComponent,
+        ChannelMessagesComponent,
+        AnalysisRunsComponent,
+      ],
     },
     add: {
-      imports: [ArchivedChannelListStubComponent, ChannelMessagesStubComponent],
+      imports: [
+        ArchivedChannelListStubComponent,
+        ChannelMessagesStubComponent,
+        AnalysisRunsStubComponent,
+      ],
     },
   });
 
@@ -238,6 +257,23 @@ describe('ChannelNavigationComponent', () => {
 
     expect(messages.channelId()).toBe(channel.id);
     expect(messages.canModerateMessages()).toBe(true);
+  });
+
+  it('scopes Analysis Runs to the selected channel', async () => {
+    const { fixture } = await configureComponent({
+      queryParams: {
+        workspace: workspaceSlug,
+        channel: channel.slug,
+      },
+      selectedChannel: channel,
+    });
+
+    const analysisRuns = fixture.debugElement.query(
+      By.directive(AnalysisRunsStubComponent)
+    ).componentInstance as AnalysisRunsStubComponent;
+
+    expect(analysisRuns.workspaceId()).toBe(workspaceId);
+    expect(analysisRuns.channelId()).toBe(channelId);
   });
 
   it('persists the exact newest message reported by channel history', async () => {
