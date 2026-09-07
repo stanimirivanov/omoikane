@@ -23,7 +23,7 @@
     "worker:dev": "nx serve ai-worker",
     "worker:build": "nx build ai-worker",
     "worker:test": "nx test ai-worker",
-    "server:integration:verify": "nx run server:integration",
+    "server:integration:verify": "node tools/development/run-server-integration.mjs",
     "build": "nx run-many -t build",
     "test": "nx run-many -t test",
     "test:watch": "nx test client --watch",

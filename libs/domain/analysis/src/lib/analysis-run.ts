@@ -1,4 +1,5 @@
 import { Schema } from 'effect';
+import { ChannelIdSchema } from '@omoikane/domain/channel';
 import { ProfileIdSchema } from '@omoikane/domain/profile';
 import { WorkspaceIdSchema } from '@omoikane/domain/workspace';
 import { AnalysisResultSchema } from './analysis-result';
@@ -16,10 +17,16 @@ export const AnalysisRunFailureCategorySchema = Schema.String.pipe(
   Schema.pattern(/^[a-z0-9._-]{1,64}$/u)
 );
 
-/** Immutable acceptance identity enriched with its latest lifecycle fact. */
+/**
+ * Immutable acceptance identity enriched with its latest lifecycle fact.
+ *
+ * `channelId` is nullable only for runs accepted before channel-scoped
+ * analysis was introduced. Every new start command requires a channel.
+ */
 export const AnalysisRunSchema = Schema.Struct({
   id: AnalysisRunIdSchema,
   workspaceId: WorkspaceIdSchema,
+  channelId: Schema.NullOr(ChannelIdSchema),
   requestedBy: ProfileIdSchema,
   status: AnalysisRunStatusSchema,
   failureCategory: Schema.NullOr(AnalysisRunFailureCategorySchema),

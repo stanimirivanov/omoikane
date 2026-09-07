@@ -2,8 +2,10 @@
 
 Defines the provider-independent Analysis Run identity and its observable
 processing states: `created`, `queued`, `running`, `succeeded`, and `failed`.
+New runs carry one immutable channel identity; the nullable representation is
+retained only so truthful pre-scope history remains decodable.
 Only failed runs carry a bounded, safe failure category. A succeeded run carries
-one validated immutable workspace-message-inventory result, its exact message
+one validated immutable channel-scoped inventory result, its exact message
 revision references, bounded processor metadata, and one proposed finding.
 Execution mechanics, jobs, and future review facts remain outside the domain
 value.

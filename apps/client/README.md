@@ -74,6 +74,12 @@ layer.
 Do not create a global store merely because data may later be shared. Promote
 state only after two implemented features require coordinated ownership.
 
+Analysis Runs are owned by the selected-channel presentation subtree. Their
+feature store receives explicit workspace and channel identities, clears its
+current run when either identity changes, and sends the selected channel to the
+trusted server. Channel authorization and source filtering remain server and
+database responsibilities.
+
 ## Feature structure
 
 The initial `channel-messages` slice keeps closely related files together:

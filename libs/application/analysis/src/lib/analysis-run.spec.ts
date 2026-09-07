@@ -25,6 +25,7 @@ import { dispatchNextAnalysisRun } from './dispatch-next-analysis-run';
 const run = {
   id: '30000000-0000-4000-8000-000000000001',
   workspaceId: '20000000-0000-4000-8000-000000000001',
+  channelId: '40000000-0000-4000-8000-000000000001',
   requestedBy: '10000000-0000-4000-8000-000000000001',
   status: 'created',
   failureCategory: null,
@@ -65,6 +66,7 @@ describe('Analysis Run use cases', () => {
         startAnalysisRun({
           identity: { userId: run.requestedBy },
           workspaceId: run.workspaceId,
+          channelId: run.channelId,
           traceContext,
         }).pipe(Effect.provide(layer(testRepository)))
       )
@@ -73,6 +75,7 @@ describe('Analysis Run use cases', () => {
     expect(start).toHaveBeenCalledWith({
       identity: { userId: run.requestedBy },
       workspaceId: run.workspaceId,
+      channelId: run.channelId,
       traceContext,
     });
   });
@@ -84,6 +87,7 @@ describe('Analysis Run use cases', () => {
       startAnalysisRun({
         identity: null,
         workspaceId: '',
+        channelId: null,
         traceContext: null,
       }).pipe(Effect.provide(layer(testRepository)), Effect.either)
     );
@@ -102,6 +106,7 @@ describe('Analysis Run use cases', () => {
       startAnalysisRun({
         identity: { userId: run.requestedBy },
         workspaceId: run.workspaceId,
+        channelId: run.channelId,
         traceContext: {
           traceparent: 'not-a-traceparent',
           tracestate: null,
@@ -115,6 +120,23 @@ describe('Analysis Run use cases', () => {
         _tag: 'InvalidAnalysisRunInputError',
         field: 'traceContext',
       },
+    });
+    expect(start).not.toHaveBeenCalled();
+  });
+
+  it('rejects a missing channel before repository access', async () => {
+    const start = vi.fn(() => Effect.succeed(run));
+    const result = await Effect.runPromise(
+      startAnalysisRun({
+        identity: { userId: run.requestedBy },
+        workspaceId: run.workspaceId,
+        traceContext,
+      }).pipe(Effect.provide(layer(repository({ start }))), Effect.either)
+    );
+
+    expect(result).toMatchObject({
+      _tag: 'Left',
+      left: { _tag: 'InvalidAnalysisRunInputError', field: 'channelId' },
     });
     expect(start).not.toHaveBeenCalled();
   });

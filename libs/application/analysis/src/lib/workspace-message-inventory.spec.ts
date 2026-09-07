@@ -31,8 +31,8 @@ const source = (index: number, authorIndex = 1) =>
     authorUserId: `10000000-0000-4000-8000-${String(authorIndex).padStart(12, '0')}`,
   });
 
-describe('workspace message inventory evaluation fixtures', () => {
-  it('describes an empty workspace without inventing evidence', () => {
+describe('channel-scoped workspace message inventory evaluation fixtures', () => {
+  it('describes an empty channel without inventing evidence', () => {
     const receipt = buildWorkspaceMessageInventory(execution, []);
 
     expect(receipt.result).toMatchObject({

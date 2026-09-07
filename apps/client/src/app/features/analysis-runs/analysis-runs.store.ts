@@ -2,6 +2,7 @@ import { DestroyRef, inject } from '@angular/core';
 import { patchState, signalStore, withMethods, withState } from '@ngrx/signals';
 import { Either } from 'effect';
 import type { AnalysisRunStatus } from '@omoikane/domain/analysis';
+import type { ChannelId } from '@omoikane/domain/channel';
 import type { WorkspaceId } from '@omoikane/domain/workspace';
 import { AnalysisRunApiService } from '@client/core/analysis-run/analysis-run-api.service';
 import { initialAnalysisRunsState } from './analysis-runs.state';
@@ -35,18 +36,20 @@ export const AnalysisRunsStore = signalStore(
 
       const message = (kind: string): string =>
         kind === 'not-found'
-          ? 'This workspace is no longer available for analysis.'
+          ? 'This channel is no longer available for analysis.'
           : kind === 'authentication'
             ? 'Your session can no longer access the analysis server.'
             : 'The Analysis Run service is currently unavailable.';
 
       const observe = async (expectedRevision: number): Promise<boolean> => {
         const workspaceId = store.workspaceId();
+        const channelId = store.channelId();
         const run = store.run();
         if (
           destroyed ||
           activeObservation !== null ||
           workspaceId === null ||
+          channelId === null ||
           run === null ||
           isTerminal(run.status)
         ) {
@@ -64,6 +67,7 @@ export const AnalysisRunsStore = signalStore(
           destroyed ||
           expectedRevision !== revision ||
           store.workspaceId() !== workspaceId ||
+          store.channelId() !== channelId ||
           store.run()?.id !== observedRunId
         ) {
           return false;
@@ -113,13 +117,17 @@ export const AnalysisRunsStore = signalStore(
       });
 
       return {
-        selectWorkspace(workspaceId: WorkspaceId): void {
-          if (store.workspaceId() !== workspaceId) {
+        selectScope(workspaceId: WorkspaceId, channelId: ChannelId): void {
+          if (
+            store.workspaceId() !== workspaceId ||
+            store.channelId() !== channelId
+          ) {
             revision += 1;
             activeObservation = null;
             stopPolling();
             patchState(store, {
               workspaceId,
+              channelId,
               run: null,
               status: 'idle',
               error: null,
@@ -129,9 +137,11 @@ export const AnalysisRunsStore = signalStore(
 
         async start(): Promise<boolean> {
           const workspaceId = store.workspaceId();
+          const channelId = store.channelId();
           const currentRun = store.run();
           if (
             workspaceId === null ||
+            channelId === null ||
             store.status() === 'starting' ||
             (currentRun !== null && !isTerminal(currentRun.status))
           ) {
@@ -140,7 +150,7 @@ export const AnalysisRunsStore = signalStore(
 
           const startedAt = revision;
           patchState(store, { status: 'starting', error: null });
-          const result = await api.start(workspaceId);
+          const result = await api.start(workspaceId, channelId);
           if (startedAt !== revision) {
             return false;
           }
@@ -170,7 +180,12 @@ export const AnalysisRunsStore = signalStore(
 
         async refresh(): Promise<boolean> {
           const workspaceId = store.workspaceId();
-          if (workspaceId === null || store.status() === 'starting') {
+          const channelId = store.channelId();
+          if (
+            workspaceId === null ||
+            channelId === null ||
+            store.status() === 'starting'
+          ) {
             return false;
           }
           stopPolling();

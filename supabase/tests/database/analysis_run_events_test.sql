@@ -21,12 +21,21 @@ ORDER BY created_at
 LIMIT 1
 \gset workspace_
 
+SELECT channel_id
+FROM public.channel_heads
+WHERE workspace_id = :'workspace_workspace_id'::UUID
+  AND channel_status = 'active'
+ORDER BY channel_id
+LIMIT 1
+\gset channel_
+
 SET LOCAL ROLE service_role;
 
 SELECT lives_ok(
     format(
-        'SELECT public.start_analysis_run(%L, %L, %L, %L)',
+        'SELECT public.start_analysis_run(%L, %L, %L, %L, %L)',
         :'workspace_workspace_id'::UUID,
+        :'channel_channel_id'::UUID,
         '10000000-0000-4000-8000-000000000001'::UUID,
         '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01',
         'omoikane=test'
@@ -137,8 +146,9 @@ SET LOCAL ROLE service_role;
 
 SELECT throws_ok(
     format(
-        'SELECT public.start_analysis_run(%L, %L, %L, NULL)',
+        'SELECT public.start_analysis_run(%L, %L, %L, %L, NULL)',
         :'workspace_workspace_id'::UUID,
+        :'channel_channel_id'::UUID,
         '10000000-0000-4000-8000-000000000001'::UUID,
         'not-a-traceparent'
     ),

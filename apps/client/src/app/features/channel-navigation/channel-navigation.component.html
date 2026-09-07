@@ -158,6 +158,11 @@
             <p>{{ channel.description }}</p>
           }
 
+          <app-analysis-runs
+            [workspaceId]="workspaceId()"
+            [channelId]="channel.id"
+          />
+
           @if (canManageChannels()) {
             @if (isEditingChannel()) {
               <form

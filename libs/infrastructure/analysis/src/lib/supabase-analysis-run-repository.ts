@@ -69,9 +69,18 @@ const mapResult = (
     );
   }
 
+  if (operation === 'start' && row.channel_id === null) {
+    return Effect.fail(
+      new InvalidAnalysisRunDataError({
+        cause: 'A newly started Analysis Run must include its channel scope.',
+      })
+    );
+  }
+
   return Schema.decodeUnknown(AnalysisRunSchema)({
     id: row.analysis_run_id,
     workspaceId: row.workspace_id,
+    channelId: row.channel_id,
     requestedBy: row.requested_by,
     status: row.status,
     failureCategory:
@@ -343,10 +352,11 @@ const mapFailedJob = (
 export const makeSupabaseAnalysisRunRepository = (
   client: SupabaseAnalysisClient
 ): AnalysisRunRepository => ({
-  start: ({ identity, workspaceId, traceContext }) =>
+  start: ({ identity, workspaceId, channelId, traceContext }) =>
     execute('start', () =>
       client.start({
         p_workspace_id: workspaceId,
+        p_channel_id: channelId,
         p_requested_by: identity.userId,
         p_traceparent: traceContext.traceparent,
         ...(traceContext.tracestate === null

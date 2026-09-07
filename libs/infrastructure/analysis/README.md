@@ -1,12 +1,14 @@
 # Analysis Infrastructure
 
 Implements the Analysis Run application repository with narrowly privileged
-Supabase RPCs. PostgreSQL atomically checks active workspace membership and
-creates the immutable run or reads its current lifecycle/result projection. A
+Supabase RPCs. PostgreSQL atomically checks active workspace membership and the
+selected active channel, then creates the immutable run or reads its current
+lifecycle/result projection. A
 separate lease-fenced pair of commands claims a requested outbox event and
 idempotently dispatches it into one durable, versioned job plus its `queued`
-lifecycle fact. The worker adapter loads bounded immutable source identities and
-atomically commits the result, evidence, finding, attempt, and terminal fact.
+lifecycle fact. The worker adapter rechecks that scope, loads bounded immutable
+source identities from only the selected channel, and atomically commits the
+result, evidence, finding, attempt, and terminal fact.
 Provider rows and errors are translated before crossing into application code.
 
 ```text

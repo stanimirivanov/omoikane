@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { Either, Schema } from 'effect';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AnalysisRunSchema, type AnalysisRun } from '@omoikane/domain/analysis';
+import { ChannelIdSchema } from '@omoikane/domain/channel';
 import { WorkspaceIdSchema } from '@omoikane/domain/workspace';
 import { AnalysisRunApiService } from '@client/core/analysis-run/analysis-run-api.service';
 import { AnalysisRunsStore } from './analysis-runs.store';
@@ -9,9 +10,13 @@ import { AnalysisRunsStore } from './analysis-runs.store';
 const workspaceId = Schema.decodeUnknownSync(WorkspaceIdSchema)(
   '20000000-0000-4000-8000-000000000001'
 );
+const channelId = Schema.decodeUnknownSync(ChannelIdSchema)(
+  '40000000-0000-4000-8000-000000000001'
+);
 const run: AnalysisRun = Schema.decodeUnknownSync(AnalysisRunSchema)({
   id: '30000000-0000-4000-8000-000000000001',
   workspaceId,
+  channelId,
   requestedBy: '10000000-0000-4000-8000-000000000001',
   status: 'created',
   failureCategory: null,
@@ -42,13 +47,13 @@ describe('AnalysisRunsStore', () => {
     vi.useRealTimers();
   });
 
-  it('starts and retains the canonical run for the selected workspace', async () => {
+  it('starts and retains the canonical run for the selected channel', async () => {
     const { store, start } = configureStore();
-    store.selectWorkspace(workspaceId);
+    store.selectScope(workspaceId, channelId);
 
     await expect(store.start()).resolves.toBe(true);
 
-    expect(start).toHaveBeenCalledExactlyOnceWith(workspaceId);
+    expect(start).toHaveBeenCalledExactlyOnceWith(workspaceId, channelId);
     expect(store.run()).toEqual(run);
     expect(store.status()).toBe('observing');
   });
@@ -60,7 +65,7 @@ describe('AnalysisRunsStore', () => {
       .mockResolvedValueOnce(Either.right(withStatus('queued')))
       .mockResolvedValueOnce(Either.right(withStatus('running')))
       .mockResolvedValueOnce(Either.right(withStatus('succeeded')));
-    store.selectWorkspace(workspaceId);
+    store.selectScope(workspaceId, channelId);
     await store.start();
 
     await vi.advanceTimersByTimeAsync(3_000);
@@ -73,15 +78,16 @@ describe('AnalysisRunsStore', () => {
     expect(get).toHaveBeenCalledTimes(3);
   });
 
-  it('stops observing when workspace selection changes', async () => {
+  it('stops observing when channel scope changes', async () => {
     vi.useFakeTimers();
     const { store, get } = configureStore();
-    store.selectWorkspace(workspaceId);
+    store.selectScope(workspaceId, channelId);
     await store.start();
 
-    store.selectWorkspace(
-      Schema.decodeUnknownSync(WorkspaceIdSchema)(
-        '20000000-0000-4000-8000-000000000002'
+    store.selectScope(
+      workspaceId,
+      Schema.decodeUnknownSync(ChannelIdSchema)(
+        '40000000-0000-4000-8000-000000000002'
       )
     );
     await vi.advanceTimersByTimeAsync(1_000);
@@ -100,7 +106,7 @@ describe('AnalysisRunsStore', () => {
         completeOldObservation = resolve;
       })
     );
-    store.selectWorkspace(workspaceId);
+    store.selectScope(workspaceId, channelId);
     await store.start();
     const oldObservation = store.refresh();
 
@@ -108,7 +114,7 @@ describe('AnalysisRunsStore', () => {
       '20000000-0000-4000-8000-000000000002'
     );
     const nextRun = { ...run, workspaceId: nextWorkspaceId };
-    store.selectWorkspace(nextWorkspaceId);
+    store.selectScope(nextWorkspaceId, channelId);
     start.mockResolvedValueOnce(Either.right(nextRun));
     await store.start();
     get.mockResolvedValueOnce(
@@ -128,7 +134,7 @@ describe('AnalysisRunsStore', () => {
 
   it('refreshes the retained run through the observe endpoint', async () => {
     const { store, get } = configureStore();
-    store.selectWorkspace(workspaceId);
+    store.selectScope(workspaceId, channelId);
     await store.start();
 
     await expect(store.refresh()).resolves.toBe(true);
@@ -136,14 +142,15 @@ describe('AnalysisRunsStore', () => {
     expect(get).toHaveBeenCalledExactlyOnceWith(workspaceId, run.id);
   });
 
-  it('clears a run when workspace selection changes', async () => {
+  it('clears a run when channel selection changes', async () => {
     const { store } = configureStore();
-    store.selectWorkspace(workspaceId);
+    store.selectScope(workspaceId, channelId);
     await store.start();
 
-    store.selectWorkspace(
-      Schema.decodeUnknownSync(WorkspaceIdSchema)(
-        '20000000-0000-4000-8000-000000000002'
+    store.selectScope(
+      workspaceId,
+      Schema.decodeUnknownSync(ChannelIdSchema)(
+        '40000000-0000-4000-8000-000000000002'
       )
     );
 
@@ -153,7 +160,7 @@ describe('AnalysisRunsStore', () => {
 
   it('does not start another run while a refresh is in progress', async () => {
     const { store, start, get } = configureStore();
-    store.selectWorkspace(workspaceId);
+    store.selectScope(workspaceId, channelId);
     await store.start();
 
     let completeRefresh:

@@ -1,13 +1,13 @@
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
-SELECT plan(9);
+SELECT plan(12);
 
 SELECT has_table('public', 'analysis_runs', 'Analysis Runs are persisted');
 SELECT has_function(
     'public',
     'start_analysis_run',
-    ARRAY['uuid', 'uuid', 'text', 'text'],
+    ARRAY['uuid', 'uuid', 'uuid', 'text', 'text'],
     'The privileged start command exists'
 );
 
@@ -18,12 +18,21 @@ ORDER BY created_at
 LIMIT 1
 \gset workspace_
 
+SELECT channel_id
+FROM public.channel_heads
+WHERE workspace_id = :'workspace_workspace_id'::UUID
+  AND channel_status = 'active'
+ORDER BY channel_id
+LIMIT 1
+\gset channel_
+
 SET LOCAL ROLE service_role;
 
 SELECT lives_ok(
     format(
-        'SELECT public.start_analysis_run(%L, %L, %L, %L)',
+        'SELECT public.start_analysis_run(%L, %L, %L, %L, %L)',
         :'workspace_workspace_id'::UUID,
+        :'channel_channel_id'::UUID,
         '10000000-0000-4000-8000-000000000001'::UUID,
         '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01',
         'omoikane=test'
@@ -52,6 +61,12 @@ SELECT is(
     'The command records the authenticated requester'
 );
 
+SELECT is(
+    (SELECT channel_id FROM public.analysis_runs WHERE analysis_run_id = :'analysis_analysis_run_id'),
+    :'channel_channel_id'::UUID,
+    'The command records the selected channel as immutable request scope'
+);
+
 SET LOCAL ROLE service_role;
 
 SELECT results_eq(
@@ -67,8 +82,9 @@ SELECT results_eq(
 
 SELECT throws_ok(
     format(
-        'SELECT public.start_analysis_run(%L, %L, %L, NULL)',
+        'SELECT public.start_analysis_run(%L, %L, %L, %L, NULL)',
         :'workspace_workspace_id'::UUID,
+        :'channel_channel_id'::UUID,
         '10000000-0000-4000-8000-000000000003'::UUID,
         '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
     ),
@@ -78,6 +94,34 @@ SELECT throws_ok(
 );
 
 RESET ROLE;
+
+SET LOCAL ROLE service_role;
+
+SELECT throws_ok(
+    format(
+        'SELECT public.start_analysis_run(%L, %L, %L, %L, NULL)',
+        :'workspace_workspace_id'::UUID,
+        'ffffffff-ffff-4fff-8fff-ffffffffffff'::UUID,
+        '10000000-0000-4000-8000-000000000001'::UUID,
+        '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01'
+    ),
+    'P0002',
+    'Analysis Run resource is not accessible.',
+    'An unknown or cross-workspace channel is deliberately indistinguishable from inaccessible scope'
+);
+
+RESET ROLE;
+
+SELECT throws_ok(
+    format(
+        'INSERT INTO public.analysis_runs (workspace_id, requested_by) VALUES (%L, %L)',
+        :'workspace_workspace_id'::UUID,
+        '10000000-0000-4000-8000-000000000001'::UUID
+    ),
+    '23514',
+    NULL,
+    'New persistence cannot bypass the required channel scope'
+);
 
 SELECT is(
     (SELECT count(*) FROM public.analysis_runs WHERE workspace_id = :'workspace_workspace_id'),

@@ -75,6 +75,8 @@ class AnalysisResultResponse {
 export class AnalysisRunResponse {
   @ApiProperty({ format: 'uuid' }) readonly id: string;
   @ApiProperty({ format: 'uuid' }) readonly workspaceId: string;
+  @ApiProperty({ format: 'uuid', nullable: true })
+  readonly channelId: string | null;
   @ApiProperty({ format: 'uuid' }) readonly requestedBy: string;
   @ApiProperty({
     enum: ['created', 'queued', 'running', 'succeeded', 'failed'],
@@ -89,6 +91,7 @@ export class AnalysisRunResponse {
   constructor(run: AnalysisRun) {
     this.id = run.id;
     this.workspaceId = run.workspaceId;
+    this.channelId = run.channelId;
     this.requestedBy = run.requestedBy;
     this.status = run.status;
     this.failureCategory = run.failureCategory;

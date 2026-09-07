@@ -1,5 +1,6 @@
 import { Effect, Schema } from 'effect';
 import type { AuthenticatedRequestIdentity } from '@omoikane/application/authentication';
+import { ChannelIdSchema, type ChannelId } from '@omoikane/domain/channel';
 import {
   AnalysisRunIdSchema,
   type AnalysisRunId,
@@ -37,6 +38,7 @@ interface ScopedRequest {
 }
 
 interface StartRequest extends ScopedRequest {
+  readonly channelId: ChannelId;
   readonly traceContext: AnalysisRunProcessingTraceContext;
 }
 
@@ -51,6 +53,7 @@ const decodeField = <A, I>(
   field:
     | 'requestIdentity'
     | 'workspaceId'
+    | 'channelId'
     | 'analysisRunId'
     | 'traceContext'
     | 'dispatcherId'
@@ -83,13 +86,18 @@ export const decodeStartRequest = (
 ): Effect.Effect<StartRequest, InvalidAnalysisRunInputError> =>
   Effect.gen(function* () {
     const request = yield* decodeScopedRequest(input);
+    const channelId = yield* decodeField(
+      ChannelIdSchema,
+      readInputProperty(input, 'channelId'),
+      'channelId'
+    );
     const traceContext = yield* decodeField(
       ProcessingTraceContextSchema,
       readInputProperty(input, 'traceContext'),
       'traceContext'
     );
 
-    return { ...request, traceContext };
+    return { ...request, channelId, traceContext };
   });
 
 export const decodeAnalysisRunId = (

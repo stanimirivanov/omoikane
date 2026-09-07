@@ -7,7 +7,8 @@ Omoikane capabilities. It uses Fastify for HTTP and owns one long-lived Effect
 runtime. The current runtime exposes liveness, dependency-aware readiness,
 OpenAPI, authenticated entry, and OpenTelemetry boundaries for trusted capabilities.
 The first product capability starts and observes a workspace-authorized,
-deterministic Analysis Run, including its completed immutable result projection.
+channel-scoped deterministic Analysis Run, including its completed immutable
+result projection.
 
 ## Responsibilities
 
@@ -19,7 +20,8 @@ deterministic Analysis Run, including its completed immutable result projection.
 - validate bearer tokens without taking ownership of browser sessions;
 - attach only an immutable, provider-independent user identity to requests;
 - deny access by default and render safe problem-details responses;
-- atomically authorize and persist immutable Analysis Run acceptance records,
+- atomically authorize workspace/channel scope and persist immutable Analysis
+  Run acceptance records,
   initial lifecycle facts, and requested outbox events;
 - expose authorized lifecycle and completed-result projections without direct
   browser access to worker-owned tables;
@@ -168,6 +170,11 @@ pnpm nx run server:typecheck
 pnpm nx run server:typecheck:test
 pnpm nx run server:lint
 ```
+
+`pnpm server:integration:verify` reads the running local Supabase server key
+from `supabase status` and passes it only to the integration-test process. The
+credential is neither hard-coded nor printed. Run `pnpm db:prepare` first so
+the local schema, seed data, and PostgREST schema cache are current.
 
 Run `pnpm server:dev`, then inspect:
 
