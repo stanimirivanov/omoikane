@@ -230,6 +230,20 @@ Exit criteria:
 - Every displayed claim links to source evidence and an Analysis Run.
 - Human review changes finding state without rewriting original model output.
 
+#### Product experience track - UI modernization
+
+After Phase 5, the implemented capabilities receive a presentation-only
+redesign before Phase 6 expands the product model. This is a parallel product
+experience track and does not renumber the architecture phases.
+
+The approved framework, visual system, information architecture,
+responsive/accessibility contract, state inventory, and UI-0 through UI-8
+implementation sequence are defined in the
+[UI/UX Redesign Plan](ui-ux-redesign-plan.md) and [ADR-0003](../architecture/adr/0003-angular-material-and-lucide-presentation-foundation.md).
+Presentation slices preserve current behavior and dependency direction. A newly
+discovered behavior requirement returns to the ordinary vertical-slice process
+instead of being hidden inside visual work.
+
 ### 3.7 Phase 6 - Requirement and intent drift
 
 Implementation scope:
@@ -340,6 +354,7 @@ Pull-request gates:
 | Before Phase 3 | **Completed in OMO-ARC-003 and ADR-0001 through ADR-0002:** C4 context and container views, server module map, API conventions, runtime ownership, authentication, and authorization design |
 | Before Phase 4 | **Completed in OMO-ARC-004:** Analysis Run lifecycle, event and job catalogues, retry/idempotency standard, worker runbook, security boundaries, telemetry, and implementation order        |
 | Before Phase 5 | **Completed in OMO-ARC-005:** Decision Forensics slice design, AI governance policy, prompt and model versioning standard, and evaluation plan                                              |
+| Before UI-1    | **Completed in OMO-UX-001 and ADR-0003:** presentation foundation, visual tokens, desktop structure, state inventory, responsive/accessibility contract, and capture matrix                 |
 | Before Phase 6 | Requirement domain model, snapshot and lineage design, and pipeline-stage contracts                                                                                                         |
 | Before Phase 7 | Analytical data model, semantic metric catalogue, and BI authorization and query-safety design                                                                                              |
 | Before Phase 8 | Privacy impact assessment, communication-signal taxonomy, and calibration and bias-evaluation plan                                                                                          |
