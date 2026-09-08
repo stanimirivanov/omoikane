@@ -322,7 +322,12 @@ Each item is a separate reviewable slice:
    frozen identities.
 2. **Extraction contract and deterministic conformance adapter.** Add the
    provider-independent port, schemas, typed failures, prompt artifact, and
-   golden structured-output fixtures. No external network call.
+   golden structured-output fixtures. **Completed:** bounded candidate schemas,
+   exact evidence and authored-participant validation, safe Effect errors,
+   SHA-256-verified instruction artifact, and fixture-backed conformance Layer.
+   Zero candidates are valid; fixtures establish structural rather than semantic
+   model quality. No external network call. Worker content loading and pinned
+   execution manifests remain part of model integration.
 3. **First hosted or local model adapter.** Implement one configured adapter in
    infrastructure and worker composition, including timeout, safe error
    mapping, metadata, and telemetry. Keep it disabled without configuration.

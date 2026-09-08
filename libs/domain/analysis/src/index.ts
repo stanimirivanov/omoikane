@@ -21,3 +21,7 @@ export {
   type AnalysisRun,
   type AnalysisRunStatus,
 } from './lib/analysis-run';
+export {
+  DecisionCandidateSchema,
+  type DecisionCandidate,
+} from './lib/decision-candidate';

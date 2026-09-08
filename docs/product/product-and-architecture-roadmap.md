@@ -209,7 +209,8 @@ Implementation scope:
   range.**
 - Extract decision candidates, claims, assumptions, participants, and linked
   source messages. **Implementation contract completed in OMO-ARC-005; runtime
-  source snapshot completed; structured extraction remains.**
+  source snapshot and extraction contract/conformance adapter completed;
+  model integration and persisted structured extraction remain.**
 - Persist evidence-backed proposed findings with confidence and model and prompt
   versions.
 - Provide a review UI where findings are confirmed, rejected, or superseded.
