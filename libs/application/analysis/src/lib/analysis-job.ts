@@ -1,8 +1,9 @@
 import { Schema } from 'effect';
-import { AnalysisRunIdSchema } from '@omoikane/domain/analysis';
 import {
   AnalysisFindingSchema,
   AnalysisResultSourceSchema,
+  AnalysisRunIdSchema,
+  DecisionCandidateSchema,
 } from '@omoikane/domain/analysis';
 import { ProfileIdSchema } from '@omoikane/domain/profile';
 import { WorkspaceIdSchema } from '@omoikane/domain/workspace';
@@ -75,7 +76,7 @@ export const AnalysisJobExecutionSchema = Schema.Struct({
   }),
 });
 
-export const AnalysisProcessorReceiptSchema = Schema.Struct({
+const WorkspaceMessageInventoryReceiptSchema = Schema.Struct({
   processorVersion: Schema.String.pipe(
     Schema.nonEmptyString(),
     Schema.maxLength(128)
@@ -100,6 +101,63 @@ export const AnalysisProcessorReceiptSchema = Schema.Struct({
     summary: Schema.String.pipe(Schema.nonEmptyString(), Schema.maxLength(500)),
   }),
 });
+
+const DecisionForensicsReceiptSchema = Schema.Struct({
+  processorVersion: Schema.Literal('analysis.decision-forensics.v1'),
+  resultFingerprint: Schema.String.pipe(
+    Schema.nonEmptyString(),
+    Schema.maxLength(256)
+  ),
+  result: Schema.Struct({
+    kind: Schema.Literal('decision-forensics'),
+    processorVersion: Schema.Literal('analysis.decision-forensics.v1'),
+    providerKind: Schema.Literal('ollama'),
+    model: Schema.String.pipe(Schema.nonEmptyString(), Schema.maxLength(128)),
+    resultSchemaVersion: Schema.Literal('decision-forensics.result.v1'),
+    promptVersion: Schema.Literal('decision-forensics.extract.v1'),
+    promptDigest: Schema.String.pipe(Schema.pattern(/^[0-9a-f]{64}$/u)),
+    evaluationVersion: Schema.Literal('decision-forensics.evaluation.v1'),
+    generationPolicy: Schema.Struct({
+      temperature: Schema.Literal(0),
+      maxOutputTokens: Schema.Literal(8192),
+      tools: Schema.Literal(false),
+      repairAttempts: Schema.Literal(0),
+    }),
+    usage: Schema.Struct({
+      inputUnits: Schema.NullOr(
+        Schema.Number.pipe(Schema.int(), Schema.nonNegative())
+      ),
+      outputUnits: Schema.NullOr(
+        Schema.Number.pipe(Schema.int(), Schema.nonNegative())
+      ),
+    }),
+    sourceCount: Schema.Number.pipe(Schema.int(), Schema.between(0, 100)),
+    sourceTruncated: Schema.Boolean,
+    sources: Schema.Array(AnalysisResultSourceSchema).pipe(
+      Schema.maxItems(100)
+    ),
+    summary: Schema.String.pipe(Schema.nonEmptyString(), Schema.maxLength(500)),
+    candidates: Schema.Array(DecisionCandidateSchema).pipe(Schema.maxItems(20)),
+  }).pipe(
+    Schema.filter(
+      (result) =>
+        result.sourceCount === result.sources.length &&
+        (!result.sourceTruncated || result.sourceCount === 100) &&
+        new Set(result.sources.map((source) => source.messageRevisionId))
+          .size === result.sources.length,
+      {
+        message: () =>
+          'Decision result source metadata does not match its unique sources.',
+      }
+    )
+  ),
+});
+
+/** Completion payloads supported by the deterministic and Decision Forensics processors. */
+export const AnalysisProcessorReceiptSchema = Schema.Union(
+  WorkspaceMessageInventoryReceiptSchema,
+  DecisionForensicsReceiptSchema
+);
 
 export const AnalysisJobSourceSchema = Schema.Struct({
   messageId: AnalysisResultSourceSchema.fields.messageId,
@@ -155,6 +213,10 @@ export type AnalysisRunOutboxClaim = typeof AnalysisRunOutboxClaimSchema.Type;
 export type AnalysisJobExecution = typeof AnalysisJobExecutionSchema.Type;
 export type AnalysisProcessorReceipt =
   typeof AnalysisProcessorReceiptSchema.Type;
+export type WorkspaceMessageInventoryProcessorReceipt =
+  typeof WorkspaceMessageInventoryReceiptSchema.Type;
+export type DecisionForensicsProcessorReceipt =
+  typeof DecisionForensicsReceiptSchema.Type;
 export type AnalysisJobSource = typeof AnalysisJobSourceSchema.Type;
 export type AnalysisJobSourceSnapshot =
   typeof AnalysisJobSourceSnapshotSchema.Type;

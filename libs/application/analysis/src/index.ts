@@ -59,6 +59,8 @@ export {
   type AnalysisJobFailureCompletion,
   type AnalysisFailureCategory,
   type AnalysisProcessorReceipt,
+  type DecisionForensicsProcessorReceipt,
+  type WorkspaceMessageInventoryProcessorReceipt,
   type AnalysisRunOutboxClaim,
 } from './lib/analysis-job';
 export {

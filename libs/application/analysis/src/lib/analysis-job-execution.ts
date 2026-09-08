@@ -6,6 +6,7 @@ import type {
   AnalysisJobFailureCompletion,
   AnalysisJobSourceSnapshot,
   AnalysisProcessorReceipt,
+  WorkspaceMessageInventoryProcessorReceipt,
 } from './analysis-job';
 import type { AnalysisJobExecutionRepositoryError } from './analysis-run-error';
 import {
@@ -81,7 +82,7 @@ const fingerprintSources = (
 export const buildWorkspaceMessageInventory = (
   execution: AnalysisJobExecution,
   snapshot: AnalysisJobSourceSnapshot
-): AnalysisProcessorReceipt => {
+): WorkspaceMessageInventoryProcessorReceipt => {
   const sources = snapshot.sources;
   const participantCount = new Set(sources.map((source) => source.authorUserId))
     .size;

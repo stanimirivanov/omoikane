@@ -86,6 +86,14 @@ the future must connect content preparation, manifest pinning, and extraction
 before persistence. The inventory worker does not pin Decision Forensics
 manifests. Source code retains the exact prompt artifact named by the manifest.
 
+`AnalysisProcessorReceiptSchema` is now a discriminated union. The existing
+workspace inventory variant remains unchanged; the Decision Forensics variant
+contains validated candidates, the exact frozen source set, manifest-linked
+artifact metadata, provider-reported nullable usage, and a bounded aggregate
+summary. It is a persistence command value, not the authorized read projection.
+The database independently matches it to the lease, snapshot, and immutable
+manifest.
+
 Content preparation is separate from `extractDecisions` so manifest pinning can
 occur before a model call. The existing inventory processor continues to request
 identities only; it does not load content it does not consume. When the model

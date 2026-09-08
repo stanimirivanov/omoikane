@@ -89,3 +89,20 @@ configuration, and cancellation while this adapter owns Ollama protocol
 semantics. The production transport and job activation remain deferred until
 the validated candidates can be committed atomically; invoking the model and
 discarding its result would violate the processing contract.
+
+## Decision Forensics persistence
+
+The Supabase adapter routes the Decision Forensics receipt to the dedicated
+`complete_decision_forensics_job_success` RPC; deterministic inventory receipts
+continue to use their existing command. The new command locks the job, verifies
+the active lease and immutable execution manifest, requires the complete frozen
+source set in its original order, and atomically commits the result, candidates,
+claims, assumptions, participant roles, evidence, successful attempt, and final
+lifecycle fact.
+
+Candidate records are immutable. Assertion and participant evidence has foreign
+keys to the result's frozen message revisions, and participant evidence must be
+authored by the asserted profile. Browser roles cannot invoke completion, and
+even the worker role has no direct table access. Invalid payload detail is
+translated to a content-free application error. Reading these normalized rows
+is intentionally deferred to the next authorized result-projection slice.
