@@ -34,6 +34,7 @@ const decisionResult = {
     {
       id: '93000000-0000-4000-8000-000000000001',
       status: 'proposed',
+      review: null,
       title: 'Release timing',
       summary: 'The release will happen Friday.',
       disposition: 'made',
@@ -66,6 +67,61 @@ describe('AnalysisResultSchema', () => {
     const decoded = Schema.decodeUnknownEither(AnalysisResultSchema)({
       ...decisionResult,
       sourceCount: 2,
+    });
+
+    expect(Either.isLeft(decoded)).toBe(true);
+  });
+
+  it('decodes a confirmed review while preserving the proposed output', () => {
+    const candidate = decisionResult.candidates[0];
+    const decoded = Schema.decodeUnknownSync(AnalysisResultSchema)({
+      ...decisionResult,
+      candidates: [
+        {
+          ...candidate,
+          status: 'confirmed',
+          review: {
+            id: '94000000-0000-4000-8000-000000000001',
+            candidateId: candidate.id,
+            reviewerId: '10000000-0000-4000-8000-000000000001',
+            action: 'confirm',
+            reason: 'Confirmed in the weekly planning review.',
+            occurredAt: new Date('2026-09-08T13:00:00Z'),
+          },
+        },
+      ],
+    });
+
+    expect(decoded).toMatchObject({
+      kind: 'decision-forensics',
+      candidates: [
+        {
+          title: 'Release timing',
+          status: 'confirmed',
+          review: { action: 'confirm' },
+        },
+      ],
+    });
+  });
+
+  it('rejects review metadata that disagrees with the projected status', () => {
+    const candidate = decisionResult.candidates[0];
+    const decoded = Schema.decodeUnknownEither(AnalysisResultSchema)({
+      ...decisionResult,
+      candidates: [
+        {
+          ...candidate,
+          status: 'confirmed',
+          review: {
+            id: '94000000-0000-4000-8000-000000000001',
+            candidateId: candidate.id,
+            reviewerId: '10000000-0000-4000-8000-000000000001',
+            action: 'reject',
+            reason: null,
+            occurredAt: new Date('2026-09-08T13:00:00Z'),
+          },
+        },
+      ],
     });
 
     expect(Either.isLeft(decoded)).toBe(true);

@@ -1,5 +1,6 @@
 export {
   AnalysisRunNotAccessibleError,
+  AnalysisDecisionAlreadyReviewedError,
   AnalysisJobLeaseLostError,
   AnalysisSourceAccessRevokedError,
   AnalysisRunOutboxClaimLostError,
@@ -7,6 +8,7 @@ export {
   InvalidAnalysisRunDataError,
   InvalidAnalysisRunInputError,
   type AnalysisRunError,
+  type AnalysisDecisionReviewError,
   type AnalysisRunDispatchError,
   type AnalysisRunDispatchRepositoryError,
   type AnalysisJobExecutionRepositoryError,
@@ -22,6 +24,7 @@ export {
   type LoadAnalysisJobSourcesCommand,
   type FailAnalysisJobCommand,
   type GetAnalysisRunQuery,
+  type ReviewAnalysisDecisionCandidateCommand,
   type StartAnalysisRunCommand,
 } from './lib/analysis-run-repository';
 export {
@@ -32,6 +35,10 @@ export {
   getAnalysisRun,
   type GetAnalysisRunInput,
 } from './lib/get-analysis-run';
+export {
+  reviewAnalysisDecisionCandidate,
+  type ReviewAnalysisDecisionCandidateInput,
+} from './lib/review-analysis-decision-candidate';
 export {
   dispatchNextAnalysisRun,
   claimNextAnalysisRunRequest,

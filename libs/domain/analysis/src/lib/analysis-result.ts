@@ -1,4 +1,5 @@
 import { Schema } from 'effect';
+import { ProfileIdSchema } from '@omoikane/domain/profile';
 import { AnalysisRunIdSchema } from './analysis-run-id';
 import { AnalysisResultSourceSchema } from './analysis-result-source';
 import { DecisionCandidateSchema } from './decision-candidate';
@@ -11,6 +12,31 @@ export const AnalysisResultIdSchema = Schema.UUID.pipe(
 export const AnalysisDecisionCandidateIdSchema = Schema.UUID.pipe(
   Schema.brand('AnalysisDecisionCandidateId')
 );
+
+// prettier-ignore
+export const AnalysisDecisionReviewIdSchema = Schema.UUID.pipe(
+  Schema.brand('AnalysisDecisionReviewId')
+);
+
+export const AnalysisDecisionReviewActionSchema = Schema.Literal(
+  'confirm',
+  'reject'
+);
+
+export const AnalysisDecisionReviewSchema = Schema.Struct({
+  id: AnalysisDecisionReviewIdSchema,
+  candidateId: AnalysisDecisionCandidateIdSchema,
+  reviewerId: ProfileIdSchema,
+  action: AnalysisDecisionReviewActionSchema,
+  reason: Schema.NullOr(
+    Schema.String.pipe(
+      Schema.nonEmptyString(),
+      Schema.maxLength(500),
+      Schema.pattern(/^[^\r\n]+$/u)
+    )
+  ),
+  occurredAt: Schema.DateFromSelf,
+});
 
 export const AnalysisFindingSchema = Schema.Struct({
   kind: Schema.Literal('workspace-message-inventory'),
@@ -59,11 +85,24 @@ export const WorkspaceMessageInventoryResultSchema = Schema.Struct({
 
 export const AnalysisDecisionCandidateSchema = Schema.Struct({
   id: AnalysisDecisionCandidateIdSchema,
-  status: Schema.Literal('proposed'),
+  status: Schema.Literal('proposed', 'confirmed', 'rejected'),
+  review: Schema.NullOr(AnalysisDecisionReviewSchema),
   ...DecisionCandidateSchema.fields,
-});
+}).pipe(
+  Schema.filter(
+    (candidate) =>
+      (candidate.status === 'proposed' && candidate.review === null) ||
+      (candidate.status === 'confirmed' &&
+        candidate.review?.action === 'confirm' &&
+        candidate.review.candidateId === candidate.id) ||
+      (candidate.status === 'rejected' &&
+        candidate.review?.action === 'reject' &&
+        candidate.review.candidateId === candidate.id),
+    { message: () => 'Decision candidate review state is inconsistent.' }
+  )
+);
 
-/** Immutable, reproducible model output awaiting a separate human review fact. */
+/** Authorized projection over immutable model output and its human review fact. */
 export const DecisionForensicsResultSchema = Schema.Struct({
   id: AnalysisResultIdSchema,
   analysisRunId: AnalysisRunIdSchema,
@@ -111,6 +150,11 @@ export const AnalysisResultSchema = Schema.Union(
 export type AnalysisResultId = typeof AnalysisResultIdSchema.Type;
 export type AnalysisDecisionCandidateId =
   typeof AnalysisDecisionCandidateIdSchema.Type;
+export type AnalysisDecisionReviewId =
+  typeof AnalysisDecisionReviewIdSchema.Type;
+export type AnalysisDecisionReviewAction =
+  typeof AnalysisDecisionReviewActionSchema.Type;
+export type AnalysisDecisionReview = typeof AnalysisDecisionReviewSchema.Type;
 export type AnalysisFinding = typeof AnalysisFindingSchema.Type;
 export type AnalysisDecisionCandidate =
   typeof AnalysisDecisionCandidateSchema.Type;

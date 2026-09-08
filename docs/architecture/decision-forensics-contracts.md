@@ -11,8 +11,8 @@
 This document defines the smallest stable contracts needed to turn the
 implemented Analysis Run platform into Decision Forensics. It governs source
 snapshotting, structured extraction, evidence, version metadata, evaluation,
-and later human review. It does not prescribe a provider SDK or create a generic
-AI framework.
+and human review. It does not prescribe a provider SDK or create a generic AI
+framework.
 
 The target product flow is:
 
@@ -231,11 +231,15 @@ evidence links are immutable. They are committed atomically with successful
 job completion and the terminal lifecycle fact. Partial extraction output is
 never visible as a successful result.
 
-Human review is a later, separate command slice. It appends immutable review
-events with reviewer identity, action, target candidate, occurrence time, and
-an optional bounded reason. The supported review actions are `confirm`,
-`reject`, and `supersede`. A supersede event references a replacement candidate
-rather than rewriting the original.
+Human review is a separate command slice. It appends an immutable review fact
+with reviewer identity, action, target candidate, occurrence time, and an
+optional bounded reason. The first implementation supports `confirm` and
+`reject`. The first review wins; an exact retry observes that same fact, while
+a different later review receives a conflict and cannot replace it.
+
+`supersede` remains deferred until a replacement-candidate workflow can own the
+replacement identity and its validation. It will append a new relationship
+rather than rewriting original model output or the existing review fact.
 
 The current review status is a projection over ordered events. `proposed` is
 the absence of a human decision, not a mutable value on the model output.
@@ -358,7 +362,12 @@ Each item is a separate reviewable slice:
    source message while retaining its exact immutable revision identity. The
    existing revision-history disclosure policy is unchanged.
 6. **Human review ledger.** Add confirm and reject first; add supersede only
-   with the replacement-candidate workflow that consumes it.
+   with the replacement-candidate workflow that consumes it. **Completed for
+   confirm and reject:** one membership-authorized command appends the first
+   immutable review, treats an exact retry idempotently, reports competing
+   reviews as conflicts, and returns a derived current projection. Angular
+   exposes explicit actions with an optional bounded reason and reconciles a
+   conflict from the authoritative run. Supersede remains deferred as planned.
 
 Hybrid retrieval, embeddings, cross-channel analysis, raw-output retention,
 automatic reruns, and generic prompt registries remain deferred until a proven

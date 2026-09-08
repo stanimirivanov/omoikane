@@ -60,6 +60,7 @@ const repository = (
 ): AnalysisRunRepository => ({
   start: () => Effect.die('unexpected start'),
   get: () => Effect.die('unexpected get'),
+  reviewDecisionCandidate: () => Effect.die('unexpected review'),
   claimNextOutboxEvent: () => Effect.succeed(Option.none()),
   dispatchOutboxEvent: () => Effect.die('unexpected dispatch'),
   checkWorkerReady: () => Effect.succeed(true),

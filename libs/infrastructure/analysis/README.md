@@ -115,3 +115,12 @@ evidence ordinal order; joins the immutable execution manifest; and returns
 usage and exact source identities. Direct access to every underlying result
 table remains revoked. The adapter decodes this unknown JSON through the domain
 result union before the value reaches the server or Angular.
+
+## Human review ledger
+
+`review_analysis_decision_candidate` is the only write capability for candidate
+reviews. It rechecks active workspace membership, locks the candidate, and
+appends one immutable confirm or reject fact. An exact retry returns the first
+fact; a competing review becomes a typed conflict. Direct review-table access
+remains revoked, and `get_analysis_run` overlays the derived status and review
+onto the read projection without changing the original candidate row.

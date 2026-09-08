@@ -8,7 +8,8 @@ runtime. The current runtime exposes liveness, dependency-aware readiness,
 OpenAPI, authenticated entry, and OpenTelemetry boundaries for trusted capabilities.
 The first product capability starts and observes a workspace-authorized,
 channel-scoped Analysis Run, including its completed immutable inventory or
-Decision Forensics result projection and bounded source-message time range.
+Decision Forensics result projection, bounded source-message time range, and
+immutable human confirmation or rejection.
 
 ## Responsibilities
 
@@ -27,6 +28,8 @@ Decision Forensics result projection and bounded source-message time range.
   browser access to worker-owned tables;
 - serialize inventory and Decision Forensics results as an explicit OpenAPI
   union, including reproducibility metadata and ordered evidence identities;
+- expose a candidate review command that maps competing reviews to a safe HTTP
+  conflict while keeping authorization and first-write-wins policy in PostgreSQL;
 - publish the implemented HTTP contract at `/openapi.json`.
 - propagate W3C trace context and stable request IDs;
 - emit safe structured request logs, traces, and bounded-cardinality metrics;

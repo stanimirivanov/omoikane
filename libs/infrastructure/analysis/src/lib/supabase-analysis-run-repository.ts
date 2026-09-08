@@ -1,5 +1,6 @@
 import { Effect, Option, Schema } from 'effect';
 import {
+  AnalysisDecisionAlreadyReviewedError,
   AnalysisRunNotAccessibleError,
   AnalysisExecutionManifestSchema,
   UnsupportedDecisionExtractionConfigurationError,
@@ -28,7 +29,12 @@ import {
   type AnalysisRunRepositoryError,
   type AnalysisRunDispatchRepositoryError,
 } from '@omoikane/application/analysis';
-import { AnalysisRunSchema, type AnalysisRun } from '@omoikane/domain/analysis';
+import {
+  AnalysisDecisionReviewSchema,
+  AnalysisRunSchema,
+  type AnalysisDecisionReview,
+  type AnalysisRun,
+} from '@omoikane/domain/analysis';
 import type {
   SupabaseAnalysisClient,
   SupabaseAnalysisJobResult,
@@ -38,6 +44,7 @@ import type {
   SupabaseAnalysisOutboxResult,
   SupabaseAnalysisRunResult,
   SupabaseAnalysisRunProjectionResult,
+  SupabaseAnalysisDecisionReviewResult,
   SupabaseAnalysisWorkerReadyResult,
 } from './supabase-analysis-client';
 
@@ -46,10 +53,71 @@ const mapAnalysisResult = (value: unknown): unknown => {
     return value;
   }
 
+  const candidates = Reflect.get(value, 'candidates');
+  const mappedCandidates = Array.isArray(candidates)
+    ? candidates.map((candidate) => {
+        if (typeof candidate !== 'object' || candidate === null) {
+          return candidate;
+        }
+        const review = Reflect.get(candidate, 'review');
+        return {
+          ...candidate,
+          review:
+            typeof review === 'object' && review !== null
+              ? {
+                  ...review,
+                  occurredAt: new Date(
+                    String(Reflect.get(review, 'occurredAt'))
+                  ),
+                }
+              : review,
+        };
+      })
+    : candidates;
+
   return {
     ...value,
+    ...(candidates === undefined ? {} : { candidates: mappedCandidates }),
     createdAt: new Date(String(Reflect.get(value, 'createdAt'))),
   };
+};
+
+const mapReviewResult = (
+  result: SupabaseAnalysisDecisionReviewResult
+): Effect.Effect<
+  AnalysisDecisionReview,
+  | AnalysisDecisionAlreadyReviewedError
+  | AnalysisRunNotAccessibleError
+  | InvalidAnalysisRunDataError
+  | AnalysisRunRepositoryUnavailableError
+> => {
+  if (result.error?.code === 'P0002') {
+    return Effect.fail(new AnalysisRunNotAccessibleError());
+  }
+  if (result.error?.code === 'P0006') {
+    return Effect.fail(new AnalysisDecisionAlreadyReviewedError());
+  }
+  if (result.error !== null) {
+    return Effect.fail(
+      new AnalysisRunRepositoryUnavailableError({
+        operation: 'reviewCandidate',
+        cause: 'Decision review command failed.',
+      })
+    );
+  }
+  const value = result.data;
+  const mapped =
+    typeof value === 'object' && value !== null
+      ? {
+          ...value,
+          occurredAt: new Date(String(Reflect.get(value, 'occurredAt'))),
+        }
+      : value;
+  return Schema.decodeUnknown(AnalysisDecisionReviewSchema)(mapped, {
+    onExcessProperty: 'error',
+  }).pipe(
+    Effect.mapError((cause) => new InvalidAnalysisRunDataError({ cause }))
+  );
 };
 
 const mapTimeRange = (start: string | null, end: string | null): unknown =>
@@ -486,6 +554,35 @@ export const makeSupabaseAnalysisRunRepository = (
         p_workspace_id: workspaceId,
         p_analysis_run_id: analysisRunId,
         p_requested_by: identity.userId,
+      })
+    ),
+  reviewDecisionCandidate: ({
+    identity,
+    workspaceId,
+    analysisRunId,
+    candidateId,
+    action,
+    reason,
+  }) =>
+    Effect.tryPromise({
+      try: () =>
+        client.reviewDecisionCandidate({
+          p_workspace_id: workspaceId,
+          p_analysis_run_id: analysisRunId,
+          p_candidate_id: candidateId,
+          p_reviewer_user_id: identity.userId,
+          p_action: action,
+          p_reason: reason,
+        }),
+      catch: () =>
+        new AnalysisRunRepositoryUnavailableError({
+          operation: 'reviewCandidate',
+          cause: 'Decision review transport failed.',
+        }),
+    }).pipe(
+      Effect.flatMap(mapReviewResult),
+      Effect.withSpan('supabase.analysis_run.review_candidate', {
+        kind: 'client',
       })
     ),
   claimNextOutboxEvent: ({ dispatcherId, leaseSeconds }) =>

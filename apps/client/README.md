@@ -90,6 +90,13 @@ source order and deep-links each message through the existing selected-channel
 route. It displays the exact immutable revision identity without broadening the
 separate message-revision authorization policy.
 
+Proposed candidates expose confirm and reject actions with an optional bounded
+reason. The store serializes review submission per feature instance and patches
+only the matching candidate after success. When another reviewer wins first,
+it reloads the authoritative run before showing the conflict. Reviewed status
+is a projection of an immutable review fact; the client never mutates model
+output locally as a source of truth.
+
 ## Feature structure
 
 The initial `channel-messages` slice keeps closely related files together:

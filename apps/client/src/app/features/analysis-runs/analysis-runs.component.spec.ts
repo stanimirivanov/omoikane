@@ -153,6 +153,7 @@ describe('AnalysisRunsComponent', () => {
           {
             id: '93000000-0000-4000-8000-000000000001',
             status: 'proposed',
+            review: null,
             title: 'Release timing',
             summary: 'The release will happen Friday.',
             disposition: 'made',
@@ -178,6 +179,7 @@ describe('AnalysisRunsComponent', () => {
       run: signal(run),
       status: signal('idle'),
       error: signal(null),
+      reviewingCandidateId: signal(null),
       timeRangeStart: signal(new Date('2026-09-01T12:00:00.000Z')),
       timeRangeEnd: signal(new Date('2026-09-08T12:00:00.000Z')),
       canStart: vi.fn(() => true),
@@ -186,6 +188,8 @@ describe('AnalysisRunsComponent', () => {
       setTimeRangeEnd: vi.fn(),
       selectScope: vi.fn(),
       start: vi.fn(),
+      canReview: vi.fn(() => true),
+      reviewCandidate: vi.fn(),
     };
 
     TestBed.overrideComponent(AnalysisRunsComponent, {
@@ -211,6 +215,21 @@ describe('AnalysisRunsComponent', () => {
     expect(text).toContain(source.messageRevisionId);
     expect(fixture.nativeElement.querySelector('a')?.getAttribute('href')).toBe(
       `/?message=${source.messageId}`
+    );
+    const reason = fixture.nativeElement.querySelector(
+      'textarea'
+    ) as HTMLTextAreaElement;
+    reason.value = 'Confirmed in planning.';
+    const buttons = Array.from(
+      fixture.nativeElement.querySelectorAll(
+        'button'
+      ) as NodeListOf<HTMLButtonElement>
+    );
+    buttons.find((button) => button.textContent?.includes('Confirm'))?.click();
+    expect(store.reviewCandidate).toHaveBeenCalledExactlyOnceWith(
+      '93000000-0000-4000-8000-000000000001',
+      'confirm',
+      'Confirmed in planning.'
     );
   });
 });

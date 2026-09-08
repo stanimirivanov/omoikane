@@ -1,4 +1,7 @@
-import type { AnalysisRun } from '@omoikane/domain/analysis';
+import type {
+  AnalysisDecisionCandidateId,
+  AnalysisRun,
+} from '@omoikane/domain/analysis';
 import type { ChannelId } from '@omoikane/domain/channel';
 import type { WorkspaceId } from '@omoikane/domain/workspace';
 
@@ -9,6 +12,7 @@ export interface AnalysisRunsState {
   readonly timeRangeEnd: Date;
   readonly run: AnalysisRun | null;
   readonly status: 'idle' | 'starting' | 'observing' | 'failed';
+  readonly reviewingCandidateId: AnalysisDecisionCandidateId | null;
   readonly error: { readonly message: string } | null;
 }
 
@@ -27,5 +31,6 @@ export const createInitialAnalysisRunsState = (
   timeRangeEnd: new Date(now),
   run: null,
   status: 'idle',
+  reviewingCandidateId: null,
   error: null,
 });

@@ -1,7 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { Either, Schema } from 'effect';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { AnalysisRunSchema, type AnalysisRun } from '@omoikane/domain/analysis';
+import {
+  AnalysisDecisionReviewSchema,
+  AnalysisRunSchema,
+  type AnalysisRun,
+} from '@omoikane/domain/analysis';
 import { ChannelIdSchema } from '@omoikane/domain/channel';
 import { WorkspaceIdSchema } from '@omoikane/domain/workspace';
 import { AnalysisRunApiService } from '@client/core/analysis-run/analysis-run-api.service';
@@ -28,6 +32,63 @@ const run: AnalysisRun = Schema.decodeUnknownSync(AnalysisRunSchema)({
   createdAt: new Date('2026-08-09T12:00:00.000Z'),
 });
 
+const source = {
+  messageId: '90000000-0000-4000-8000-000000000001',
+  messageRevisionId: '91000000-0000-4000-8000-000000000001',
+};
+const candidateId = '93000000-0000-4000-8000-000000000001';
+const decisionRun = Schema.decodeUnknownSync(AnalysisRunSchema)({
+  ...run,
+  status: 'succeeded',
+  result: {
+    id: '92000000-0000-4000-8000-000000000001',
+    analysisRunId: run.id,
+    kind: 'decision-forensics',
+    processorVersion: 'analysis.decision-forensics.v1',
+    providerKind: 'ollama',
+    model: 'qwen3:8b',
+    resultSchemaVersion: 'decision-forensics.result.v1',
+    promptVersion: 'decision-forensics.extract.v1',
+    promptDigest:
+      'd0b179cc79776914ad559aef19e9060dd13bff3946200bbc6f7914a980e9fff1',
+    evaluationVersion: 'decision-forensics.evaluation.v1',
+    generationPolicy: {
+      temperature: 0,
+      maxOutputTokens: 8192,
+      tools: false,
+      repairAttempts: 0,
+    },
+    usage: { inputUnits: 10, outputUnits: 5 },
+    sourceCount: 1,
+    sourceTruncated: false,
+    sources: [source],
+    summary: 'Extracted 1 proposed decision candidate.',
+    candidates: [
+      {
+        id: candidateId,
+        status: 'proposed',
+        review: null,
+        title: 'Release timing',
+        summary: 'Release on Friday.',
+        disposition: 'made',
+        claims: [{ text: 'Release on Friday.', evidence: [source] }],
+        assumptions: [],
+        participants: [],
+        confidence: 0.9,
+      },
+    ],
+    createdAt: new Date('2026-09-08T12:00:00Z'),
+  },
+});
+const review = Schema.decodeUnknownSync(AnalysisDecisionReviewSchema)({
+  id: '94000000-0000-4000-8000-000000000001',
+  candidateId,
+  reviewerId: run.requestedBy,
+  action: 'confirm',
+  reason: 'Confirmed in planning.',
+  occurredAt: new Date('2026-09-08T13:00:00Z'),
+});
+
 const withStatus = (
   status: AnalysisRun['status'],
   failureCategory: string | null = null
@@ -36,13 +97,22 @@ const withStatus = (
 const configureStore = () => {
   const start = vi.fn().mockResolvedValue(Either.right(run));
   const get = vi.fn().mockResolvedValue(Either.right(run));
+  const reviewCandidate = vi.fn().mockResolvedValue(Either.right(review));
   TestBed.configureTestingModule({
     providers: [
       AnalysisRunsStore,
-      { provide: AnalysisRunApiService, useValue: { start, get } },
+      {
+        provide: AnalysisRunApiService,
+        useValue: { start, get, reviewCandidate },
+      },
     ],
   });
-  return { store: TestBed.inject(AnalysisRunsStore), start, get };
+  return {
+    store: TestBed.inject(AnalysisRunsStore),
+    start,
+    get,
+    reviewCandidate,
+  };
 };
 
 describe('AnalysisRunsStore', () => {
@@ -219,5 +289,70 @@ describe('AnalysisRunsStore', () => {
 
     expect(start).not.toHaveBeenCalled();
     expect(store.error()?.message).toContain('valid past time range');
+  });
+
+  it('confirms a proposed candidate and preserves its model output', async () => {
+    const { store, start, reviewCandidate } = configureStore();
+    start.mockResolvedValueOnce(Either.right(decisionRun));
+    store.selectScope(workspaceId, channelId);
+    await store.start();
+
+    await expect(
+      store.reviewCandidate(
+        review.candidateId,
+        'confirm',
+        '  Confirmed in planning.  '
+      )
+    ).resolves.toBe(true);
+
+    expect(reviewCandidate).toHaveBeenCalledExactlyOnceWith(
+      workspaceId,
+      decisionRun.id,
+      review.candidateId,
+      'confirm',
+      'Confirmed in planning.'
+    );
+    const candidate =
+      store.run()?.result?.kind === 'decision-forensics'
+        ? store.run()?.result?.candidates[0]
+        : undefined;
+    expect(candidate).toMatchObject({
+      title: 'Release timing',
+      status: 'confirmed',
+      review: { action: 'confirm' },
+    });
+    expect(store.reviewingCandidateId()).toBeNull();
+  });
+
+  it('reloads canonical review state after a competing review', async () => {
+    const { store, start, get, reviewCandidate } = configureStore();
+    const rejectedReview = { ...review, action: 'reject' as const };
+    const rejectedRun: AnalysisRun = {
+      ...decisionRun,
+      result:
+        decisionRun.result?.kind === 'decision-forensics'
+          ? {
+              ...decisionRun.result,
+              candidates: decisionRun.result.candidates.map((candidate) => ({
+                ...candidate,
+                status: 'rejected' as const,
+                review: rejectedReview,
+              })),
+            }
+          : decisionRun.result,
+    };
+    start.mockResolvedValueOnce(Either.right(decisionRun));
+    reviewCandidate.mockResolvedValueOnce(Either.left({ kind: 'conflict' }));
+    get.mockResolvedValueOnce(Either.right(rejectedRun));
+    store.selectScope(workspaceId, channelId);
+    await store.start();
+
+    await expect(
+      store.reviewCandidate(review.candidateId, 'confirm', '')
+    ).resolves.toBe(false);
+
+    expect(store.run()).toEqual(rejectedRun);
+    expect(store.error()?.message).toContain('already reviewed');
+    expect(store.reviewingCandidateId()).toBeNull();
   });
 });

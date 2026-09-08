@@ -2,6 +2,8 @@ import { Clock, Effect, Schema } from 'effect';
 import type { AuthenticatedRequestIdentity } from '@omoikane/application/authentication';
 import { ChannelIdSchema, type ChannelId } from '@omoikane/domain/channel';
 import {
+  AnalysisDecisionCandidateIdSchema,
+  AnalysisDecisionReviewActionSchema,
   AnalysisTimeRangeSchema,
   AnalysisRunIdSchema,
   type AnalysisTimeRange,
@@ -64,6 +66,9 @@ const decodeField = <A, I>(
     | 'channelId'
     | 'timeRange'
     | 'analysisRunId'
+    | 'candidateId'
+    | 'reviewAction'
+    | 'reviewReason'
     | 'traceContext'
     | 'dispatcherId'
 ): Effect.Effect<A, InvalidAnalysisRunInputError> =>
@@ -130,6 +135,30 @@ export const decodeAnalysisRunId = (
   input: unknown
 ): Effect.Effect<AnalysisRunId, InvalidAnalysisRunInputError> =>
   decodeField(AnalysisRunIdSchema, input, 'analysisRunId');
+
+export const decodeAnalysisDecisionCandidateId = (input: unknown) =>
+  decodeField(AnalysisDecisionCandidateIdSchema, input, 'candidateId');
+
+export const decodeAnalysisDecisionReviewAction = (input: unknown) =>
+  decodeField(AnalysisDecisionReviewActionSchema, input, 'reviewAction');
+
+const AnalysisDecisionReviewReasonSchema = Schema.NullOr(
+  Schema.String.pipe(
+    Schema.nonEmptyString(),
+    Schema.maxLength(500),
+    Schema.pattern(/^[^\r\n]+$/u)
+  )
+);
+
+export const decodeAnalysisDecisionReviewReason = (input: unknown) => {
+  const normalized =
+    typeof input === 'string' ? input.trim() || null : (input ?? null);
+  return decodeField(
+    AnalysisDecisionReviewReasonSchema,
+    normalized,
+    'reviewReason'
+  );
+};
 
 const DispatcherIdSchema = Schema.String.pipe(
   Schema.maxLength(128),

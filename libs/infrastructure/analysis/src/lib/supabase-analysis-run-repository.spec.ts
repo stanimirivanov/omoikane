@@ -53,6 +53,10 @@ const client = (
 ): SupabaseAnalysisClient => ({
   start: vi.fn().mockResolvedValue({ data: [row], error: null }),
   get: vi.fn().mockResolvedValue({ data: [projectionRow], error: null }),
+  reviewDecisionCandidate: vi.fn().mockResolvedValue({
+    data: null,
+    error: null,
+  }),
   claimNextOutboxEvent: vi.fn().mockResolvedValue({ data: [], error: null }),
   dispatchOutboxEvent: vi.fn().mockResolvedValue({ data: [], error: null }),
   checkWorkerReady: vi.fn().mockResolvedValue({ data: true, error: null }),
@@ -469,6 +473,7 @@ describe('makeSupabaseAnalysisRunRepository', () => {
               {
                 id: '93000000-0000-4000-8000-000000000001',
                 status: 'proposed',
+                review: null,
                 title: 'Release timing',
                 summary: 'The release will happen Friday.',
                 disposition: 'made',
@@ -651,6 +656,74 @@ describe('makeSupabaseAnalysisRunRepository', () => {
     expect(result).toMatchObject({
       _tag: 'Left',
       left: { _tag: 'InvalidAnalysisRunDataError' },
+    });
+  });
+
+  it('appends and decodes a candidate review without exposing table access', async () => {
+    const reviewDecisionCandidate = vi.fn().mockResolvedValue({
+      data: {
+        id: '94000000-0000-4000-8000-000000000001',
+        candidateId: '93000000-0000-4000-8000-000000000001',
+        reviewerId: row.requested_by,
+        action: 'confirm',
+        reason: null,
+        occurredAt: '2026-09-08T13:00:00.000Z',
+      },
+      error: null,
+    });
+    const repository = makeSupabaseAnalysisRunRepository(
+      client({ reviewDecisionCandidate })
+    );
+    const reviewCommand = {
+      identity: command.identity,
+      workspaceId: command.workspaceId,
+      analysisRunId: row.analysis_run_id,
+      candidateId: '93000000-0000-4000-8000-000000000001',
+      action: 'confirm',
+      reason: null,
+    } as Parameters<typeof repository.reviewDecisionCandidate>[0];
+
+    await expect(
+      Effect.runPromise(repository.reviewDecisionCandidate(reviewCommand))
+    ).resolves.toMatchObject({
+      candidateId: reviewCommand.candidateId,
+      action: 'confirm',
+      occurredAt: new Date('2026-09-08T13:00:00.000Z'),
+    });
+    expect(reviewDecisionCandidate).toHaveBeenCalledExactlyOnceWith({
+      p_workspace_id: reviewCommand.workspaceId,
+      p_analysis_run_id: reviewCommand.analysisRunId,
+      p_candidate_id: reviewCommand.candidateId,
+      p_reviewer_user_id: reviewCommand.identity.userId,
+      p_action: 'confirm',
+      p_reason: null,
+    });
+  });
+
+  it('maps competing candidate reviews to the explicit conflict error', async () => {
+    const error = { code: 'P0006' } as PostgrestError;
+    const repository = makeSupabaseAnalysisRunRepository(
+      client({
+        reviewDecisionCandidate: vi
+          .fn()
+          .mockResolvedValue({ data: null, error }),
+      })
+    );
+    const reviewCommand = {
+      identity: command.identity,
+      workspaceId: command.workspaceId,
+      analysisRunId: row.analysis_run_id,
+      candidateId: '93000000-0000-4000-8000-000000000001',
+      action: 'reject',
+      reason: 'Evidence does not support this.',
+    } as Parameters<typeof repository.reviewDecisionCandidate>[0];
+
+    await expect(
+      Effect.runPromise(
+        repository.reviewDecisionCandidate(reviewCommand).pipe(Effect.flip)
+      )
+    ).resolves.toMatchObject({
+      _tag: 'AnalysisDecisionAlreadyReviewedError',
     });
   });
 

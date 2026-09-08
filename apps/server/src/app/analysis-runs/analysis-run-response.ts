@@ -8,6 +8,7 @@ import type {
   DecisionForensicsResult,
   WorkspaceMessageInventoryResult,
 } from '@omoikane/domain/analysis';
+import { AnalysisDecisionReviewResponse } from './analysis-decision-review-response';
 
 type DecisionAssertion = AnalysisDecisionCandidate['claims'][number];
 type DecisionParticipant = AnalysisDecisionCandidate['participants'][number];
@@ -117,7 +118,10 @@ class DecisionParticipantResponse {
 
 class AnalysisDecisionCandidateResponse {
   @ApiProperty({ format: 'uuid' }) readonly id: string;
-  @ApiProperty({ enum: ['proposed'] }) readonly status: 'proposed';
+  @ApiProperty({ enum: ['proposed', 'confirmed', 'rejected'] })
+  readonly status: AnalysisDecisionCandidate['status'];
+  @ApiProperty({ nullable: true, type: () => AnalysisDecisionReviewResponse })
+  readonly review: AnalysisDecisionReviewResponse | null;
   @ApiProperty() readonly title: string;
   @ApiProperty() readonly summary: string;
   @ApiProperty({ enum: ['made', 'deferred', 'changed', 'rejected'] })
@@ -133,6 +137,10 @@ class AnalysisDecisionCandidateResponse {
   constructor(candidate: AnalysisDecisionCandidate) {
     this.id = candidate.id;
     this.status = candidate.status;
+    this.review =
+      candidate.review === null
+        ? null
+        : new AnalysisDecisionReviewResponse(candidate.review);
     this.title = candidate.title;
     this.summary = candidate.summary;
     this.disposition = candidate.disposition;

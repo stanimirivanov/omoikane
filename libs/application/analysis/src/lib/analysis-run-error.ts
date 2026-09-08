@@ -6,6 +6,9 @@ export type AnalysisRunInputField =
   | 'channelId'
   | 'timeRange'
   | 'analysisRunId'
+  | 'candidateId'
+  | 'reviewAction'
+  | 'reviewReason'
   | 'traceContext'
   | 'dispatcherId';
 
@@ -17,6 +20,11 @@ export class InvalidAnalysisRunInputError extends Data.TaggedError(
 /** The requested workspace or run is inaccessible without revealing existence. */
 export class AnalysisRunNotAccessibleError extends Data.TaggedError(
   'AnalysisRunNotAccessibleError'
+) {}
+
+/** Another human review already established the candidate's terminal status. */
+export class AnalysisDecisionAlreadyReviewedError extends Data.TaggedError(
+  'AnalysisDecisionAlreadyReviewedError'
 ) {}
 
 /** A provider result failed the supported Analysis Run runtime contract. */
@@ -46,6 +54,7 @@ export class AnalysisRunRepositoryUnavailableError extends Data.TaggedError(
   readonly operation:
     | 'start'
     | 'get'
+    | 'reviewCandidate'
     | 'claimOutbox'
     | 'dispatchOutbox'
     | 'healthWorker'
@@ -65,6 +74,11 @@ export type AnalysisRunRepositoryError =
 
 export type AnalysisRunError =
   | InvalidAnalysisRunInputError
+  | AnalysisRunRepositoryError;
+
+export type AnalysisDecisionReviewError =
+  | InvalidAnalysisRunInputError
+  | AnalysisDecisionAlreadyReviewedError
   | AnalysisRunRepositoryError;
 
 /** Failures specific to the internal outbox dispatch workflow. */
