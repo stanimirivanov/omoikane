@@ -79,6 +79,7 @@ export {
 export {
   DecisionExtractionInputSchema,
   DecisionExtractionOutputSchema,
+  DECISION_EXTRACTION_OUTPUT_JSON_SCHEMA,
   DecisionExtractionResponseSchema,
   DecisionExtractionUnavailableError,
   InvalidDecisionExtractionOutputError,

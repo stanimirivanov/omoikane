@@ -210,8 +210,9 @@ Implementation scope:
 - Extract decision candidates, claims, assumptions, participants, and linked
   source messages. **Implementation contract completed in OMO-ARC-005; runtime
   source snapshot, authorized content loading, immutable execution manifests,
-  and extraction contract/conformance adapter completed;
-  model integration and persisted structured extraction remain.**
+  extraction contract/conformance adapter, and the first Ollama protocol
+  adapter completed; Node worker transport/activation and persisted structured
+  extraction remain.**
 - Persist evidence-backed proposed findings with confidence and model and prompt
   versions.
 - Provide a review UI where findings are confirmed, rejected, or superseded.

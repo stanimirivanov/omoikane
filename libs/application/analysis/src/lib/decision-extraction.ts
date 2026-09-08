@@ -1,4 +1,4 @@
-import { Context, Data, Effect, Schema } from 'effect';
+import { Context, Data, Effect, JSONSchema, Schema } from 'effect';
 import {
   AnalysisRunIdSchema,
   DecisionCandidateSchema,
@@ -40,6 +40,17 @@ export const DecisionExtractionOutputSchema = Schema.Struct({
   schemaVersion: Schema.Literal('decision-forensics.result.v1'),
   candidates: Schema.Array(DecisionCandidateSchema).pipe(Schema.maxItems(20)),
 });
+
+/**
+ * Provider-neutral JSON Schema generated from the authoritative output
+ * contract. Model adapters may use it to constrain generation, but application
+ * validation remains authoritative because JSON Schema cannot express every
+ * cross-field and evidence invariant enforced below.
+ */
+export const DECISION_EXTRACTION_OUTPUT_JSON_SCHEMA = JSONSchema.make(
+  DecisionExtractionOutputSchema,
+  { target: 'jsonSchema7' }
+);
 
 const metadataLabel = Schema.String.pipe(
   Schema.pattern(/^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,127}$/u)

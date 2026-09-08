@@ -46,6 +46,10 @@ Candidate meaning and evidence requirements live in the analysis domain.
 Messages are serialized as a separate JSON data payload. The instruction digest
 is SHA-256 over the exact UTF-8 instruction string without a trailing newline,
 verified by conformance tests using Node only in the test runtime.
+`DECISION_EXTRACTION_OUTPUT_JSON_SCHEMA` is generated from the authoritative
+Effect output schema for adapters that support constrained generation. The
+Effect decoder remains authoritative because provider-side JSON Schema cannot
+enforce evidence membership, authored-participant, or all refinement rules.
 
 Version 1 limits input to 100 sources, 10,000 UTF-16 code units per message,
 and 100,000 total; output has at most 20 candidates, each with at most 20 claims,

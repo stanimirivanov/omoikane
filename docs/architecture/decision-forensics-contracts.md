@@ -338,6 +338,14 @@ Each item is a separate reviewable slice:
    and policy metadata under a job lock. Retries observe the stored selection;
    incompatible deployment configuration fails explicitly. Database and separate
    concurrent-connection tests verify first-writer behavior and lease fencing.
+   **Protocol adapter completed:** the Ollama Layer maps the immutable prompt,
+   structured-output JSON Schema, zero-temperature/no-tools policy, response
+   metadata, token usage, and safe HTTP/transport failure categories. It also
+   rejects model substitution, tool calls, malformed JSON, and output-limit
+   termination. A narrow transport seam preserves the infrastructure library's
+   runtime-neutral type boundary. Node fetch composition and live job activation
+   remain paired with atomic candidate persistence so no model output is
+   silently discarded.
 4. **Persist proposed decision candidates.** Add only the tables and atomic
    completion changes consumed by the validated extraction result.
 5. **Authorized Decision Forensics read UI.** Render candidates, claims,
