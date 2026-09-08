@@ -49,6 +49,8 @@ multiple deployment profiles.
 | OMO-SAD-001 | Software Architecture Document                                                              | Planned. It will become the broad architecture reference and be updated as vertical slices become implemented reality. No approved source was included in this import. |
 | ADR series  | [Architecture Decision Records](adr/README.md)                                              | Record later changes that supersede a baseline decision.                                                                                                               |
 | OMO-ARC-003 | [Modular Server Architecture](modular-server-architecture.md)                               | Defines the approved Phase 3 server boundary and ordered implementation slices.                                                                                        |
+| OMO-ARC-004 | [Analysis Run Processing Contracts](analysis-run-processing-contracts.md)                   | Defines the approved Phase 4 lifecycle, outbox, durable-job, worker, retry, and idempotency contracts.                                                                 |
+| OMO-ARC-005 | [Decision Forensics Contracts](decision-forensics-contracts.md)                             | Defines the approved Phase 5 source snapshot, extraction, evidence, versioning, governance, evaluation, and human-review contracts.                                    |
 
 ## 4. Governance and precedence
 

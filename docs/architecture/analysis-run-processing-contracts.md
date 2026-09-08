@@ -379,8 +379,9 @@ The receipt and workspace-message-inventory result are sufficient to prove that:
 - the result and proposed finding commit before the terminal success fact.
 
 The processor port belongs in the analysis application library because the
-worker consumes it. Hosted model adapters, fake model output, prompt contracts,
-and human review remain later Phase 5 capabilities.
+worker consumes it. Hosted model adapters and human review remain Phase 5
+capabilities governed by the
+[Decision Forensics contracts](decision-forensics-contracts.md).
 
 ## 11. Security and data boundaries
 
@@ -505,3 +506,4 @@ Each item is one reviewable vertical slice:
 - [ADR 0002: Supabase server authentication and workspace authorization](adr/0002-supabase-server-authentication-and-workspace-authorization.md)
 - [Local development environment](../development/local-development-environment.md)
 - [Deployment and environment strategy](../operations/deployment-and-environment-strategy.md)
+- [Decision Forensics contracts](decision-forensics-contracts.md)

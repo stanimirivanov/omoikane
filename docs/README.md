@@ -35,7 +35,7 @@ change through an ADR.
 | OMO-SAD-001 | Software Architecture Document                                                           | Planned; no approved source was supplied for this baseline import |
 | ADR series  | [Architecture Decision Records](architecture/adr/README.md)                              | Later decisions that amend or supersede the baseline              |
 
-## Implemented architecture descriptions
+## Architecture descriptions and implementation contracts
 
 | ID          | Document                                                                               | Purpose                                                                                                                  |
 | ----------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
@@ -43,6 +43,7 @@ change through an ADR.
 | OMO-ARC-002 | [Collaboration Phase 2 Exit Audit](architecture/collaboration-phase-2-exit-audit.md)   | Phase 2 exit evidence, including the authenticated browser-to-Supabase smoke boundary                                    |
 | OMO-ARC-003 | [Modular Server Architecture](architecture/modular-server-architecture.md)             | Approved Phase 3 runtime, module, API, security, health, telemetry, and implementation boundaries                        |
 | OMO-ARC-004 | [Analysis Run Processing Contracts](architecture/analysis-run-processing-contracts.md) | Approved Phase 4 lifecycle, outbox, durable-job, worker, retry, idempotency, security, and telemetry contracts           |
+| OMO-ARC-005 | [Decision Forensics Contracts](architecture/decision-forensics-contracts.md)           | Approved Phase 5 source snapshot, extraction, evidence, versioning, governance, evaluation, and review contracts         |
 
 ## Accepted architecture decisions
 

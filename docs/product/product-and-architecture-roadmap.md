@@ -208,7 +208,8 @@ Implementation scope:
   **Completed with an immutable, authorized channel and bounded UTC time
   range.**
 - Extract decision candidates, claims, assumptions, participants, and linked
-  source messages.
+  source messages. **Implementation contract completed in OMO-ARC-005; runtime
+  implementation remains.**
 - Persist evidence-backed proposed findings with confidence and model and prompt
   versions.
 - Provide a review UI where findings are confirmed, rejected, or superseded.
@@ -329,7 +330,7 @@ Pull-request gates:
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Before Phase 3 | **Completed in OMO-ARC-003 and ADR-0001 through ADR-0002:** C4 context and container views, server module map, API conventions, runtime ownership, authentication, and authorization design |
 | Before Phase 4 | **Completed in OMO-ARC-004:** Analysis Run lifecycle, event and job catalogues, retry/idempotency standard, worker runbook, security boundaries, telemetry, and implementation order        |
-| Before Phase 5 | Decision Forensics slice design, AI governance policy, prompt and model versioning standard, and evaluation plan                                                                            |
+| Before Phase 5 | **Completed in OMO-ARC-005:** Decision Forensics slice design, AI governance policy, prompt and model versioning standard, and evaluation plan                                              |
 | Before Phase 6 | Requirement domain model, snapshot and lineage design, and pipeline-stage contracts                                                                                                         |
 | Before Phase 7 | Analytical data model, semantic metric catalogue, and BI authorization and query-safety design                                                                                              |
 | Before Phase 8 | Privacy impact assessment, communication-signal taxonomy, and calibration and bias-evaluation plan                                                                                          |
