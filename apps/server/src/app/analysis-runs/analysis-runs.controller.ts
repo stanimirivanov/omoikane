@@ -52,7 +52,7 @@ const failHttp = (error: AnalysisRunError): never => {
   }
 };
 
-/** Authenticated HTTP entry point for the deterministic Analysis Run workflow. */
+/** Authenticated HTTP entry point for the trusted Analysis Run workflow. */
 @ApiTags('analysis-runs')
 @Controller('workspaces/:workspaceId/analysis-runs')
 export class AnalysisRunsController {
@@ -101,7 +101,7 @@ export class AnalysisRunsController {
   }
 
   @Get(':analysisRunId')
-  @ApiOperation({ summary: 'Observe a deterministic Analysis Run' })
+  @ApiOperation({ summary: 'Observe an Analysis Run' })
   @ApiParam({ name: 'workspaceId', format: 'uuid' })
   @ApiParam({ name: 'analysisRunId', format: 'uuid' })
   @ApiOkResponse({ type: AnalysisRunResponse })

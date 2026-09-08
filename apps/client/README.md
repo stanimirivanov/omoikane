@@ -83,6 +83,13 @@ days, with an inclusive start and exclusive end. The accepted immutable range
 is rendered with the run. Channel authorization and authoritative source
 filtering remain server and database responsibilities.
 
+Succeeded Decision Forensics runs render their AI-generated output explicitly
+as proposed, including candidates, claims, assumptions, participant roles,
+model-assessed confidence, and provider usage. A shared evidence renderer keeps
+source order and deep-links each message through the existing selected-channel
+route. It displays the exact immutable revision identity without broadening the
+separate message-revision authorization policy.
+
 ## Feature structure
 
 The initial `channel-messages` slice keeps closely related files together:

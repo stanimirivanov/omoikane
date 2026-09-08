@@ -432,6 +432,84 @@ describe('makeSupabaseAnalysisRunRepository', () => {
     });
   });
 
+  it('decodes the complete Decision Forensics read projection', async () => {
+    const source = {
+      messageId: '90000000-0000-4000-8000-000000000001',
+      messageRevisionId: '91000000-0000-4000-8000-000000000001',
+    };
+    const get = vi.fn().mockResolvedValue({
+      data: [
+        {
+          ...projectionRow,
+          status: 'succeeded',
+          result: {
+            id: '92000000-0000-4000-8000-000000000001',
+            analysisRunId: row.analysis_run_id,
+            kind: 'decision-forensics',
+            processorVersion: 'analysis.decision-forensics.v1',
+            providerKind: 'ollama',
+            model: 'qwen3:8b',
+            resultSchemaVersion: 'decision-forensics.result.v1',
+            promptVersion: 'decision-forensics.extract.v1',
+            promptDigest:
+              'd0b179cc79776914ad559aef19e9060dd13bff3946200bbc6f7914a980e9fff1',
+            evaluationVersion: 'decision-forensics.evaluation.v1',
+            generationPolicy: {
+              temperature: 0,
+              maxOutputTokens: 8192,
+              tools: false,
+              repairAttempts: 0,
+            },
+            usage: { inputUnits: 42, outputUnits: 17 },
+            sourceCount: 1,
+            sourceTruncated: false,
+            sources: [source],
+            summary: 'Extracted one candidate.',
+            candidates: [
+              {
+                id: '93000000-0000-4000-8000-000000000001',
+                status: 'proposed',
+                title: 'Release timing',
+                summary: 'The release will happen Friday.',
+                disposition: 'made',
+                confidence: 0.9,
+                claims: [{ text: 'Release on Friday.', evidence: [source] }],
+                assumptions: [],
+                participants: [
+                  {
+                    profileId: row.requested_by,
+                    role: 'decision-maker',
+                    evidence: [source],
+                  },
+                ],
+              },
+            ],
+            createdAt: '2026-09-08T12:00:00.000Z',
+          },
+        },
+      ],
+      error: null,
+    });
+    const repository = makeSupabaseAnalysisRunRepository(client({ get }));
+    const query = {
+      identity: command.identity,
+      workspaceId: command.workspaceId,
+      analysisRunId: row.analysis_run_id,
+    } as Parameters<typeof repository.get>[0];
+
+    await expect(
+      Effect.runPromise(repository.get(query))
+    ).resolves.toMatchObject({
+      status: 'succeeded',
+      result: {
+        kind: 'decision-forensics',
+        usage: { inputUnits: 42, outputUnits: 17 },
+        candidates: [{ title: 'Release timing' }],
+        createdAt: new Date('2026-09-08T12:00:00.000Z'),
+      },
+    });
+  });
+
   it('maps lease-owned immutable message sources', async () => {
     const loadJobSources = vi.fn().mockResolvedValue({
       data: [

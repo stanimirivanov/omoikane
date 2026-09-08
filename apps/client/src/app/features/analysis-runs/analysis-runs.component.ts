@@ -7,12 +7,14 @@ import {
 } from '@angular/core';
 import type { WorkspaceId } from '@omoikane/domain/workspace';
 import type { ChannelId } from '@omoikane/domain/channel';
+import { AnalysisEvidenceLinksComponent } from './analysis-evidence-links.component';
 import { AnalysisRunsStore } from './analysis-runs.store';
 
 /** Minimal UI proving the authenticated server-backed Analysis Run path. */
 @Component({
   selector: 'app-analysis-runs',
   standalone: true,
+  imports: [AnalysisEvidenceLinksComponent],
   providers: [AnalysisRunsStore],
   templateUrl: './analysis-runs.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,

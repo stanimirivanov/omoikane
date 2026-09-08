@@ -6,14 +6,24 @@ export {
 } from './lib/analysis-time-range';
 export {
   AnalysisFindingSchema,
+  AnalysisDecisionCandidateIdSchema,
+  AnalysisDecisionCandidateSchema,
+  DecisionForensicsResultSchema,
   AnalysisResultIdSchema,
   AnalysisResultSchema,
-  AnalysisResultSourceSchema,
+  WorkspaceMessageInventoryResultSchema,
+  type AnalysisDecisionCandidate,
+  type AnalysisDecisionCandidateId,
   type AnalysisFinding,
   type AnalysisResult,
   type AnalysisResultId,
-  type AnalysisResultSource,
+  type DecisionForensicsResult,
+  type WorkspaceMessageInventoryResult,
 } from './lib/analysis-result';
+export {
+  AnalysisResultSourceSchema,
+  type AnalysisResultSource,
+} from './lib/analysis-result-source';
 export {
   AnalysisRunFailureCategorySchema,
   AnalysisRunSchema,

@@ -104,5 +104,14 @@ Candidate records are immutable. Assertion and participant evidence has foreign
 keys to the result's frozen message revisions, and participant evidence must be
 authored by the asserted profile. Browser roles cannot invoke completion, and
 even the worker role has no direct table access. Invalid payload detail is
-translated to a content-free application error. Reading these normalized rows
-is intentionally deferred to the next authorized result-projection slice.
+translated to a content-free application error.
+
+## Authorized Decision Forensics projection
+
+`get_analysis_run` remains the sole result read capability. It rechecks active
+workspace membership and delegates normalized JSON construction to a private
+read mapper. That mapper preserves candidate, assertion, participant, and
+evidence ordinal order; joins the immutable execution manifest; and returns
+usage and exact source identities. Direct access to every underlying result
+table remains revoked. The adapter decodes this unknown JSON through the domain
+result union before the value reaches the server or Angular.

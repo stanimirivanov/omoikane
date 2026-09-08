@@ -357,6 +357,12 @@ Each item is a separate reviewable slice:
    table access remains revoked. Authorized projection is intentionally next.
 5. **Authorized Decision Forensics read UI.** Render candidates, claims,
    assumptions, participants, confidence, and resolvable evidence links.
+   **Completed:** the membership-authorized Analysis Run RPC projects normalized
+   candidates, manifest metadata, provider usage, and ordered evidence into a
+   validated discriminated domain value. Nest publishes both result variants as
+   an OpenAPI union. Angular labels model output as proposed and deep-links each
+   source message while retaining its exact immutable revision identity. The
+   existing revision-history disclosure policy is unchanged.
 6. **Human review ledger.** Add confirm and reject first; add supersede only
    with the replacement-candidate workflow that consumes it.
 
