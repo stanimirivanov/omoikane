@@ -76,3 +76,25 @@ export {
   type CompleteAnalysisJobFailureInput,
   type CompleteAnalysisJobSuccessInput,
 } from './lib/analysis-job-execution';
+export {
+  DecisionExtractionInputSchema,
+  DecisionExtractionOutputSchema,
+  DecisionExtractionResponseSchema,
+  DecisionExtractionUnavailableError,
+  InvalidDecisionExtractionOutputError,
+  DecisionExtractionLimitError,
+  UnsupportedDecisionExtractionConfigurationError,
+  DecisionExtractorTag,
+  validateDecisionExtractionResponse,
+  type DecisionExtractionInput,
+  type DecisionExtractionResponse,
+  type DecisionExtractionError,
+  type DecisionExtractionRequest,
+  type DecisionExtractor,
+} from './lib/decision-extraction';
+export {
+  extractDecisions,
+  buildDecisionExtractionRequest,
+  DECISION_EXTRACTION_INSTRUCTIONS,
+  DECISION_EXTRACTION_PROMPT_DIGEST,
+} from './lib/extract-decisions';

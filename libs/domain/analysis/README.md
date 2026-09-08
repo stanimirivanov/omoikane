@@ -13,6 +13,14 @@ value.
 The library depends only on inner domain identities and Effect Schema. External
 rows are decoded before becoming `AnalysisRun` values.
 
+`DecisionCandidateSchema` additionally defines proposed extraction values:
+made/deferred/changed/rejected dispositions, bounded claims and assumptions,
+supported participant roles, exact evidence identities, and finite confidence.
+Each assertion requires evidence without duplicate messages. Candidate identity
+and human review are assigned later by persistence; model output cannot choose
+them. The application enforces membership in the specific run snapshot.
+Provider envelopes, prompts, and transport failures remain application concerns.
+
 ```text
 lifecycle projection -> infrastructure decoder -> AnalysisRun
 ```

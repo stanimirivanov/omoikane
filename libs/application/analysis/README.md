@@ -30,3 +30,33 @@ and future-ending requests. Polling, worker lifecycle, hosted model execution,
 review workflows, and streaming remain outside this package.
 
 Verify with `pnpm exec nx run-many -t lint typecheck typecheck:test test -p analysis-application`.
+
+## Decision extraction contract
+
+`extractDecisions` accepts ordered snapshot identities enriched with immutable
+message content at the trusted worker boundary. It validates the input, requests
+`DecisionExtractorTag`, and checks decoded output against the exact source set.
+The Tag is the typed Effect dependency; a Layer supplies a model adapter or the
+local deterministic conformance adapter. This use case is not yet wired into
+the inventory worker or database completion command.
+
+`decision-extraction.ts` owns the port, bounded schemas, and safe failure
+categories; `extract-decisions.ts` owns orchestration and the immutable prompt.
+Candidate meaning and evidence requirements live in the analysis domain.
+Messages are serialized as a separate JSON data payload. The instruction digest
+is SHA-256 over the exact UTF-8 instruction string without a trailing newline,
+verified by conformance tests using Node only in the test runtime.
+
+Version 1 limits input to 100 sources, 10,000 UTF-16 code units per message,
+and 100,000 total; output has at most 20 candidates, each with at most 20 claims,
+20 assumptions, and 100 participant assertions. These are conservative policy
+bounds, not token estimates. Generation uses temperature zero, an 8,192-token
+output ceiling, no tools, and no repair attempts. A participant must author at
+least one cited source; this intentionally excludes inferred silent participants.
+Empty candidate collections are valid. Schema errors are translated without
+retaining raw content or provider output in error payloads.
+
+Future worker integration must load content through an authorized capability
+and pin the provider, model, prompt, schema, evaluation, and generation policy
+in the execution manifest before invoking a model. No fallback model is implied
+by this contract. Invalid output is terminal under the current no-repair policy.

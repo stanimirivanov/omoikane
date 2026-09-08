@@ -33,3 +33,18 @@ repositories remain outside this package.
 
 Verify with
 `pnpm exec nx run-many -t lint typecheck typecheck:test test -p analysis-infrastructure`.
+
+## Decision extraction conformance adapter
+
+`makeDeterministicDecisionExtractorLayer` supplies the application extractor
+Tag from one explicit synthetic input/output case. It compares the full request,
+including source data, prompt, and generation policy, then decodes unknown output
+and verifies evidence through the application validator. Unmatched requests or
+metadata fail with unsupported configuration. The adapter performs no inference
+and has no network access; it is not installed in the production worker.
+
+The conformance suite covers dispositions, conflicts, assumptions, participant
+roles, empty outcomes, malformed output, revision mismatch, and adversarial
+message text. These tests establish structural conformance only. They do not
+measure model precision, recall, or resistance to prompt injection; those need
+a real adapter and the later versioned semantic evaluation gate.
