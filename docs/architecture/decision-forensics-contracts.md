@@ -348,6 +348,13 @@ Each item is a separate reviewable slice:
    silently discarded.
 4. **Persist proposed decision candidates.** Add only the tables and atomic
    completion changes consumed by the validated extraction result.
+   **Completed:** a dedicated lease-fenced command verifies the pinned manifest
+   and exact ordered source snapshot, then atomically stores provider usage,
+   candidates, claims, assumptions, participant roles, their evidence, the
+   successful attempt, and lifecycle fact. Foreign keys constrain all evidence
+   to the frozen result sources, participant evidence must be authored by that
+   profile, rows are immutable, retries are fingerprint-idempotent, and direct
+   table access remains revoked. Authorized projection is intentionally next.
 5. **Authorized Decision Forensics read UI.** Render candidates, claims,
    assumptions, participants, confidence, and resolvable evidence links.
 6. **Human review ledger.** Add confirm and reject first; add supersede only

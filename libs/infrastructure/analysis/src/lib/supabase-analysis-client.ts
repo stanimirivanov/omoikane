@@ -41,6 +41,8 @@ export interface SupabaseAnalysisJobExtractionInputResult {
 }
 type CompleteJobArgs =
   Database['public']['Functions']['complete_analysis_job_success']['Args'];
+type CompleteDecisionJobArgs =
+  Database['public']['Functions']['complete_decision_forensics_job_success']['Args'];
 type FailJobArgs =
   Database['public']['Functions']['complete_analysis_job_failure']['Args'];
 type FailJobRow =
@@ -114,6 +116,9 @@ export interface SupabaseAnalysisClient {
   readonly completeJobSuccess: (
     args: CompleteJobArgs
   ) => PromiseLike<SupabaseAnalysisJobResult>;
+  readonly completeDecisionJobSuccess: (
+    args: CompleteDecisionJobArgs
+  ) => PromiseLike<SupabaseAnalysisJobResult>;
   readonly completeJobFailure: (
     args: FailJobArgs
   ) => PromiseLike<SupabaseAnalysisJobFailureResult>;
@@ -162,6 +167,8 @@ export const makeSupabaseAnalysisClient = (
       client.rpc('load_analysis_job_extraction_input', args),
     completeJobSuccess: (args) =>
       client.rpc('complete_analysis_job_success', args),
+    completeDecisionJobSuccess: (args) =>
+      client.rpc('complete_decision_forensics_job_success', args),
     completeJobFailure: (args) =>
       client.rpc('complete_analysis_job_failure', args),
   };

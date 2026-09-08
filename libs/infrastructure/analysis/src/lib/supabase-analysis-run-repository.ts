@@ -323,6 +323,13 @@ const mapCompletedJob = (
   if (result.error?.code === 'P0003') {
     return Effect.fail(new AnalysisJobLeaseLostError());
   }
+  if (result.error?.code === '22023') {
+    return Effect.fail(
+      new InvalidAnalysisRunDataError({
+        cause: 'The database rejected the Analysis result contract.',
+      })
+    );
+  }
   if (result.error !== null) {
     return Effect.fail(
       new AnalysisRunRepositoryUnavailableError({
@@ -635,29 +642,65 @@ export const makeSupabaseAnalysisRunRepository = (
     durationMilliseconds,
   }) =>
     Effect.tryPromise({
-      try: () =>
-        client.completeJobSuccess({
+      try: () => {
+        const common = {
+          kind: result.kind,
+          processorVersion: result.processorVersion,
+          providerKind: result.providerKind,
+          model: result.model,
+          evaluationVersion: result.evaluationVersion,
+          sourceCount: result.sourceCount,
+          sourceTruncated: result.sourceTruncated,
+          sources: result.sources.map((source) => ({
+            messageId: source.messageId,
+            messageRevisionId: source.messageRevisionId,
+          })),
+          summary: result.summary,
+        };
+        const complete =
+          result.kind === 'decision-forensics'
+            ? client.completeDecisionJobSuccess
+            : client.completeJobSuccess;
+        return complete({
           p_job_id: execution.jobId,
           p_attempt_id: execution.attemptId,
           p_lease_token: execution.leaseToken,
           p_result_fingerprint: resultFingerprint,
           p_duration_milliseconds: durationMilliseconds,
-          p_result: {
-            kind: result.kind,
-            processorVersion: result.processorVersion,
-            providerKind: result.providerKind,
-            model: result.model,
-            evaluationVersion: result.evaluationVersion,
-            sourceCount: result.sourceCount,
-            sourceTruncated: result.sourceTruncated,
-            sources: result.sources.map((source) => ({
-              messageId: source.messageId,
-              messageRevisionId: source.messageRevisionId,
-            })),
-            summary: result.summary,
-            finding: { ...result.finding },
-          },
-        }),
+          p_result:
+            result.kind === 'workspace-message-inventory'
+              ? { ...common, finding: { ...result.finding } }
+              : {
+                  ...common,
+                  resultSchemaVersion: result.resultSchemaVersion,
+                  promptVersion: result.promptVersion,
+                  promptDigest: result.promptDigest,
+                  generationPolicy: { ...result.generationPolicy },
+                  usage: { ...result.usage },
+                  candidates: result.candidates.map((candidate) => ({
+                    ...candidate,
+                    claims: candidate.claims.map((claim) => ({
+                      ...claim,
+                      evidence: claim.evidence.map((evidence) => ({
+                        ...evidence,
+                      })),
+                    })),
+                    assumptions: candidate.assumptions.map((assumption) => ({
+                      ...assumption,
+                      evidence: assumption.evidence.map((evidence) => ({
+                        ...evidence,
+                      })),
+                    })),
+                    participants: candidate.participants.map((participant) => ({
+                      ...participant,
+                      evidence: participant.evidence.map((evidence) => ({
+                        ...evidence,
+                      })),
+                    })),
+                  })),
+                },
+        });
+      },
       catch: (cause) =>
         new AnalysisRunRepositoryUnavailableError({
           operation: 'completeJob',

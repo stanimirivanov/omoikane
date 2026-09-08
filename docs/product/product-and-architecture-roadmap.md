@@ -211,8 +211,9 @@ Implementation scope:
   source messages. **Implementation contract completed in OMO-ARC-005; runtime
   source snapshot, authorized content loading, immutable execution manifests,
   extraction contract/conformance adapter, and the first Ollama protocol
-  adapter completed; Node worker transport/activation and persisted structured
-  extraction remain.**
+  adapter completed. Atomic, manifest-matched structured candidate persistence
+  is also complete; Node worker transport/activation and the authorized result
+  projection remain.**
 - Persist evidence-backed proposed findings with confidence and model and prompt
   versions.
 - Provide a review UI where findings are confirmed, rejected, or superseded.

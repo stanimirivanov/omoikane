@@ -16,6 +16,234 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      analysis_decision_assertion_sources: {
+        Row: {
+          analysis_decision_candidate_id: string
+          analysis_result_id: string
+          assertion_kind: string
+          assertion_ordinal: number
+          evidence_ordinal: number
+          message_id: string
+          message_version_id: string
+        }
+        Insert: {
+          analysis_decision_candidate_id: string
+          analysis_result_id: string
+          assertion_kind: string
+          assertion_ordinal: number
+          evidence_ordinal: number
+          message_id: string
+          message_version_id: string
+        }
+        Update: {
+          analysis_decision_candidate_id?: string
+          analysis_result_id?: string
+          assertion_kind?: string
+          assertion_ordinal?: number
+          evidence_ordinal?: number
+          message_id?: string
+          message_version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_decision_assertion_s_analysis_decision_candidate__fkey"
+            columns: [
+              "analysis_decision_candidate_id",
+              "assertion_kind",
+              "assertion_ordinal",
+            ]
+            isOneToOne: false
+            referencedRelation: "analysis_decision_assertions"
+            referencedColumns: [
+              "analysis_decision_candidate_id",
+              "assertion_kind",
+              "ordinal",
+            ]
+          },
+          {
+            foreignKeyName: "analysis_decision_assertion_s_analysis_result_id_message_i_fkey"
+            columns: ["analysis_result_id", "message_id", "message_version_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_result_sources"
+            referencedColumns: [
+              "analysis_result_id",
+              "message_id",
+              "message_version_id",
+            ]
+          },
+        ]
+      }
+      analysis_decision_assertions: {
+        Row: {
+          analysis_decision_candidate_id: string
+          analysis_result_id: string
+          assertion_kind: string
+          assertion_text: string
+          ordinal: number
+        }
+        Insert: {
+          analysis_decision_candidate_id: string
+          analysis_result_id: string
+          assertion_kind: string
+          assertion_text: string
+          ordinal: number
+        }
+        Update: {
+          analysis_decision_candidate_id?: string
+          analysis_result_id?: string
+          assertion_kind?: string
+          assertion_text?: string
+          ordinal?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_decision_assertions_analysis_decision_candidate_i_fkey"
+            columns: ["analysis_decision_candidate_id", "analysis_result_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_decision_candidates"
+            referencedColumns: [
+              "analysis_decision_candidate_id",
+              "analysis_result_id",
+            ]
+          },
+        ]
+      }
+      analysis_decision_candidates: {
+        Row: {
+          analysis_decision_candidate_id: string
+          analysis_result_id: string
+          confidence: number
+          created_at: string
+          disposition: string
+          ordinal: number
+          summary: string
+          title: string
+        }
+        Insert: {
+          analysis_decision_candidate_id?: string
+          analysis_result_id: string
+          confidence: number
+          created_at: string
+          disposition: string
+          ordinal: number
+          summary: string
+          title: string
+        }
+        Update: {
+          analysis_decision_candidate_id?: string
+          analysis_result_id?: string
+          confidence?: number
+          created_at?: string
+          disposition?: string
+          ordinal?: number
+          summary?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_decision_candidates_analysis_result_id_fkey"
+            columns: ["analysis_result_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_results"
+            referencedColumns: ["analysis_result_id"]
+          },
+        ]
+      }
+      analysis_decision_participant_sources: {
+        Row: {
+          analysis_decision_candidate_id: string
+          analysis_result_id: string
+          evidence_ordinal: number
+          message_id: string
+          message_version_id: string
+          participant_ordinal: number
+        }
+        Insert: {
+          analysis_decision_candidate_id: string
+          analysis_result_id: string
+          evidence_ordinal: number
+          message_id: string
+          message_version_id: string
+          participant_ordinal: number
+        }
+        Update: {
+          analysis_decision_candidate_id?: string
+          analysis_result_id?: string
+          evidence_ordinal?: number
+          message_id?: string
+          message_version_id?: string
+          participant_ordinal?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_decision_participan_analysis_decision_candidate__fkey1"
+            columns: ["analysis_decision_candidate_id", "participant_ordinal"]
+            isOneToOne: false
+            referencedRelation: "analysis_decision_participants"
+            referencedColumns: ["analysis_decision_candidate_id", "ordinal"]
+          },
+          {
+            foreignKeyName: "analysis_decision_participant_analysis_result_id_message_i_fkey"
+            columns: ["analysis_result_id", "message_id", "message_version_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_result_sources"
+            referencedColumns: [
+              "analysis_result_id",
+              "message_id",
+              "message_version_id",
+            ]
+          },
+        ]
+      }
+      analysis_decision_participants: {
+        Row: {
+          analysis_decision_candidate_id: string
+          analysis_result_id: string
+          ordinal: number
+          participant_role: string
+          profile_id: string
+        }
+        Insert: {
+          analysis_decision_candidate_id: string
+          analysis_result_id: string
+          ordinal: number
+          participant_role: string
+          profile_id: string
+        }
+        Update: {
+          analysis_decision_candidate_id?: string
+          analysis_result_id?: string
+          ordinal?: number
+          participant_role?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_decision_participant_analysis_decision_candidate__fkey"
+            columns: ["analysis_decision_candidate_id", "analysis_result_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_decision_candidates"
+            referencedColumns: [
+              "analysis_decision_candidate_id",
+              "analysis_result_id",
+            ]
+          },
+          {
+            foreignKeyName: "analysis_decision_participants_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "current_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "analysis_decision_participants_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       analysis_execution_manifests: {
         Row: {
           analysis_run_id: string
@@ -297,7 +525,9 @@ export type Database = {
           analysis_run_id: string
           created_at: string
           evaluation_version: string
+          input_units: number | null
           model: string | null
+          output_units: number | null
           processor_version: string
           provider_kind: string
           result_fingerprint: string
@@ -311,7 +541,9 @@ export type Database = {
           analysis_run_id: string
           created_at?: string
           evaluation_version: string
+          input_units?: number | null
           model?: string | null
+          output_units?: number | null
           processor_version: string
           provider_kind: string
           result_fingerprint: string
@@ -325,7 +557,9 @@ export type Database = {
           analysis_run_id?: string
           created_at?: string
           evaluation_version?: string
+          input_units?: number | null
           model?: string | null
+          output_units?: number | null
           processor_version?: string
           provider_kind?: string
           result_fingerprint?: string
@@ -2094,6 +2328,43 @@ export type Database = {
         }[]
       }
       complete_analysis_job_success: {
+        Args: {
+          p_attempt_id: string
+          p_duration_milliseconds: number
+          p_job_id: string
+          p_lease_token: string
+          p_result: Json
+          p_result_fingerprint: string
+        }
+        Returns: {
+          analysis_job_id: string
+          analysis_run_id: string
+          attempt_count: number
+          available_at: string
+          completed_at: string | null
+          created_at: string
+          job_kind: string
+          job_version: number
+          last_failure_category: string | null
+          lease_expires_at: string | null
+          lease_owner: string | null
+          lease_token: string | null
+          max_attempts: number
+          source_outbox_event_id: string
+          terminal_outcome: string | null
+          traceparent: string
+          tracestate: string | null
+          updated_at: string
+          workspace_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "analysis_jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      complete_decision_forensics_job_success: {
         Args: {
           p_attempt_id: string
           p_duration_milliseconds: number

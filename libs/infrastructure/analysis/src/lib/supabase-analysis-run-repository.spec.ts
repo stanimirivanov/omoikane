@@ -1,6 +1,8 @@
 import { Effect, Option, Schema } from 'effect';
 import { describe, expect, it, vi } from 'vitest';
 import type { PostgrestError } from '@supabase/supabase-js';
+import { ProfileIdSchema } from '@omoikane/domain/profile';
+import { AnalysisResultSourceSchema } from '@omoikane/domain/analysis';
 import { AnalysisJobExecutionSchema } from '@omoikane/application/analysis';
 import { decisionExecutionConfiguration } from '@omoikane/application/analysis';
 import type {
@@ -63,6 +65,9 @@ const client = (
     .fn()
     .mockResolvedValue({ data: null, error: null }),
   completeJobSuccess: vi.fn().mockResolvedValue({ data: [], error: null }),
+  completeDecisionJobSuccess: vi
+    .fn()
+    .mockResolvedValue({ data: [], error: null }),
   completeJobFailure: vi.fn().mockResolvedValue({ data: [], error: null }),
   ...overrides,
 });
@@ -765,6 +770,116 @@ describe('makeSupabaseAnalysisRunRepository', () => {
     expect(result).toMatchObject({
       _tag: 'Left',
       left: { _tag: 'AnalysisJobLeaseLostError' },
+    });
+  });
+
+  it('maps a database-rejected result without retaining its detail', async () => {
+    const error = {
+      code: '22023',
+      message: 'PRIVATE_RESULT_DETAIL',
+    } as PostgrestError;
+    const repository = makeSupabaseAnalysisRunRepository(
+      client({
+        completeJobSuccess: vi.fn().mockResolvedValue({ data: null, error }),
+      })
+    );
+    const result = await Effect.runPromise(
+      repository
+        .completeJobSuccess({
+          execution: contentExecution(),
+          resultFingerprint: 'invalid-result',
+          result: resultDraft,
+          durationMilliseconds: 1,
+        })
+        .pipe(Effect.either)
+    );
+    expect(result).toMatchObject({
+      _tag: 'Left',
+      left: { _tag: 'InvalidAnalysisRunDataError' },
+    });
+    expect(JSON.stringify(result)).not.toContain('PRIVATE_RESULT_DETAIL');
+  });
+
+  it('routes Decision Forensics output to its atomic persistence command', async () => {
+    const execution = contentExecution();
+    const completeDecisionJobSuccess = vi.fn().mockResolvedValue({
+      data: [
+        {
+          analysis_job_id: execution.jobId,
+          analysis_run_id: execution.analysisRunId,
+          workspace_id: execution.workspaceId,
+          job_kind: execution.kind,
+          job_version: execution.version,
+          available_at: '2026-08-10T12:00:00.000Z',
+        },
+      ],
+      error: null,
+    });
+    const repository = makeSupabaseAnalysisRunRepository(
+      client({ completeDecisionJobSuccess })
+    );
+    const source = Schema.decodeUnknownSync(AnalysisResultSourceSchema)({
+      messageId: '90000000-0000-4000-8000-000000000001',
+      messageRevisionId: '91000000-0000-4000-8000-000000000001',
+    });
+    const result = {
+      kind: 'decision-forensics' as const,
+      processorVersion: 'analysis.decision-forensics.v1' as const,
+      providerKind: 'ollama' as const,
+      model: 'qwen3:8b',
+      resultSchemaVersion: 'decision-forensics.result.v1' as const,
+      promptVersion: 'decision-forensics.extract.v1' as const,
+      promptDigest:
+        'd0b179cc79776914ad559aef19e9060dd13bff3946200bbc6f7914a980e9fff1',
+      evaluationVersion: 'decision-forensics.evaluation.v1' as const,
+      generationPolicy: {
+        temperature: 0 as const,
+        maxOutputTokens: 8192 as const,
+        tools: false as const,
+        repairAttempts: 0 as const,
+      },
+      usage: { inputUnits: 42, outputUnits: 17 },
+      sourceCount: 1,
+      sourceTruncated: false,
+      sources: [source],
+      summary: 'Extracted 1 proposed decision candidate.',
+      candidates: [
+        {
+          title: 'Release timing',
+          summary: 'Release Friday.',
+          disposition: 'made' as const,
+          claims: [{ text: 'Release Friday.', evidence: [source] }],
+          assumptions: [],
+          participants: [
+            {
+              profileId: Schema.decodeUnknownSync(ProfileIdSchema)(
+                '10000000-0000-4000-8000-000000000001'
+              ),
+              role: 'decision-maker' as const,
+              evidence: [source],
+            },
+          ],
+          confidence: 0.9,
+        },
+      ],
+    };
+
+    await Effect.runPromise(
+      repository.completeJobSuccess({
+        execution,
+        resultFingerprint: 'decision-result-v1',
+        result,
+        durationMilliseconds: 12,
+      })
+    );
+
+    expect(completeDecisionJobSuccess).toHaveBeenCalledExactlyOnceWith({
+      p_job_id: execution.jobId,
+      p_attempt_id: execution.attemptId,
+      p_lease_token: execution.leaseToken,
+      p_result_fingerprint: 'decision-result-v1',
+      p_duration_milliseconds: 12,
+      p_result: result,
     });
   });
 
