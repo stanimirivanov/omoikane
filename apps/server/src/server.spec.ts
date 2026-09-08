@@ -106,11 +106,17 @@ describe('Omoikane server runtime', () => {
     expect(document.paths).toHaveProperty(
       '/api/v1/workspaces/{workspaceId}/analysis-runs'
     );
+    expect(document.paths).toHaveProperty(
+      '/api/v1/workspaces/{workspaceId}/analysis-runs/{analysisRunId}/candidates/{candidateId}/review'
+    );
     expect(document.components.schemas).toHaveProperty(
       'WorkspaceMessageInventoryResultResponse'
     );
     expect(document.components.schemas).toHaveProperty(
       'DecisionForensicsResultResponse'
+    );
+    expect(document.components.schemas).toHaveProperty(
+      'AnalysisDecisionReviewResponse'
     );
     expect(document.components.schemas['AnalysisRunResponse']).toMatchObject({
       properties: {

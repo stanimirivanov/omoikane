@@ -10,6 +10,11 @@ type StartArgs = Database['public']['Functions']['start_analysis_run']['Args'];
 type GetArgs = Database['public']['Functions']['get_analysis_run']['Args'];
 type GetRow =
   Database['public']['Functions']['get_analysis_run']['Returns'][number];
+type GeneratedReviewCandidateArgs =
+  Database['public']['Functions']['review_analysis_decision_candidate']['Args'];
+type ReviewCandidateArgs = Omit<GeneratedReviewCandidateArgs, 'p_reason'> & {
+  readonly p_reason: string | null;
+};
 type ClaimOutboxArgs =
   Database['public']['Functions']['claim_analysis_run_outbox_event']['Args'];
 type DispatchOutboxArgs =
@@ -58,6 +63,13 @@ export interface SupabaseAnalysisRunProjectionResult {
   readonly error: PostgrestError | null;
 }
 
+export interface SupabaseAnalysisDecisionReviewResult {
+  readonly data:
+    | Database['public']['Functions']['review_analysis_decision_candidate']['Returns']
+    | null;
+  readonly error: PostgrestError | null;
+}
+
 export interface SupabaseAnalysisOutboxResult {
   readonly data: AnalysisOutboxRow[] | null;
   readonly error: PostgrestError | null;
@@ -97,6 +109,9 @@ export interface SupabaseAnalysisClient {
   readonly get: (
     args: GetArgs
   ) => PromiseLike<SupabaseAnalysisRunProjectionResult>;
+  readonly reviewDecisionCandidate: (
+    args: ReviewCandidateArgs
+  ) => PromiseLike<SupabaseAnalysisDecisionReviewResult>;
   readonly claimNextOutboxEvent: (
     args: ClaimOutboxArgs
   ) => PromiseLike<SupabaseAnalysisOutboxResult>;
@@ -156,6 +171,11 @@ export const makeSupabaseAnalysisClient = (
       client.rpc('pin_analysis_job_execution_manifest', args),
     start: (args) => client.rpc('start_analysis_run', args),
     get: (args) => client.rpc('get_analysis_run', args),
+    reviewDecisionCandidate: (args) =>
+      client.rpc(
+        'review_analysis_decision_candidate',
+        args as GeneratedReviewCandidateArgs
+      ),
     claimNextOutboxEvent: (args) =>
       client.rpc('claim_analysis_run_outbox_event', args),
     dispatchOutboxEvent: (args) =>

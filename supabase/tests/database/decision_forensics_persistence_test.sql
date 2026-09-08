@@ -1,6 +1,6 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
-SELECT plan(28);
+SELECT plan(43);
 
 SELECT has_table('public', 'analysis_decision_candidates', 'Decision candidates are durable');
 SELECT has_table('public', 'analysis_decision_assertions', 'Claims and assumptions are durable');
@@ -11,6 +11,10 @@ SELECT has_function('public', 'complete_decision_forensics_job_success', ARRAY['
 SELECT ok(NOT has_function_privilege('authenticated', 'public.complete_decision_forensics_job_success(uuid,uuid,uuid,text,integer,jsonb)', 'EXECUTE'), 'Browser callers cannot complete Decision Forensics jobs');
 SELECT ok(NOT has_table_privilege('service_role', 'public.analysis_decision_candidates', 'SELECT'), 'Workers cannot read candidate tables directly');
 SELECT ok(NOT has_function_privilege('service_role', 'private.build_analysis_result_projection(uuid)', 'EXECUTE'), 'The internal result mapper is not an independent worker capability');
+SELECT has_table('public', 'analysis_decision_review_events', 'Human reviews are durable');
+SELECT has_function('public', 'review_analysis_decision_candidate', ARRAY['uuid','uuid','uuid','uuid','text','text'], 'Human review has one focused command');
+SELECT ok(NOT has_function_privilege('authenticated', 'public.review_analysis_decision_candidate(uuid,uuid,uuid,uuid,text,text)', 'EXECUTE'), 'Browser callers cannot write review facts directly');
+SELECT ok(NOT has_table_privilege('service_role', 'public.analysis_decision_review_events', 'SELECT'), 'Trusted runtimes cannot bypass the review command');
 
 SELECT workspace_id FROM public.workspaces
 WHERE created_by = '10000000-0000-4000-8000-000000000001' ORDER BY created_at LIMIT 1
@@ -129,7 +133,7 @@ SELECT is((:'projected_result'::JSONB)->>'kind', 'decision-forensics', 'The auth
 SELECT is((:'projected_result'::JSONB)->'usage', '{"inputUnits":42,"outputUnits":17}'::JSONB, 'The authorized projection includes provider usage');
 SELECT is(
     ((:'projected_result'::JSONB)#>'{candidates,0}') - ARRAY['id','claims','assumptions','participants'],
-    '{"status":"proposed","title":"Release timing","summary":"The release will happen Friday.","disposition":"made","confidence":0.9}'::JSONB,
+    '{"status":"proposed","review":null,"title":"Release timing","summary":"The release will happen Friday.","disposition":"made","confidence":0.9}'::JSONB,
     'The authorized projection preserves candidate order and proposed state'
 );
 SELECT is(
@@ -147,6 +151,47 @@ SELECT is(
     '{"profileId":"10000000-0000-4000-8000-000000000001","role":"decision-maker"}'::JSONB,
     'The authorized projection includes participant identity and role'
 );
+
+SELECT analysis_decision_candidate_id FROM public.analysis_decision_candidates LIMIT 1
+\gset candidate_
+SET LOCAL ROLE service_role;
+SELECT public.review_analysis_decision_candidate(
+    :'workspace_workspace_id', :'run_analysis_run_id', :'candidate_analysis_decision_candidate_id',
+    '10000000-0000-4000-8000-000000000001', 'confirm', 'Reviewed against the cited message.'
+) AS review
+\gset first_
+SELECT public.review_analysis_decision_candidate(
+    :'workspace_workspace_id', :'run_analysis_run_id', :'candidate_analysis_decision_candidate_id',
+    '10000000-0000-4000-8000-000000000001', 'confirm', 'Reviewed against the cited message.'
+) AS review
+\gset replay_
+RESET ROLE;
+
+SELECT is((:'first_review'::JSONB)->>'action', 'confirm', 'The first review records its action');
+SELECT is((:'first_review'::JSONB)->>'reason', 'Reviewed against the cited message.', 'The first review records its optional reason');
+SELECT is((SELECT count(*) FROM public.analysis_decision_review_events), 1::BIGINT, 'An exact retry does not append another review fact');
+SELECT is((:'replay_review'::JSONB)->>'id', (:'first_review'::JSONB)->>'id', 'An exact retry observes the original review identity');
+SET LOCAL ROLE service_role;
+SELECT throws_ok(format(
+    'SELECT public.review_analysis_decision_candidate(%L,%L,%L,%L,%L,%L)',
+    :'workspace_workspace_id', :'run_analysis_run_id', :'candidate_analysis_decision_candidate_id',
+    '10000000-0000-4000-8000-000000000001', 'reject', 'A competing review.'
+), 'P0006', 'Decision candidate already has a human review.', 'A competing review cannot replace the first review');
+SELECT throws_ok(format(
+    'SELECT public.review_analysis_decision_candidate(%L,%L,%L,%L,%L,NULL)',
+    :'workspace_workspace_id', :'run_analysis_run_id', :'candidate_analysis_decision_candidate_id',
+    '10000000-0000-4000-8000-000000000003', 'confirm'
+), 'P0002', 'Decision candidate is not accessible.', 'An outsider cannot review a candidate');
+SELECT result FROM public.get_analysis_run(
+    :'workspace_workspace_id', :'run_analysis_run_id',
+    '10000000-0000-4000-8000-000000000001'
+) \gset reviewed_
+RESET ROLE;
+SELECT is((:'reviewed_result'::JSONB)#>>'{candidates,0,status}', 'confirmed', 'The current projection derives confirmed status from the review ledger');
+SELECT is((:'reviewed_result'::JSONB)#>>'{candidates,0,review,action}', 'confirm', 'The current projection includes the immutable review fact');
+SELECT is((SELECT count(*) FROM public.analysis_decision_candidates), 1::BIGINT, 'Review does not rewrite or replace model candidates');
+SELECT throws_ok('UPDATE public.analysis_decision_review_events SET review_action = ''reject''', '55000', 'Analysis output records are immutable.', 'Review facts cannot be rewritten');
+SELECT throws_ok('DELETE FROM public.analysis_decision_review_events', '55000', 'Analysis output records are immutable.', 'Review facts cannot be deleted');
 SELECT throws_ok('UPDATE public.analysis_decision_candidates SET title = ''changed''', '55000', 'Analysis output records are immutable.', 'Candidates cannot be rewritten');
 SELECT throws_ok('DELETE FROM public.analysis_decision_assertion_sources', '55000', 'Analysis output records are immutable.', 'Candidate evidence cannot be deleted');
 

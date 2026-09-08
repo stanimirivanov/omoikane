@@ -244,6 +244,55 @@ export type Database = {
           },
         ]
       }
+      analysis_decision_review_events: {
+        Row: {
+          analysis_decision_candidate_id: string
+          analysis_decision_review_event_id: string
+          occurred_at: string
+          reason: string | null
+          review_action: string
+          reviewer_user_id: string
+        }
+        Insert: {
+          analysis_decision_candidate_id: string
+          analysis_decision_review_event_id?: string
+          occurred_at: string
+          reason?: string | null
+          review_action: string
+          reviewer_user_id: string
+        }
+        Update: {
+          analysis_decision_candidate_id?: string
+          analysis_decision_review_event_id?: string
+          occurred_at?: string
+          reason?: string | null
+          review_action?: string
+          reviewer_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_decision_review_even_analysis_decision_candidate__fkey"
+            columns: ["analysis_decision_candidate_id"]
+            isOneToOne: true
+            referencedRelation: "analysis_decision_candidates"
+            referencedColumns: ["analysis_decision_candidate_id"]
+          },
+          {
+            foreignKeyName: "analysis_decision_review_events_reviewer_user_id_fkey"
+            columns: ["reviewer_user_id"]
+            isOneToOne: false
+            referencedRelation: "current_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "analysis_decision_review_events_reviewer_user_id_fkey"
+            columns: ["reviewer_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       analysis_execution_manifests: {
         Row: {
           analysis_run_id: string
@@ -2654,6 +2703,17 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      review_analysis_decision_candidate: {
+        Args: {
+          p_action: string
+          p_analysis_run_id: string
+          p_candidate_id: string
+          p_reason: string
+          p_reviewer_user_id: string
+          p_workspace_id: string
+        }
+        Returns: Json
       }
       search_workspace_messages: {
         Args: {

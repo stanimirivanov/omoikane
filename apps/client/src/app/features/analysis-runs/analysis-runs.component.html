@@ -1,6 +1,6 @@
 <section aria-labelledby="analysis-runs-title">
   <h3 id="analysis-runs-title">Analysis Runs</h3>
-  <p>Start a deterministic trusted workflow for this channel.</p>
+  <p>Start a trusted analysis workflow for this channel.</p>
 
   <fieldset [disabled]="!store.canEditTimeRange()">
     <legend>Message time range</legend>
@@ -113,6 +113,60 @@
                               {{ candidate.confidence }} (0 to 1).
                             </p>
                             <p>Status: {{ candidate.status }}.</p>
+                            @if (candidate.review; as review) {
+                              <p>
+                                Reviewed by {{ review.reviewerId }} on
+                                <time
+                                  [attr.datetime]="
+                                    toUtcDateTime(review.occurredAt)
+                                  "
+                                >
+                                  {{ toUtcDateTime(review.occurredAt) }} </time
+                                >.
+                                @if (review.reason) {
+                                  Reason: {{ review.reason }}
+                                }
+                              </p>
+                            } @else {
+                              <label>
+                                Optional review reason
+                                <textarea
+                                  #reviewReason
+                                  maxlength="500"
+                                ></textarea>
+                              </label>
+                              <button
+                                type="button"
+                                [disabled]="!store.canReview(candidate)"
+                                (click)="
+                                  store.reviewCandidate(
+                                    candidate.id,
+                                    'confirm',
+                                    reviewReason.value
+                                  )
+                                "
+                              >
+                                Confirm candidate
+                              </button>
+                              <button
+                                type="button"
+                                [disabled]="!store.canReview(candidate)"
+                                (click)="
+                                  store.reviewCandidate(
+                                    candidate.id,
+                                    'reject',
+                                    reviewReason.value
+                                  )
+                                "
+                              >
+                                Reject candidate
+                              </button>
+                              @if (
+                                store.reviewingCandidateId() === candidate.id
+                              ) {
+                                <p aria-live="polite">Saving review&hellip;</p>
+                              }
+                            }
 
                             <h6>Claims</h6>
                             <ul>

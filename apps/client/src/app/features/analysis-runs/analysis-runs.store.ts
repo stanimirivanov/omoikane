@@ -3,6 +3,9 @@ import { patchState, signalStore, withMethods, withState } from '@ngrx/signals';
 import { Either, Schema } from 'effect';
 import {
   AnalysisTimeRangeSchema,
+  type AnalysisDecisionCandidate,
+  type AnalysisDecisionCandidateId,
+  type AnalysisDecisionReviewAction,
   type AnalysisRunStatus,
   type AnalysisTimeRange,
 } from '@omoikane/domain/analysis';
@@ -45,7 +48,9 @@ export const AnalysisRunsStore = signalStore(
             ? 'Your session can no longer access the analysis server.'
             : kind === 'invalid-request'
               ? 'Choose a valid past time range of no more than 31 days.'
-              : 'The Analysis Run service is currently unavailable.';
+              : kind === 'conflict'
+                ? 'This candidate was already reviewed. Its current state has been reloaded.'
+                : 'The Analysis Run service is currently unavailable.';
 
       const decodeTimeRange = (): Either.Either<AnalysisTimeRange, unknown> =>
         Schema.decodeUnknownEither(AnalysisTimeRangeSchema)({
@@ -57,11 +62,15 @@ export const AnalysisRunsStore = signalStore(
         const currentRun = store.run();
         return (
           store.status() === 'starting' ||
+          store.reviewingCandidateId() !== null ||
           (currentRun !== null && !isTerminal(currentRun.status))
         );
       };
 
-      const observe = async (expectedRevision: number): Promise<boolean> => {
+      const observe = async (
+        expectedRevision: number,
+        includeTerminal = false
+      ): Promise<boolean> => {
         const workspaceId = store.workspaceId();
         const channelId = store.channelId();
         const run = store.run();
@@ -71,7 +80,7 @@ export const AnalysisRunsStore = signalStore(
           workspaceId === null ||
           channelId === null ||
           run === null ||
-          isTerminal(run.status)
+          (!includeTerminal && isTerminal(run.status))
         ) {
           return false;
         }
@@ -99,6 +108,7 @@ export const AnalysisRunsStore = signalStore(
             patchState(store, {
               status: 'failed',
               error: { message: message(error.kind) },
+              reviewingCandidateId: null,
             });
             return false;
           },
@@ -108,6 +118,7 @@ export const AnalysisRunsStore = signalStore(
               run: observed,
               status: terminal ? 'idle' : 'observing',
               error: null,
+              reviewingCandidateId: null,
             });
             if (!terminal) {
               pollTimer = setTimeout(() => {
@@ -182,6 +193,7 @@ export const AnalysisRunsStore = signalStore(
               run: null,
               status: 'idle',
               error: null,
+              reviewingCandidateId: null,
             });
           }
         },
@@ -255,7 +267,99 @@ export const AnalysisRunsStore = signalStore(
             return false;
           }
           stopPolling();
-          return observe(revision);
+          return observe(revision, true);
+        },
+
+        canReview(candidate: AnalysisDecisionCandidate): boolean {
+          return (
+            candidate.status === 'proposed' &&
+            store.reviewingCandidateId() === null
+          );
+        },
+
+        async reviewCandidate(
+          candidateId: AnalysisDecisionCandidateId,
+          action: AnalysisDecisionReviewAction,
+          reason: string
+        ): Promise<boolean> {
+          const workspaceId = store.workspaceId();
+          const run = store.run();
+          const candidate =
+            run?.result?.kind === 'decision-forensics'
+              ? run.result.candidates.find((item) => item.id === candidateId)
+              : undefined;
+          if (
+            workspaceId === null ||
+            run === null ||
+            candidate?.status !== 'proposed' ||
+            store.reviewingCandidateId() !== null
+          ) {
+            return false;
+          }
+
+          const expectedRevision = revision;
+          patchState(store, { reviewingCandidateId: candidateId, error: null });
+          const result = await api.reviewCandidate(
+            workspaceId,
+            run.id,
+            candidateId,
+            action,
+            reason.trim() || null
+          );
+          if (
+            expectedRevision !== revision ||
+            store.workspaceId() !== workspaceId ||
+            store.run()?.id !== run.id
+          ) {
+            return false;
+          }
+
+          if (Either.isLeft(result)) {
+            if (result.left.kind === 'conflict') {
+              const refreshed = await observe(expectedRevision, true);
+              if (refreshed) {
+                patchState(store, {
+                  error: { message: message('conflict') },
+                });
+              }
+            } else {
+              patchState(store, {
+                reviewingCandidateId: null,
+                error: { message: message(result.left.kind) },
+              });
+            }
+            return false;
+          }
+
+          const review = result.right;
+          const currentRun = store.run();
+          if (currentRun?.result?.kind !== 'decision-forensics') {
+            patchState(store, { reviewingCandidateId: null });
+            return false;
+          }
+          patchState(store, {
+            reviewingCandidateId: null,
+            error: null,
+            run: {
+              ...currentRun,
+              result: {
+                ...currentRun.result,
+                candidates: currentRun.result.candidates.map((item) =>
+                  item.id === candidateId
+                    ? {
+                        ...item,
+                        status:
+                          review.action === 'confirm'
+                            ? ('confirmed' as const)
+                            : ('rejected' as const),
+                        review,
+                      }
+                    : item
+                ),
+              },
+            },
+          });
+          return true;
         },
       };
     }

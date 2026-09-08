@@ -1,6 +1,9 @@
 import { Effect, Layer, Option, Schema } from 'effect';
 import { describe, expect, it, vi } from 'vitest';
-import type { AnalysisRun } from '@omoikane/domain/analysis';
+import {
+  AnalysisDecisionReviewSchema,
+  type AnalysisRun,
+} from '@omoikane/domain/analysis';
 import {
   AnalysisRunRepositoryTag,
   type AnalysisRunRepository,
@@ -21,6 +24,7 @@ import {
   processDecisionForensicsJob,
 } from './analysis-job-execution';
 import { getAnalysisRun } from './get-analysis-run';
+import { reviewAnalysisDecisionCandidate } from './review-analysis-decision-candidate';
 import { startAnalysisRun } from './start-analysis-run';
 import { dispatchNextAnalysisRun } from './dispatch-next-analysis-run';
 import { prepareAnalysisJobExtraction } from './prepare-analysis-job-extraction';
@@ -70,6 +74,7 @@ const repository = (
 ): AnalysisRunRepository => ({
   start: () => Effect.die('unexpected start'),
   get: () => Effect.die('unexpected get'),
+  reviewDecisionCandidate: () => Effect.die('unexpected review'),
   claimNextOutboxEvent: () => Effect.die('unexpected outbox claim'),
   dispatchOutboxEvent: () => Effect.die('unexpected outbox dispatch'),
   checkWorkerReady: () => Effect.die('unexpected worker readiness'),
@@ -545,6 +550,63 @@ describe('Analysis Run use cases', () => {
       }).pipe(Effect.provide(layer(testRepository)))
     );
     expect(get).toHaveBeenCalledOnce();
+  });
+
+  it('normalizes and appends a human candidate review through the repository', async () => {
+    const review = Schema.decodeUnknownSync(AnalysisDecisionReviewSchema)({
+      id: '94000000-0000-4000-8000-000000000001',
+      candidateId: '93000000-0000-4000-8000-000000000001',
+      reviewerId: run.requestedBy,
+      action: 'confirm',
+      reason: 'Confirmed in planning.',
+      occurredAt: new Date('2026-09-08T13:00:00Z'),
+    });
+    const reviewDecisionCandidate = vi.fn(() => Effect.succeed(review));
+
+    await expect(
+      Effect.runPromise(
+        reviewAnalysisDecisionCandidate({
+          identity: { userId: run.requestedBy },
+          workspaceId: run.workspaceId,
+          analysisRunId: run.id,
+          candidateId: review.candidateId,
+          action: 'confirm',
+          reason: '  Confirmed in planning.  ',
+        }).pipe(Effect.provide(layer(repository({ reviewDecisionCandidate }))))
+      )
+    ).resolves.toEqual(review);
+    expect(reviewDecisionCandidate).toHaveBeenCalledExactlyOnceWith({
+      identity: { userId: run.requestedBy },
+      workspaceId: run.workspaceId,
+      analysisRunId: run.id,
+      candidateId: review.candidateId,
+      action: 'confirm',
+      reason: 'Confirmed in planning.',
+    });
+  });
+
+  it('rejects malformed candidate review input before repository access', async () => {
+    const reviewDecisionCandidate = vi.fn();
+
+    await expect(
+      Effect.runPromise(
+        reviewAnalysisDecisionCandidate({
+          identity: { userId: run.requestedBy },
+          workspaceId: run.workspaceId,
+          analysisRunId: run.id,
+          candidateId: 'not-a-candidate',
+          action: 'confirm',
+          reason: null,
+        }).pipe(
+          Effect.provide(layer(repository({ reviewDecisionCandidate }))),
+          Effect.flip
+        )
+      )
+    ).resolves.toMatchObject({
+      _tag: 'InvalidAnalysisRunInputError',
+      field: 'candidateId',
+    });
+    expect(reviewDecisionCandidate).not.toHaveBeenCalled();
   });
 
   it('claims and dispatches one available request', async () => {

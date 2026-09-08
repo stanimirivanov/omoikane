@@ -1,7 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { Either, Schema } from 'effect';
 import {
+  AnalysisDecisionReviewSchema,
   AnalysisRunSchema,
+  type AnalysisDecisionCandidateId,
+  type AnalysisDecisionReview,
+  type AnalysisDecisionReviewAction,
   type AnalysisRun,
   type AnalysisTimeRange,
 } from '@omoikane/domain/analysis';
@@ -13,19 +17,51 @@ export interface AnalysisRunApiError {
     | 'authentication'
     | 'invalid-request'
     | 'not-found'
+    | 'conflict'
     | 'unavailable';
 }
 
 const decodeResponse = (value: unknown) => {
   const record = typeof value === 'object' && value !== null ? value : {};
   const result = Reflect.get(record, 'result');
+  const resultRecord =
+    typeof result === 'object' && result !== null ? result : undefined;
+  const candidates =
+    resultRecord === undefined
+      ? undefined
+      : Reflect.get(resultRecord, 'candidates');
   const decodedResult =
-    typeof result === 'object' && result !== null
-      ? {
-          ...result,
-          createdAt: new Date(String(Reflect.get(result, 'createdAt') ?? '')),
-        }
-      : result;
+    resultRecord === undefined
+      ? result
+      : {
+          ...resultRecord,
+          createdAt: new Date(
+            String(Reflect.get(resultRecord, 'createdAt') ?? '')
+          ),
+          ...(Array.isArray(candidates)
+            ? {
+                candidates: candidates.map((candidate: unknown) => {
+                  const candidateRecord =
+                    typeof candidate === 'object' && candidate !== null
+                      ? candidate
+                      : {};
+                  const review = Reflect.get(candidateRecord, 'review');
+                  return {
+                    ...candidateRecord,
+                    review:
+                      typeof review === 'object' && review !== null
+                        ? {
+                            ...review,
+                            occurredAt: new Date(
+                              String(Reflect.get(review, 'occurredAt') ?? '')
+                            ),
+                          }
+                        : review,
+                  };
+                }),
+              }
+            : {}),
+        };
   const timeRange = Reflect.get(record, 'timeRange');
   const decodedTimeRange =
     typeof timeRange === 'object' && timeRange !== null
@@ -44,6 +80,18 @@ const decodeResponse = (value: unknown) => {
     failureCategory: Reflect.get(record, 'failureCategory'),
     result: decodedResult,
     createdAt: new Date(String(Reflect.get(record, 'createdAt') ?? '')),
+  });
+};
+
+const decodeReviewResponse = (value: unknown) => {
+  const record = typeof value === 'object' && value !== null ? value : {};
+  return Schema.decodeUnknownEither(AnalysisDecisionReviewSchema)({
+    id: Reflect.get(record, 'id'),
+    candidateId: Reflect.get(record, 'candidateId'),
+    reviewerId: Reflect.get(record, 'reviewerId'),
+    action: Reflect.get(record, 'action'),
+    reason: Reflect.get(record, 'reason'),
+    occurredAt: new Date(String(Reflect.get(record, 'occurredAt') ?? '')),
   });
 };
 
@@ -71,6 +119,64 @@ export class AnalysisRunApiService {
     analysisRunId: string
   ): Promise<Either.Either<AnalysisRun, AnalysisRunApiError>> {
     return this.request('GET', workspaceId, analysisRunId);
+  }
+
+  async reviewCandidate(
+    workspaceId: string,
+    analysisRunId: string,
+    candidateId: AnalysisDecisionCandidateId,
+    action: AnalysisDecisionReviewAction,
+    reason: string | null
+  ): Promise<Either.Either<AnalysisDecisionReview, AnalysisRunApiError>> {
+    const tokenResult = await this.authentication.currentAccessToken();
+    if (Either.isLeft(tokenResult)) {
+      return Either.left({ kind: 'authentication' });
+    }
+
+    let response: Response;
+    try {
+      response = await fetch(
+        `${environment.server.url}/api/v1/workspaces/${workspaceId}/analysis-runs/${analysisRunId}/candidates/${candidateId}/review`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${tokenResult.right}`,
+            'Content-Type': 'application/json',
+            'X-Request-Id': crypto.randomUUID(),
+          },
+          body: JSON.stringify({ action, reason }),
+        }
+      );
+    } catch {
+      return Either.left({ kind: 'unavailable' });
+    }
+
+    if (!response.ok) {
+      return Either.left({ kind: this.errorKind(response.status) });
+    }
+
+    try {
+      return Either.mapLeft(
+        decodeReviewResponse(await response.json()),
+        () => ({
+          kind: 'unavailable' as const,
+        })
+      );
+    } catch {
+      return Either.left({ kind: 'unavailable' });
+    }
+  }
+
+  private errorKind(status: number): AnalysisRunApiError['kind'] {
+    return status === 400
+      ? 'invalid-request'
+      : status === 404
+        ? 'not-found'
+        : status === 409
+          ? 'conflict'
+          : status === 401
+            ? 'authentication'
+            : 'unavailable';
   }
 
   private async request(
@@ -107,14 +213,7 @@ export class AnalysisRunApiService {
 
     if (!response.ok) {
       return Either.left({
-        kind:
-          response.status === 400
-            ? 'invalid-request'
-            : response.status === 404
-              ? 'not-found'
-              : response.status === 401
-                ? 'authentication'
-                : 'unavailable',
+        kind: this.errorKind(response.status),
       });
     }
 

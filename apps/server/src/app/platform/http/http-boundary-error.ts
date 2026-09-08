@@ -55,6 +55,15 @@ export const resourceNotFound = (): HttpBoundaryError =>
     code: 'resource_not_found',
   });
 
+export const resourceConflict = (): HttpBoundaryError =>
+  new HttpBoundaryError({
+    status: 409,
+    type: 'https://omoikane.dev/problems/resource-conflict',
+    title: 'The resource has changed',
+    detail: 'The requested change conflicts with the current resource state.',
+    code: 'resource_conflict',
+  });
+
 export const analysisUnavailable = (): HttpBoundaryError =>
   new HttpBoundaryError({
     status: 503,

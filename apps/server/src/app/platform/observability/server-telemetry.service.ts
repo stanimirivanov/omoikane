@@ -75,7 +75,8 @@ export type ServerObservedOperation =
   | 'authentication.validate'
   | 'authentication.health'
   | 'analysis_run.start'
-  | 'analysis_run.get';
+  | 'analysis_run.get'
+  | 'analysis_run.review_candidate';
 
 const headerGetter: TextMapGetter<TelemetryRequest['headers']> = {
   keys: (headers) => Object.keys(headers),

@@ -27,7 +27,13 @@ returns one runtime-validated, retry-stable snapshot with its persisted
 truncation state. The snapshot uses the run's immutable inclusive-start,
 exclusive-end interval; the start use case rejects invalid, longer-than-31-day,
 and future-ending requests. Polling, worker lifecycle, hosted model execution,
-review workflows, and streaming remain outside this package.
+supersede workflows and streaming remain outside this package.
+
+`reviewAnalysisDecisionCandidate` validates the scoped identity, run and
+candidate identities, action, and optional trimmed reason before invoking the
+repository port. It returns the immutable review fact. A repository conflict
+is explicit when another review already won; exact command retries remain
+idempotent at the database boundary.
 
 Verify with `pnpm exec nx run-many -t lint typecheck typecheck:test test -p analysis-application`.
 

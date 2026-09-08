@@ -8,6 +8,9 @@ import type { DecisionExtractionInput } from './decision-extraction';
 import type { AuthenticatedRequestIdentity } from '@omoikane/application/authentication';
 import type { ChannelId } from '@omoikane/domain/channel';
 import type {
+  AnalysisDecisionCandidateId,
+  AnalysisDecisionReview,
+  AnalysisDecisionReviewAction,
   AnalysisRun,
   AnalysisRunId,
   AnalysisTimeRange,
@@ -15,6 +18,7 @@ import type {
 import type { WorkspaceId } from '@omoikane/domain/workspace';
 import type {
   AnalysisRunDispatchRepositoryError,
+  AnalysisDecisionAlreadyReviewedError,
   AnalysisJobExecutionRepositoryError,
   AnalysisRunRepositoryError,
 } from './analysis-run-error';
@@ -46,6 +50,14 @@ export interface AnalysisRunProcessingTraceContext {
 
 export interface GetAnalysisRunQuery extends ScopedAnalysisRunRequest {
   readonly analysisRunId: AnalysisRunId;
+}
+
+export interface ReviewAnalysisDecisionCandidateCommand
+  extends ScopedAnalysisRunRequest {
+  readonly analysisRunId: AnalysisRunId;
+  readonly candidateId: AnalysisDecisionCandidateId;
+  readonly action: AnalysisDecisionReviewAction;
+  readonly reason: string | null;
 }
 
 export interface ClaimAnalysisRunOutboxCommand {
@@ -93,6 +105,12 @@ export interface AnalysisRunRepository {
   readonly get: (
     query: GetAnalysisRunQuery
   ) => Effect.Effect<AnalysisRun, AnalysisRunRepositoryError>;
+  readonly reviewDecisionCandidate: (
+    command: ReviewAnalysisDecisionCandidateCommand
+  ) => Effect.Effect<
+    AnalysisDecisionReview,
+    AnalysisDecisionAlreadyReviewedError | AnalysisRunRepositoryError
+  >;
   readonly claimNextOutboxEvent: (
     command: ClaimAnalysisRunOutboxCommand
   ) => Effect.Effect<

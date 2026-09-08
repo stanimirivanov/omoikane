@@ -3,6 +3,7 @@ import {
   ApiBadRequestResponse,
   ApiBody,
   ApiCreatedResponse,
+  ApiConflictResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
@@ -13,6 +14,8 @@ import {
 import { Either } from 'effect';
 import {
   getAnalysisRun,
+  reviewAnalysisDecisionCandidate,
+  type AnalysisDecisionReviewError,
   startAnalysisRun,
   type AnalysisRunError,
 } from '@omoikane/application/analysis';
@@ -26,10 +29,13 @@ import {
   invalidRequest,
   invalidServerData,
   resourceNotFound,
+  resourceConflict,
 } from '../platform/http/http-boundary-error';
 import { AnalysisRunResponse } from './analysis-run-response';
 import { ServerTelemetry } from '../platform/observability/server-telemetry.service';
 import { StartAnalysisRunRequest } from './start-analysis-run-request';
+import { ReviewAnalysisDecisionCandidateRequest } from './review-analysis-decision-candidate-request';
+import { AnalysisDecisionReviewResponse } from './analysis-decision-review-response';
 
 const requireIdentity = (request: RequestWithIdentity) => {
   const identity = getRequestIdentity(request);
@@ -52,6 +58,13 @@ const failHttp = (error: AnalysisRunError): never => {
   }
 };
 
+const failReviewHttp = (error: AnalysisDecisionReviewError): never => {
+  if (error._tag === 'AnalysisDecisionAlreadyReviewedError') {
+    throw resourceConflict();
+  }
+  return failHttp(error);
+};
+
 /** Authenticated HTTP entry point for the trusted Analysis Run workflow. */
 @ApiTags('analysis-runs')
 @Controller('workspaces/:workspaceId/analysis-runs')
@@ -62,7 +75,7 @@ export class AnalysisRunsController {
   ) {}
 
   @Post()
-  @ApiOperation({ summary: 'Start a deterministic Analysis Run' })
+  @ApiOperation({ summary: 'Start an Analysis Run' })
   @ApiParam({ name: 'workspaceId', format: 'uuid' })
   @ApiBody({ type: StartAnalysisRunRequest })
   @ApiCreatedResponse({ type: AnalysisRunResponse })
@@ -129,6 +142,50 @@ export class AnalysisRunsController {
         this.telemetry.annotateAnalysisRun(request, run.workspaceId, run.id);
         return new AnalysisRunResponse(run);
       },
+    });
+  }
+
+  @Post(':analysisRunId/candidates/:candidateId/review')
+  @ApiOperation({ summary: 'Review a proposed Decision Forensics candidate' })
+  @ApiParam({ name: 'workspaceId', format: 'uuid' })
+  @ApiParam({ name: 'analysisRunId', format: 'uuid' })
+  @ApiParam({ name: 'candidateId', format: 'uuid' })
+  @ApiBody({ type: ReviewAnalysisDecisionCandidateRequest })
+  @ApiCreatedResponse({ type: AnalysisDecisionReviewResponse })
+  @ApiBadRequestResponse({
+    description: 'A route or review value is malformed.',
+  })
+  @ApiNotFoundResponse({
+    description: 'The decision candidate is inaccessible.',
+  })
+  @ApiConflictResponse({
+    description: 'The candidate was already reviewed differently.',
+  })
+  @ApiServiceUnavailableResponse({ description: 'Persistence is unavailable.' })
+  async reviewCandidate(
+    @Req() request: RequestWithIdentity,
+    @Param('workspaceId') workspaceId: string,
+    @Param('analysisRunId') analysisRunId: string,
+    @Param('candidateId') candidateId: string,
+    @Body('action') action: unknown,
+    @Body('reason') reason: unknown
+  ): Promise<AnalysisDecisionReviewResponse> {
+    const result = await this.runtime.runRequestEither(
+      request,
+      'analysis_run.review_candidate',
+      reviewAnalysisDecisionCandidate({
+        identity: requireIdentity(request),
+        workspaceId,
+        analysisRunId,
+        candidateId,
+        action,
+        reason,
+      })
+    );
+
+    return Either.match(result, {
+      onLeft: failReviewHttp,
+      onRight: (review) => new AnalysisDecisionReviewResponse(review),
     });
   }
 }

@@ -214,10 +214,14 @@ Implementation scope:
   adapter completed. Atomic, manifest-matched structured candidate persistence
   and the authorized result projection/API/UI are also complete. The Node worker
   now activates the optional Ollama processor with bounded cancellation and
-  deterministic result fingerprints; human review remains.**
+  deterministic result fingerprints. Membership-authorized confirm and reject
+  review actions append immutable facts, reconcile conflicts, and project the
+  reviewed state without rewriting model output.**
 - Persist evidence-backed proposed findings with confidence and model and prompt
   versions.
 - Provide a review UI where findings are confirmed, rejected, or superseded.
+  **Confirm and reject are complete; supersede is intentionally deferred until
+  a replacement-candidate workflow exists.**
 - Add pgvector and hybrid retrieval only when semantic evidence retrieval needs
   them.
 
