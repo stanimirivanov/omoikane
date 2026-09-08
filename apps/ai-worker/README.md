@@ -53,3 +53,12 @@ Local health endpoints default to:
 Configuration is documented in `.env.example`. The Supabase secret key (or the
 legacy service-role compatibility key) belongs only to trusted server and
 worker runtimes, must be supplied explicitly, and must never reach Angular.
+
+## Extraction preparation
+
+The application now exposes `prepareAnalysisJobExtraction` to load the exact
+snapshot revision content through a lease-fenced, reauthorized RPC. It is a
+prerequisite for the model processor; the running inventory loop still requests
+identities only. Provider selection, execution-manifest pinning, and model
+composition are not yet configured. Content remains in immutable message
+versions and is never copied into job payloads, lifecycle facts, or telemetry.

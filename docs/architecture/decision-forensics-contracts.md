@@ -326,11 +326,14 @@ Each item is a separate reviewable slice:
    exact evidence and authored-participant validation, safe Effect errors,
    SHA-256-verified instruction artifact, and fixture-backed conformance Layer.
    Zero candidates are valid; fixtures establish structural rather than semantic
-   model quality. No external network call. Worker content loading and pinned
-   execution manifests remain part of model integration.
+   model quality. No external network call.
 3. **First hosted or local model adapter.** Implement one configured adapter in
    infrastructure and worker composition, including timeout, safe error
    mapping, metadata, and telemetry. Keep it disabled without configuration.
+   **Prerequisite completed:** `prepareAnalysisJobExtraction` loads authorized
+   frozen revision content through a worker-only RPC. The RPC reuses snapshot
+   acquisition's lease and access checks, including on retries. Provider/model
+   selection, pinned execution manifests, and model invocation remain.
 4. **Persist proposed decision candidates.** Add only the tables and atomic
    completion changes consumed by the validated extraction result.
 5. **Authorized Decision Forensics read UI.** Render candidates, claims,

@@ -51,6 +51,7 @@ export class AnalysisRunRepositoryUnavailableError extends Data.TaggedError(
     | 'healthWorker'
     | 'acquireJob'
     | 'loadSources'
+    | 'loadExtractionInput'
     | 'completeJob'
     | 'failJob';
   readonly cause: unknown;

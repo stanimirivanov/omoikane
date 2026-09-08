@@ -2249,6 +2249,10 @@ export type Database = {
           unread_count: number
         }[]
       }
+      load_analysis_job_extraction_input: {
+        Args: { p_attempt_id: string; p_job_id: string; p_lease_token: string }
+        Returns: Json
+      }
       load_analysis_job_sources: {
         Args: { p_attempt_id: string; p_job_id: string; p_lease_token: string }
         Returns: {

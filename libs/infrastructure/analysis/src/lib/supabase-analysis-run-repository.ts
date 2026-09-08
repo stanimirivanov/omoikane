@@ -1,6 +1,8 @@
 import { Effect, Option, Schema } from 'effect';
 import {
   AnalysisRunNotAccessibleError,
+  DecisionExtractionInputSchema,
+  type DecisionExtractionInput,
   AnalysisRunOutboxClaimLostError,
   AnalysisRunRepositoryUnavailableError,
   AnalysisJobSchema,
@@ -493,6 +495,73 @@ export const makeSupabaseAnalysisRunRepository = (
     }).pipe(
       Effect.flatMap(mapJobSources),
       Effect.withSpan('supabase.analysis_job.load_sources', { kind: 'client' })
+    ),
+  loadJobExtractionInput: ({ execution }) =>
+    Effect.tryPromise({
+      try: () =>
+        client.loadJobExtractionInput({
+          p_job_id: execution.jobId,
+          p_attempt_id: execution.attemptId,
+          p_lease_token: execution.leaseToken,
+        }),
+      // Content-bearing transports and schema errors must not retain raw bodies.
+      catch: () =>
+        new AnalysisRunRepositoryUnavailableError({
+          operation: 'loadExtractionInput',
+          cause: 'Snapshot content transport failed.',
+        }),
+    }).pipe(
+      Effect.flatMap(
+        (
+          result
+        ): Effect.Effect<
+          DecisionExtractionInput,
+          AnalysisJobExecutionRepositoryError
+        > => {
+          if (result.error?.code === 'P0003')
+            return Effect.fail(new AnalysisJobLeaseLostError());
+          if (result.error?.code === 'P0004')
+            return Effect.fail(new AnalysisSourceAccessRevokedError());
+          if (result.error?.code === 'P0005')
+            return Effect.fail(
+              new InvalidAnalysisRunDataError({
+                cause: 'Snapshot content is incomplete.',
+              })
+            );
+          if (result.error !== null)
+            return Effect.fail(
+              new AnalysisRunRepositoryUnavailableError({
+                operation: 'loadExtractionInput',
+                cause: 'Snapshot content command failed.',
+              })
+            );
+          return Schema.decodeUnknown(DecisionExtractionInputSchema)(
+            result.data,
+            { onExcessProperty: 'error' }
+          ).pipe(
+            Effect.mapError(
+              () =>
+                new InvalidAnalysisRunDataError({
+                  cause:
+                    'Snapshot content does not satisfy the extraction contract.',
+                })
+            ),
+            Effect.flatMap((input) =>
+              input.analysisRunId === execution.analysisRunId
+                ? Effect.succeed(input)
+                : Effect.fail(
+                    new InvalidAnalysisRunDataError({
+                      cause:
+                        'Snapshot content belongs to a different Analysis Run.',
+                    })
+                  )
+            )
+          );
+        }
+      ),
+      Effect.withSpan('supabase.analysis_job.load_extraction_input', {
+        kind: 'client',
+      })
     ),
   completeJobSuccess: ({
     execution,
