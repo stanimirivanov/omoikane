@@ -13,6 +13,8 @@ the [Omoikane documentation](docs/README.md).
 ## Technology
 
 - Angular 22 for the browser application and dependency-injection boundary
+- Angular Material and Lucide as the approved presentation foundation; package
+  installation begins with UI-1
 - NgRx Signal Store for feature-local presentation state
 - Effect for typed application workflows, dependency injection, and failures
 - Supabase for authentication, PostgreSQL, row-level security, realtime, and
@@ -54,6 +56,11 @@ Dependencies point toward policy:
 The project is developed as small vertical slices. New abstractions are
 introduced only after concrete duplication or coupling appears in implemented
 features.
+
+The presentation-only modernization track is specified in the
+[UI/UX Redesign Plan](docs/product/ui-ux-redesign-plan.md). It applies a dense,
+Omoikane-specific collaboration workspace without changing the architecture or
+adding product behavior.
 
 ## Repository layout
 

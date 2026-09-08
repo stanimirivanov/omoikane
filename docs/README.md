@@ -44,6 +44,7 @@ change through an ADR.
 | OMO-ARC-003 | [Modular Server Architecture](architecture/modular-server-architecture.md)             | Approved Phase 3 runtime, module, API, security, health, telemetry, and implementation boundaries                        |
 | OMO-ARC-004 | [Analysis Run Processing Contracts](architecture/analysis-run-processing-contracts.md) | Approved Phase 4 lifecycle, outbox, durable-job, worker, retry, idempotency, security, and telemetry contracts           |
 | OMO-ARC-005 | [Decision Forensics Contracts](architecture/decision-forensics-contracts.md)           | Approved Phase 5 source snapshot, extraction, evidence, versioning, governance, evaluation, and review contracts         |
+| OMO-UX-001  | [UI/UX Redesign Plan](product/ui-ux-redesign-plan.md)                                  | Approved presentation foundation, visual contract, migration slices, and review gates                                    |
 
 ## Accepted architecture decisions
 
@@ -51,6 +52,7 @@ change through an ADR.
 | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | [ADR 0001](architecture/adr/0001-nestjs-effect-runtime-boundary.md)                             | Defines the NestJS-to-Effect runtime and lifecycle boundary.                        |
 | [ADR 0002](architecture/adr/0002-supabase-server-authentication-and-workspace-authorization.md) | Defines bearer identity validation, workspace authorization, and privileged access. |
+| [ADR 0003](architecture/adr/0003-angular-material-and-lucide-presentation-foundation.md)        | Selects Angular Material and Lucide while retaining Omoikane-owned product layout.  |
 
 ## Repository reconciliation
 

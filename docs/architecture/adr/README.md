@@ -10,6 +10,7 @@ implementation documentation.
 | -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
 | [0001](0001-nestjs-effect-runtime-boundary.md)                             | NestJS owns HTTP and process lifecycle; one long-lived Effect runtime owns application execution. |
 | [0002](0002-supabase-server-authentication-and-workspace-authorization.md) | Supabase validates bearer identity; application workflows authorize explicit workspace scope.     |
+| [0003](0003-angular-material-and-lucide-presentation-foundation.md)        | Angular Material and Lucide provide UI primitives while Omoikane owns product layout and styling. |
 
 ## Authority
 
