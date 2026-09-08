@@ -107,6 +107,36 @@ export const AnalysisJobSourceSchema = Schema.Struct({
   authorUserId: ProfileIdSchema,
 });
 
+/**
+ * Retry-stable evidence identities selected for one Analysis Run.
+ *
+ * The snapshot contains at most 100 unique messages and revisions. Truncation
+ * is possible only when the full 100-source boundary was persisted.
+ */
+export const AnalysisJobSourceSnapshotSchema = Schema.Struct({
+  sources: Schema.Array(AnalysisJobSourceSchema).pipe(Schema.maxItems(100)),
+  sourceTruncated: Schema.Boolean,
+}).pipe(
+  Schema.filter(
+    (snapshot) => !snapshot.sourceTruncated || snapshot.sources.length === 100,
+    {
+      message: () =>
+        'A truncated Analysis source snapshot must contain 100 sources.',
+    }
+  ),
+  Schema.filter(
+    (snapshot) =>
+      new Set(snapshot.sources.map((source) => source.messageId)).size ===
+        snapshot.sources.length &&
+      new Set(snapshot.sources.map((source) => source.messageRevisionId))
+        .size === snapshot.sources.length,
+    {
+      message: () =>
+        'An Analysis source snapshot cannot contain duplicate sources.',
+    }
+  )
+);
+
 export const AnalysisFailureCategorySchema = Schema.String.pipe(
   Schema.pattern(/^[a-z0-9._-]{1,64}$/u)
 );
@@ -126,6 +156,8 @@ export type AnalysisJobExecution = typeof AnalysisJobExecutionSchema.Type;
 export type AnalysisProcessorReceipt =
   typeof AnalysisProcessorReceiptSchema.Type;
 export type AnalysisJobSource = typeof AnalysisJobSourceSchema.Type;
+export type AnalysisJobSourceSnapshot =
+  typeof AnalysisJobSourceSnapshotSchema.Type;
 export type AnalysisFailureCategory = typeof AnalysisFailureCategorySchema.Type;
 export type AnalysisJobFailureCompletion =
   typeof AnalysisJobFailureCompletionSchema.Type;

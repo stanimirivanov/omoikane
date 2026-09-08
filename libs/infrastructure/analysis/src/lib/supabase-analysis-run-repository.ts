@@ -6,6 +6,7 @@ import {
   AnalysisJobSchema,
   AnalysisJobExecutionSchema,
   AnalysisJobSourceSchema,
+  AnalysisJobSourceSnapshotSchema,
   AnalysisJobFailureCompletionSchema,
   AnalysisJobLeaseLostError,
   AnalysisSourceAccessRevokedError,
@@ -13,7 +14,7 @@ import {
   InvalidAnalysisRunDataError,
   type AnalysisJob,
   type AnalysisJobExecution,
-  type AnalysisJobSource,
+  type AnalysisJobSourceSnapshot,
   type AnalysisJobFailureCompletion,
   type AnalysisJobExecutionRepositoryError,
   type AnalysisRunOutboxClaim,
@@ -257,7 +258,7 @@ const mapWorkerReady = (
 const mapJobSources = (
   result: SupabaseAnalysisJobSourcesResult
 ): Effect.Effect<
-  ReadonlyArray<AnalysisJobSource>,
+  AnalysisJobSourceSnapshot,
   AnalysisJobExecutionRepositoryError
 > => {
   if (result.error?.code === 'P0003') {
@@ -275,14 +276,38 @@ const mapJobSources = (
     );
   }
 
-  return Effect.forEach(result.data ?? [], (row) =>
+  if (result.data === null) {
+    return Effect.fail(
+      new InvalidAnalysisRunDataError({
+        cause: 'The Analysis source snapshot command returned no data.',
+      })
+    );
+  }
+
+  const rows = result.data;
+  const sourceTruncated = rows[0]?.source_truncated ?? false;
+  if (rows.some((row) => row.source_truncated !== sourceTruncated)) {
+    return Effect.fail(
+      new InvalidAnalysisRunDataError({
+        cause: 'The Analysis source snapshot has inconsistent metadata.',
+      })
+    );
+  }
+
+  return Effect.forEach(rows, (row) =>
     Schema.decodeUnknown(AnalysisJobSourceSchema)({
       messageId: row.message_id,
       messageRevisionId: row.message_version_id,
       authorUserId: row.author_user_id,
-    }).pipe(
-      Effect.mapError((cause) => new InvalidAnalysisRunDataError({ cause }))
-    )
+    })
+  ).pipe(
+    Effect.flatMap((sources) =>
+      Schema.decodeUnknown(AnalysisJobSourceSnapshotSchema)({
+        sources,
+        sourceTruncated,
+      })
+    ),
+    Effect.mapError((cause) => new InvalidAnalysisRunDataError({ cause }))
   );
 };
 

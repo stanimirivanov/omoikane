@@ -8,8 +8,10 @@ steps: dispatch one requested outbox event, then acquire and execute one
 available job.
 
 The current processor is deliberately deterministic. It reads bounded immutable
-message/revision/author identities but no message content, performs no network
-model call, and produces a stable workspace-message-inventory result.
+message/revision/author identities from the run's persisted historical source
+snapshot but no message content, performs no network model call, and produces a
+stable workspace-message-inventory result. Recovered attempts observe the same
+ordered identities and truncation state rather than recomputing current sources.
 
 ## Runtime boundaries
 

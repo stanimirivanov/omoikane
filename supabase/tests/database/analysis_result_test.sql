@@ -124,7 +124,7 @@ WITH bounded AS (
         'model', NULL,
         'evaluationVersion', 'workspace-message-inventory.v1',
         'sourceCount', count(*),
-        'sourceTruncated', (SELECT count(*) > 100 FROM selected_analysis_sources),
+        'sourceTruncated', coalesce(bool_or(source_truncated), FALSE),
         'sources', coalesce(
             jsonb_agg(jsonb_build_object(
                 'messageId', message_id,

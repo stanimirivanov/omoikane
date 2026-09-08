@@ -166,6 +166,7 @@ describe('makeSupabaseAnalysisRunRepository', () => {
           message_id: '90000000-0000-4000-8000-000000000001',
           message_version_id: '91000000-0000-4000-8000-000000000001',
           author_user_id: row.requested_by,
+          source_truncated: false,
         },
       ],
       error: null,
@@ -181,13 +182,16 @@ describe('makeSupabaseAnalysisRunRepository', () => {
 
     await expect(
       Effect.runPromise(repository.loadJobSources({ execution }))
-    ).resolves.toMatchObject([
-      {
-        messageId: '90000000-0000-4000-8000-000000000001',
-        messageRevisionId: '91000000-0000-4000-8000-000000000001',
-        authorUserId: row.requested_by,
-      },
-    ]);
+    ).resolves.toMatchObject({
+      sources: [
+        {
+          messageId: '90000000-0000-4000-8000-000000000001',
+          messageRevisionId: '91000000-0000-4000-8000-000000000001',
+          authorUserId: row.requested_by,
+        },
+      ],
+      sourceTruncated: false,
+    });
     expect(loadJobSources).toHaveBeenCalledExactlyOnceWith({
       p_job_id: execution.jobId,
       p_attempt_id: execution.attemptId,
@@ -216,6 +220,68 @@ describe('makeSupabaseAnalysisRunRepository', () => {
           .pipe(Effect.flip)
       )
     ).resolves.toMatchObject({ _tag: 'AnalysisSourceAccessRevokedError' });
+  });
+
+  it('rejects inconsistent source snapshot metadata', async () => {
+    const loadJobSources = vi.fn().mockResolvedValue({
+      data: [
+        {
+          message_id: '90000000-0000-4000-8000-000000000001',
+          message_version_id: '91000000-0000-4000-8000-000000000001',
+          author_user_id: row.requested_by,
+          source_truncated: false,
+        },
+        {
+          message_id: '90000000-0000-4000-8000-000000000002',
+          message_version_id: '91000000-0000-4000-8000-000000000002',
+          author_user_id: row.requested_by,
+          source_truncated: true,
+        },
+      ],
+      error: null,
+    });
+    const repository = makeSupabaseAnalysisRunRepository(
+      client({ loadJobSources })
+    );
+
+    await expect(
+      Effect.runPromise(
+        repository
+          .loadJobSources({
+            execution: {
+              jobId: '60000000-0000-4000-8000-000000000001',
+              attemptId: '70000000-0000-4000-8000-000000000001',
+              leaseToken: '80000000-0000-4000-8000-000000000001',
+            } as AnalysisJobExecution,
+          })
+          .pipe(Effect.flip)
+      )
+    ).resolves.toMatchObject({ _tag: 'InvalidAnalysisRunDataError' });
+  });
+
+  it('rejects a null successful source snapshot response', async () => {
+    const repository = makeSupabaseAnalysisRunRepository(
+      client({
+        loadJobSources: vi.fn().mockResolvedValue({
+          data: null,
+          error: null,
+        }),
+      })
+    );
+
+    await expect(
+      Effect.runPromise(
+        repository
+          .loadJobSources({
+            execution: {
+              jobId: '60000000-0000-4000-8000-000000000001',
+              attemptId: '70000000-0000-4000-8000-000000000001',
+              leaseToken: '80000000-0000-4000-8000-000000000001',
+            } as AnalysisJobExecution,
+          })
+          .pipe(Effect.flip)
+      )
+    ).resolves.toMatchObject({ _tag: 'InvalidAnalysisRunDataError' });
   });
 
   it('rejects malformed provider rows', async () => {

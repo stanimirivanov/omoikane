@@ -318,15 +318,18 @@ describe('Analysis Run use cases', () => {
       processorVersion: WORKSPACE_MESSAGE_INVENTORY_PROCESSOR_VERSION,
       traceContext,
     } as AnalysisJobExecution;
-    const sources = [
-      Schema.decodeUnknownSync(AnalysisJobSourceSchema)({
-        messageId: '90000000-0000-4000-8000-000000000001',
-        messageRevisionId: '91000000-0000-4000-8000-000000000001',
-        authorUserId: run.requestedBy,
-      }),
-    ];
+    const snapshot = {
+      sources: [
+        Schema.decodeUnknownSync(AnalysisJobSourceSchema)({
+          messageId: '90000000-0000-4000-8000-000000000001',
+          messageRevisionId: '91000000-0000-4000-8000-000000000001',
+          authorUserId: run.requestedBy,
+        }),
+      ],
+      sourceTruncated: false,
+    };
     const processorLayer = layer(
-      repository({ loadJobSources: () => Effect.succeed(sources) })
+      repository({ loadJobSources: () => Effect.succeed(snapshot) })
     );
     const firstReceipt = await Effect.runPromise(
       processAnalysisJob(execution).pipe(Effect.provide(processorLayer))

@@ -15,7 +15,7 @@ import type {
 import type {
   AnalysisJob,
   AnalysisJobExecution,
-  AnalysisJobSource,
+  AnalysisJobSourceSnapshot,
   AnalysisJobFailureCompletion,
   AnalysisProcessorReceipt,
   AnalysisRunOutboxClaim,
@@ -101,7 +101,7 @@ export interface AnalysisRunRepository {
   readonly loadJobSources: (
     command: LoadAnalysisJobSourcesCommand
   ) => Effect.Effect<
-    ReadonlyArray<AnalysisJobSource>,
+    AnalysisJobSourceSnapshot,
     AnalysisJobExecutionRepositoryError
   >;
   readonly completeJobSuccess: (

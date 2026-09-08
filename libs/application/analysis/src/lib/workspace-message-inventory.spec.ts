@@ -1,7 +1,10 @@
-import { Schema } from 'effect';
+import { Either, Schema } from 'effect';
 import { describe, expect, it } from 'vitest';
 import type { AnalysisJobExecution } from './analysis-job';
-import { AnalysisJobSourceSchema } from './analysis-job';
+import {
+  AnalysisJobSourceSchema,
+  AnalysisJobSourceSnapshotSchema,
+} from './analysis-job';
 import {
   buildWorkspaceMessageInventory,
   WORKSPACE_MESSAGE_INVENTORY_PROCESSOR_VERSION,
@@ -33,7 +36,10 @@ const source = (index: number, authorIndex = 1) =>
 
 describe('channel-scoped workspace message inventory evaluation fixtures', () => {
   it('describes an empty channel without inventing evidence', () => {
-    const receipt = buildWorkspaceMessageInventory(execution, []);
+    const receipt = buildWorkspaceMessageInventory(execution, {
+      sources: [],
+      sourceTruncated: false,
+    });
 
     expect(receipt.result).toMatchObject({
       sourceCount: 0,
@@ -44,11 +50,10 @@ describe('channel-scoped workspace message inventory evaluation fixtures', () =>
   });
 
   it('counts distinct participants from the selected evidence', () => {
-    const receipt = buildWorkspaceMessageInventory(execution, [
-      source(1, 1),
-      source(2, 1),
-      source(3, 2),
-    ]);
+    const receipt = buildWorkspaceMessageInventory(execution, {
+      sources: [source(1, 1), source(2, 1), source(3, 2)],
+      sourceTruncated: false,
+    });
 
     expect(receipt.result.summary).toBe(
       'Analyzed 3 active messages from 2 participants.'
@@ -60,15 +65,35 @@ describe('channel-scoped workspace message inventory evaluation fixtures', () =>
   });
 
   it('caps evidence at 100 and produces a stable fingerprint', () => {
-    const available = Array.from({ length: 101 }, (_, index) =>
+    const sources = Array.from({ length: 100 }, (_, index) =>
       source(index + 1)
     );
-    const first = buildWorkspaceMessageInventory(execution, available);
-    const second = buildWorkspaceMessageInventory(execution, available);
+    const snapshot = { sources, sourceTruncated: true };
+    const first = buildWorkspaceMessageInventory(execution, snapshot);
+    const second = buildWorkspaceMessageInventory(execution, snapshot);
 
     expect(first).toEqual(second);
     expect(first.result.sourceCount).toBe(100);
     expect(first.result.sourceTruncated).toBe(true);
     expect(first.result.sources).toHaveLength(100);
+  });
+
+  it('rejects impossible truncation metadata and duplicate evidence', () => {
+    expect(
+      Either.isLeft(
+        Schema.decodeUnknownEither(AnalysisJobSourceSnapshotSchema)({
+          sources: [source(1)],
+          sourceTruncated: true,
+        })
+      )
+    ).toBe(true);
+    expect(
+      Either.isLeft(
+        Schema.decodeUnknownEither(AnalysisJobSourceSnapshotSchema)({
+          sources: [source(1), source(1)],
+          sourceTruncated: false,
+        })
+      )
+    ).toBe(true);
   });
 });
