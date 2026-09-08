@@ -24,6 +24,14 @@ type LoadSourceRow =
   Database['public']['Functions']['load_analysis_job_sources']['Returns'][number];
 type LoadExtractionInputArgs =
   Database['public']['Functions']['load_analysis_job_extraction_input']['Args'];
+type PinManifestArgs =
+  Database['public']['Functions']['pin_analysis_job_execution_manifest']['Args'];
+export interface SupabaseAnalysisExecutionManifestResult {
+  readonly data:
+    | Database['public']['Functions']['pin_analysis_job_execution_manifest']['Returns']
+    | null;
+  readonly error: PostgrestError | null;
+}
 
 export interface SupabaseAnalysisJobExtractionInputResult {
   readonly data:
@@ -80,6 +88,9 @@ export interface SupabaseAnalysisWorkerReadyResult {
 
 /** Focused RPC projection used by the privileged Analysis Run adapter. */
 export interface SupabaseAnalysisClient {
+  readonly pinJobExecutionManifest: (
+    args: PinManifestArgs
+  ) => PromiseLike<SupabaseAnalysisExecutionManifestResult>;
   readonly start: (args: StartArgs) => PromiseLike<SupabaseAnalysisRunResult>;
   readonly get: (
     args: GetArgs
@@ -136,6 +147,8 @@ export const makeSupabaseAnalysisClient = (
   });
 
   return {
+    pinJobExecutionManifest: (args) =>
+      client.rpc('pin_analysis_job_execution_manifest', args),
     start: (args) => client.rpc('start_analysis_run', args),
     get: (args) => client.rpc('get_analysis_run', args),
     claimNextOutboxEvent: (args) =>

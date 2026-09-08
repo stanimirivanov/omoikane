@@ -16,6 +16,53 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      analysis_execution_manifests: {
+        Row: {
+          analysis_run_id: string
+          created_at: string
+          evaluation_version: string
+          generation_policy: Json
+          model: string
+          processor_version: string
+          prompt_digest: string
+          prompt_version: string
+          provider_kind: string
+          result_schema_version: string
+        }
+        Insert: {
+          analysis_run_id: string
+          created_at?: string
+          evaluation_version: string
+          generation_policy: Json
+          model: string
+          processor_version: string
+          prompt_digest: string
+          prompt_version: string
+          provider_kind: string
+          result_schema_version: string
+        }
+        Update: {
+          analysis_run_id?: string
+          created_at?: string
+          evaluation_version?: string
+          generation_policy?: Json
+          model?: string
+          processor_version?: string
+          prompt_digest?: string
+          prompt_version?: string
+          provider_kind?: string
+          result_schema_version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_execution_manifests_analysis_run_id_fkey"
+            columns: ["analysis_run_id"]
+            isOneToOne: true
+            referencedRelation: "analysis_runs"
+            referencedColumns: ["analysis_run_id"]
+          },
+        ]
+      }
       analysis_findings: {
         Row: {
           analysis_finding_id: string
@@ -2265,6 +2312,15 @@ export type Database = {
       mark_channel_read: {
         Args: { p_channel_id: string; p_message_id: string }
         Returns: string
+      }
+      pin_analysis_job_execution_manifest: {
+        Args: {
+          p_attempt_id: string
+          p_configuration: Json
+          p_job_id: string
+          p_lease_token: string
+        }
+        Returns: Json
       }
       remove_workspace_member: {
         Args: { p_reason?: string; p_user_id: string; p_workspace_id: string }

@@ -99,3 +99,12 @@ export {
   DECISION_EXTRACTION_PROMPT_DIGEST,
 } from './lib/extract-decisions';
 export { prepareAnalysisJobExtraction } from './lib/prepare-analysis-job-extraction';
+export {
+  AnalysisExecutionConfigurationSchema,
+  AnalysisExecutionManifestSchema,
+  decisionExecutionConfiguration,
+  pinAnalysisJobExecutionManifest,
+  type AnalysisExecutionConfiguration,
+  type AnalysisExecutionManifest,
+  type AnalysisExecutionManifestError,
+} from './lib/analysis-execution-manifest';

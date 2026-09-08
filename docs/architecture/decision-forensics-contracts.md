@@ -333,7 +333,11 @@ Each item is a separate reviewable slice:
    **Prerequisite completed:** `prepareAnalysisJobExtraction` loads authorized
    frozen revision content through a worker-only RPC. The RPC reuses snapshot
    acquisition's lease and access checks, including on retries. Provider/model
-   selection, pinned execution manifests, and model invocation remain.
+   selection and model invocation remain. **Manifest prerequisite completed:**
+   a worker-only create-or-observe RPC pins immutable model, artifact, digest,
+   and policy metadata under a job lock. Retries observe the stored selection;
+   incompatible deployment configuration fails explicitly. Database and separate
+   concurrent-connection tests verify first-writer behavior and lease fencing.
 4. **Persist proposed decision candidates.** Add only the tables and atomic
    completion changes consumed by the validated extraction result.
 5. **Authorized Decision Forensics read UI.** Render candidates, claims,

@@ -52,6 +52,7 @@ export class AnalysisRunRepositoryUnavailableError extends Data.TaggedError(
     | 'acquireJob'
     | 'loadSources'
     | 'loadExtractionInput'
+    | 'pinManifest'
     | 'completeJob'
     | 'failJob';
   readonly cause: unknown;

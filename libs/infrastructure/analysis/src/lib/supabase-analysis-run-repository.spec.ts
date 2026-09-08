@@ -2,6 +2,7 @@ import { Effect, Option, Schema } from 'effect';
 import { describe, expect, it, vi } from 'vitest';
 import type { PostgrestError } from '@supabase/supabase-js';
 import { AnalysisJobExecutionSchema } from '@omoikane/application/analysis';
+import { decisionExecutionConfiguration } from '@omoikane/application/analysis';
 import type {
   AnalysisJobExecution,
   AnalysisRunOutboxClaim,
@@ -55,6 +56,9 @@ const client = (
   checkWorkerReady: vi.fn().mockResolvedValue({ data: true, error: null }),
   acquireNextJob: vi.fn().mockResolvedValue({ data: [], error: null }),
   loadJobSources: vi.fn().mockResolvedValue({ data: [], error: null }),
+  pinJobExecutionManifest: vi
+    .fn()
+    .mockResolvedValue({ data: null, error: null }),
   loadJobExtractionInput: vi
     .fn()
     .mockResolvedValue({ data: null, error: null }),
@@ -80,6 +84,125 @@ const command = {
 >[0];
 
 describe('makeSupabaseAnalysisRunRepository', () => {
+  describe('execution manifest mapping', () => {
+    const configuration = () =>
+      decisionExecutionConfiguration({
+        providerKind: 'deterministic',
+        model: 'conformance.v1',
+      });
+    it('maps the lease and configuration, preserving a previously selected model', async () => {
+      const execution = contentExecution();
+      const stored = {
+        analysisRunId: execution.analysisRunId,
+        configuration: { ...configuration(), model: 'previous-model.v1' },
+      };
+      const pinJobExecutionManifest = vi
+        .fn()
+        .mockResolvedValue({ data: stored, error: null });
+      const repository = makeSupabaseAnalysisRunRepository(
+        client({ pinJobExecutionManifest })
+      );
+      expect(
+        await Effect.runPromise(
+          repository.pinJobExecutionManifest({
+            execution,
+            configuration: configuration(),
+          })
+        )
+      ).toEqual(stored);
+      expect(pinJobExecutionManifest).toHaveBeenCalledExactlyOnceWith({
+        p_job_id: execution.jobId,
+        p_attempt_id: execution.attemptId,
+        p_lease_token: execution.leaseToken,
+        p_configuration: configuration(),
+      });
+    });
+    it.each([
+      ['P0003', 'AnalysisJobLeaseLostError'],
+      ['P0004', 'AnalysisSourceAccessRevokedError'],
+      ['22023', 'UnsupportedDecisionExtractionConfigurationError'],
+      ['XX000', 'AnalysisRunRepositoryUnavailableError'],
+    ])('translates %s safely', async (code, tag) => {
+      const repository = makeSupabaseAnalysisRunRepository(
+        client({
+          pinJobExecutionManifest: vi.fn().mockResolvedValue({
+            data: null,
+            error: { code, message: 'PRIVATE_SENTINEL' },
+          }),
+        })
+      );
+      const error = await Effect.runPromise(
+        Effect.flip(
+          repository.pinJobExecutionManifest({
+            execution: contentExecution(),
+            configuration: configuration(),
+          })
+        )
+      );
+      expect(error._tag).toBe(tag);
+      expect(JSON.stringify(error)).not.toContain('PRIVATE_SENTINEL');
+    });
+    it('rejects malformed or unsupported policy data and foreign runs', async () => {
+      const execution = contentExecution();
+      for (const [data, tag] of [
+        [null, 'UnsupportedDecisionExtractionConfigurationError'],
+        [
+          {
+            analysisRunId: execution.analysisRunId,
+            configuration: {
+              ...configuration(),
+              generationPolicy: { tools: true },
+            },
+          },
+          'UnsupportedDecisionExtractionConfigurationError',
+        ],
+        [
+          {
+            analysisRunId: '30000000-0000-4000-8000-000000000002',
+            configuration: configuration(),
+          },
+          'InvalidAnalysisRunDataError',
+        ],
+      ] as const) {
+        const repository = makeSupabaseAnalysisRunRepository(
+          client({
+            pinJobExecutionManifest: vi
+              .fn()
+              .mockResolvedValue({ data, error: null }),
+          })
+        );
+        expect(
+          await Effect.runPromise(
+            Effect.flip(
+              repository.pinJobExecutionManifest({
+                execution,
+                configuration: configuration(),
+              })
+            )
+          )
+        ).toMatchObject({ _tag: tag });
+      }
+    });
+    it('does not expose transport errors in telemetry', async () => {
+      const repository = makeSupabaseAnalysisRunRepository(
+        client({
+          pinJobExecutionManifest: vi
+            .fn()
+            .mockRejectedValue(new Error('PRIVATE_SENTINEL')),
+        })
+      );
+      const error = await Effect.runPromise(
+        Effect.flip(
+          repository.pinJobExecutionManifest({
+            execution: contentExecution(),
+            configuration: configuration(),
+          })
+        )
+      );
+      expect(error._tag).toBe('AnalysisRunRepositoryUnavailableError');
+      expect(JSON.stringify(error)).not.toContain('PRIVATE_SENTINEL');
+    });
+  });
   const contentExecution = () =>
     Schema.decodeUnknownSync(AnalysisJobExecutionSchema)({
       jobId: '60000000-0000-4000-8000-000000000001',

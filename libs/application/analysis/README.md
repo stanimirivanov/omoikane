@@ -66,6 +66,22 @@ pin the provider, model, prompt, schema, evaluation, and generation policy
 in the execution manifest before invoking a model. No fallback model is implied
 by this contract. Invalid output is terminal under the current no-repair policy.
 
+`pinAnalysisJobExecutionManifest` now performs that pinning through the existing
+repository port. It builds the supported v1 artifact configuration, requires a
+matching leased processor version, then requests atomic create-or-observe.
+The database's stored configuration is authoritative. This single-adapter
+deployment accepts it only when the configured provider/model and every
+artifact/policy field match; otherwise it returns
+`UnsupportedDecisionExtractionConfigurationError`. It never overwrites an old
+manifest or silently selects another model. Version labels are decoded as
+bounded metadata so unsupported historical artifacts can be rejected explicitly.
+
+The manifest contains neither content nor prompt text nor credentials.
+Model invocation and completion are still separate; configuring a provider in
+the future must connect content preparation, manifest pinning, and extraction
+before persistence. The inventory worker does not pin Decision Forensics
+manifests. Source code retains the exact prompt artifact named by the manifest.
+
 Content preparation is separate from `extractDecisions` so manifest pinning can
 occur before a model call. The existing inventory processor continues to request
 identities only; it does not load content it does not consume. When the model

@@ -1,4 +1,9 @@
 import { Context, type Effect, type Option } from 'effect';
+import type {
+  AnalysisExecutionConfiguration,
+  AnalysisExecutionManifest,
+  AnalysisExecutionManifestError,
+} from './analysis-execution-manifest';
 import type { DecisionExtractionInput } from './decision-extraction';
 import type { AuthenticatedRequestIdentity } from '@omoikane/application/authentication';
 import type { ChannelId } from '@omoikane/domain/channel';
@@ -74,6 +79,14 @@ export interface FailAnalysisJobCommand {
 
 /** Capability-oriented persistence boundary for runs and durable dispatch. */
 export interface AnalysisRunRepository {
+  /** Atomically creates or observes immutable configuration; never replaces an existing manifest. */
+  readonly pinJobExecutionManifest: (command: {
+    readonly execution: AnalysisJobExecution;
+    readonly configuration: AnalysisExecutionConfiguration;
+  }) => Effect.Effect<
+    AnalysisExecutionManifest,
+    AnalysisExecutionManifestError
+  >;
   readonly start: (
     command: StartAnalysisRunCommand
   ) => Effect.Effect<AnalysisRun, AnalysisRunRepositoryError>;

@@ -57,8 +57,9 @@
     "db:types:generate": "node tools/database/generate-types.mjs",
     "db:types:check": "pnpm db:types:generate && git diff --exit-code -- libs/shared/database/src/generated/database.types.ts",
     "db:test": "supabase test db",
+    "db:test:manifest-concurrency": "node tools/database/verify-manifest-concurrency.mjs",
     "db:lint": "supabase db lint --level error",
-    "db:verify": "pnpm db:reset && pnpm db:lint && pnpm db:test && pnpm db:types:check",
+    "db:verify": "pnpm db:reset && pnpm db:lint && pnpm db:test && pnpm db:test:manifest-concurrency && pnpm db:types:check",
     "verify:all": "pnpm verify && pnpm db:verify && pnpm server:integration:verify && pnpm e2e:install && pnpm e2e",
     "dev": "pnpm db:prepare && nx run-many -t serve -p client server ai-worker --parallel=3"
   },
