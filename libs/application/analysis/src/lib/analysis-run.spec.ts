@@ -15,8 +15,10 @@ import {
   acquireNextAnalysisJob,
   completeAnalysisJobFailure,
   completeAnalysisJobSuccess,
+  DECISION_FORENSICS_PROCESSOR_VERSION,
   WORKSPACE_MESSAGE_INVENTORY_PROCESSOR_VERSION,
   processAnalysisJob,
+  processDecisionForensicsJob,
 } from './analysis-job-execution';
 import { getAnalysisRun } from './get-analysis-run';
 import { startAnalysisRun } from './start-analysis-run';
@@ -29,6 +31,12 @@ import {
   pinAnalysisJobExecutionManifest,
 } from './analysis-execution-manifest';
 import { buildDecisionExtractionRequest } from './extract-decisions';
+import {
+  DecisionExtractionUnavailableError,
+  DecisionExtractionInputSchema,
+  DecisionExtractorTag,
+  type DecisionExtractor,
+} from './decision-extraction';
 
 const run = {
   id: '30000000-0000-4000-8000-000000000001',
@@ -234,6 +242,170 @@ describe('Analysis Run use cases', () => {
         )
       )
     ).toEqual(error);
+  });
+
+  describe('Decision Forensics processing', () => {
+    const provider = { providerKind: 'ollama' as const, model: 'qwen3:8b' };
+    const execution = Schema.decodeUnknownSync(AnalysisJobExecutionSchema)({
+      jobId: '60000000-0000-4000-8000-000000000001',
+      attemptId: '70000000-0000-4000-8000-000000000001',
+      leaseToken: '80000000-0000-4000-8000-000000000001',
+      analysisRunId: run.id,
+      workspaceId: run.workspaceId,
+      kind: 'analysis.execute',
+      version: 1,
+      attemptNumber: 1,
+      leaseExpiresAt: new Date('2026-09-08T12:00:00Z'),
+      processorVersion: DECISION_FORENSICS_PROCESSOR_VERSION,
+      traceContext,
+    });
+    const extractionInput = Schema.decodeUnknownSync(
+      DecisionExtractionInputSchema
+    )({
+      analysisRunId: run.id,
+      sourceTruncated: false,
+      sources: [
+        {
+          messageId: '90000000-0000-4000-8000-000000000001',
+          messageRevisionId: '91000000-0000-4000-8000-000000000001',
+          authorUserId: run.requestedBy,
+          content: 'We decided to release Friday.',
+        },
+      ],
+    });
+    const source = extractionInput.sources.at(0);
+    if (!source) {
+      throw new Error(
+        'Expected one decoded Decision Forensics source fixture.'
+      );
+    }
+    const evidence = {
+      messageId: source.messageId,
+      messageRevisionId: source.messageRevisionId,
+    };
+
+    const processingLayer = (
+      testRepository: AnalysisRunRepository,
+      extract: DecisionExtractor['extract']
+    ) =>
+      Layer.merge(
+        layer(testRepository),
+        Layer.succeed(DecisionExtractorTag, { extract })
+      );
+
+    it('pins before loading content and builds a complete fingerprinted receipt', async () => {
+      const manifest = {
+        analysisRunId: run.id,
+        configuration: decisionExecutionConfiguration(provider),
+      };
+      const pinJobExecutionManifest = vi.fn(() => Effect.succeed(manifest));
+      const loadJobExtractionInput = vi.fn(() =>
+        Effect.succeed({
+          analysisRunId: run.id,
+          sourceTruncated: false,
+          sources: [source],
+        })
+      );
+      const extract = vi.fn(() =>
+        Effect.succeed({
+          output: {
+            schemaVersion: 'decision-forensics.result.v1' as const,
+            candidates: [
+              {
+                title: 'Release timing',
+                summary: 'The release will happen Friday.',
+                disposition: 'made' as const,
+                claims: [
+                  {
+                    text: 'Release on Friday.',
+                    evidence: [evidence],
+                  },
+                ],
+                assumptions: [],
+                participants: [
+                  {
+                    profileId: run.requestedBy,
+                    role: 'decision-maker' as const,
+                    evidence: [evidence],
+                  },
+                ],
+                confidence: 0.9,
+              },
+            ],
+          },
+          providerKind: 'ollama',
+          model: provider.model,
+          usage: { inputUnits: 42, outputUnits: 17 },
+        })
+      );
+      const fingerprint = vi.fn(() => 'a'.repeat(64));
+      const testRepository = repository({
+        pinJobExecutionManifest,
+        loadJobExtractionInput,
+      });
+
+      const receipt = await Effect.runPromise(
+        processDecisionForensicsJob({
+          execution,
+          provider,
+          fingerprint,
+        }).pipe(Effect.provide(processingLayer(testRepository, extract)))
+      );
+
+      expect(receipt).toMatchObject({
+        processorVersion: DECISION_FORENSICS_PROCESSOR_VERSION,
+        resultFingerprint: 'a'.repeat(64),
+        result: {
+          kind: 'decision-forensics',
+          model: provider.model,
+          sourceCount: 1,
+          usage: { inputUnits: 42, outputUnits: 17 },
+          candidates: [{ title: 'Release timing' }],
+        },
+      });
+      expect(pinJobExecutionManifest.mock.invocationCallOrder[0]).toBeLessThan(
+        loadJobExtractionInput.mock.invocationCallOrder[0] ?? 0
+      );
+      expect(loadJobExtractionInput.mock.invocationCallOrder[0]).toBeLessThan(
+        extract.mock.invocationCallOrder[0] ?? 0
+      );
+      expect(fingerprint).toHaveBeenCalledWith(JSON.stringify(receipt.result));
+    });
+
+    it('classifies provider availability as retryable without leaking details', async () => {
+      const configuration = decisionExecutionConfiguration(provider);
+      const testRepository = repository({
+        pinJobExecutionManifest: () =>
+          Effect.succeed({ analysisRunId: run.id, configuration }),
+        loadJobExtractionInput: () =>
+          Effect.succeed({
+            analysisRunId: run.id,
+            sourceTruncated: false,
+            sources: [source],
+          }),
+      });
+      const extract = vi.fn(() =>
+        Effect.fail(
+          new DecisionExtractionUnavailableError({ reason: 'timeout' })
+        )
+      );
+
+      await expect(
+        Effect.runPromise(
+          processDecisionForensicsJob({
+            execution,
+            provider,
+            fingerprint: () => 'unused',
+          }).pipe(
+            Effect.provide(processingLayer(testRepository, extract)),
+            Effect.flip
+          )
+        )
+      ).resolves.toMatchObject({
+        _tag: 'RetryableAnalysisProcessorError',
+        category: 'provider.timeout',
+      });
+    });
   });
   it('starts a run with validated explicit identity and workspace scope', async () => {
     const start = vi.fn(() => Effect.succeed(run));
@@ -462,9 +634,11 @@ describe('Analysis Run use cases', () => {
 
     await expect(
       Effect.runPromise(
-        acquireNextAnalysisJob({ workerId: 'worker-1', leaseSeconds: 60 }).pipe(
-          Effect.provide(layer(repository({ acquireNextJob })))
-        )
+        acquireNextAnalysisJob({
+          workerId: 'worker-1',
+          leaseSeconds: 60,
+          processorVersion: WORKSPACE_MESSAGE_INVENTORY_PROCESSOR_VERSION,
+        }).pipe(Effect.provide(layer(repository({ acquireNextJob }))))
       )
     ).resolves.toEqual(Option.some(execution));
     expect(acquireNextJob).toHaveBeenCalledExactlyOnceWith({

@@ -212,8 +212,9 @@ Implementation scope:
   source snapshot, authorized content loading, immutable execution manifests,
   extraction contract/conformance adapter, and the first Ollama protocol
   adapter completed. Atomic, manifest-matched structured candidate persistence
-  and the authorized result projection/API/UI are also complete; Node worker
-  transport/activation and human review remain.**
+  and the authorized result projection/API/UI are also complete. The Node worker
+  now activates the optional Ollama processor with bounded cancellation and
+  deterministic result fingerprints; human review remains.**
 - Persist evidence-backed proposed findings with confidence and model and prompt
   versions.
 - Provide a review UI where findings are confirmed, rejected, or superseded.

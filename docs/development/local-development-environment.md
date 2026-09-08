@@ -2,14 +2,14 @@
 
 > **Document ID:** OMO-DEV-001  
 > **Version:** 1.0  
-> **Status:** Approved target baseline, repository-reconciled 8 August 2026  
+> **Status:** Approved target baseline, repository-reconciled 8 September 2026
 > **Date:** 2 August 2026  
 > **Product:** Omoikane - The Collaborative Intelligence Platform
 
 This document defines the target local development environment. The server,
-worker, Supabase paths, and trace/metric observability profile are implemented.
-Sections that name Redis, Loki, or local AI remain future capability guidance
-until those artifacts have an implemented consumer.
+worker, Supabase paths, trace/metric observability profile, and optional local AI
+profile are implemented. Sections that name Redis or Loki remain future
+capability guidance until those artifacts have an implemented consumer.
 
 ## 1. Baseline workstation
 
@@ -67,10 +67,10 @@ flowchart LR
   worker -.-> ollama
 ```
 
-The server process, worker, Supabase access, and telemetry arrows are
-operational. Redis and Ollama remain target topology until consuming
-capabilities justify them. The initial Phase 4 worker uses the approved
-PostgreSQL-backed queue and does not require Redis.
+The server process, worker, Supabase access, telemetry, and opt-in Ollama arrows
+are operational. Redis remains target topology until a capability justifies it.
+The worker continues to use the approved PostgreSQL-backed queue and does not
+require Redis.
 
 ## 3. Target repository layout
 
@@ -173,9 +173,10 @@ SUPABASE_ANON_KEY=<from-supabase-status>
 SUPABASE_SECRET_KEY=<SECRET_KEY-from-pnpm-supabase-status>
 SUPABASE_DB_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
 
-OPENAI_API_KEY=
-ANTHROPIC_API_KEY=
-OLLAMA_BASE_URL=http://localhost:11434
+OMOIKANE_OLLAMA_BASE_URL=http://127.0.0.1:11434
+OMOIKANE_DECISION_FORENSICS_MODEL=qwen3:4b-instruct
+OMOIKANE_OLLAMA_TIMEOUT_MS=30000
+OMOIKANE_OLLAMA_MODEL=qwen3:4b-instruct
 ```
 
 ## 6. Target port allocation
@@ -214,7 +215,9 @@ command.
 | `pnpm dev:observability`        | Start the implemented Collector, Prometheus, Grafana, and Tempo trace/metric profile.          |
 | `pnpm dev:observability:status` | Inspect only the repository-owned observability profile.                                       |
 | `pnpm dev:observability:down`   | Stop that profile while preserving its named local volumes.                                    |
-| `pnpm dev:ai-local`             | Start Ollama and provision the documented local model.                                         |
+| `pnpm dev:ai-local`             | Start Ollama and provision the documented local Decision Forensics model.                      |
+| `pnpm dev:ai-local:status`      | Verify that the optional Ollama profile and configured local model are available.              |
+| `pnpm dev:ai-local:down`        | Stop the optional Ollama profile while preserving its model volume.                            |
 | `pnpm dev:status`               | Show implemented Node.js, pnpm, Docker, and local Supabase health.                             |
 | `pnpm e2e:verify`               | Reset the local platform and run the authenticated Chromium collaboration smoke path.          |
 | `pnpm dev:logs`                 | Follow infrastructure and implemented runtime logs.                                            |
@@ -299,6 +302,14 @@ open Grafana on port 3000. The default Prometheus host port is 9090; set
 `OMOIKANE_PROMETHEUS_PORT` before startup when that port is occupied. Server
 logs remain structured JSON on stdout, so Loki stays deferred until a log
 transport is implemented and consumed.
+
+The local AI profile is deliberately separate from `pnpm dev:up` and the
+default verification suite because its pinned container and model are optional
+resources. Run `pnpm dev:ai-local`, then configure the worker with
+`OMOIKANE_OLLAMA_BASE_URL=http://127.0.0.1:11434` and
+`OMOIKANE_DECISION_FORENSICS_MODEL=qwen3:4b-instruct`. The startup command waits
+for Ollama and provisions that model; `OMOIKANE_OLLAMA_MODEL` may select another
+model for provisioning, but it must match the worker model configuration.
 
 ## 10. Staged verification
 

@@ -26,6 +26,7 @@ const config: WorkerConfig = {
   readinessTimeoutMilliseconds: 1000,
   telemetryEndpoint: null,
   telemetryShutdownTimeoutMilliseconds: 1000,
+  decisionForensics: null,
 };
 
 const execution = {
@@ -85,11 +86,13 @@ describe('AnalysisWorkerRuntime', () => {
       completed();
       return Effect.succeed(completedJob);
     });
+    const acquireNextJob = vi.fn(() =>
+      Effect.succeed(
+        acquisitionCount++ === 0 ? Option.some(execution) : Option.none()
+      )
+    );
     const testRepository = repository({
-      acquireNextJob: () =>
-        Effect.succeed(
-          acquisitionCount++ === 0 ? Option.some(execution) : Option.none()
-        ),
+      acquireNextJob,
       completeJobSuccess,
     });
     const telemetry = new WorkerTelemetry(config);
@@ -105,6 +108,11 @@ describe('AnalysisWorkerRuntime', () => {
     await runtime.stop();
 
     expect(completeJobSuccess).toHaveBeenCalledOnce();
+    expect(acquireNextJob).toHaveBeenCalledWith({
+      workerId: config.workerId,
+      processorVersion: WORKSPACE_MESSAGE_INVENTORY_PROCESSOR_VERSION,
+      leaseSeconds: config.jobLeaseSeconds,
+    });
     expect(completeJobSuccess).toHaveBeenCalledWith(
       expect.objectContaining({
         execution,
@@ -196,7 +204,10 @@ describe('AnalysisWorkerRuntime', () => {
       config,
       telemetry,
       Layer.succeed(AnalysisRunRepositoryTag, testRepository),
-      processor
+      {
+        processorVersion: WORKSPACE_MESSAGE_INVENTORY_PROCESSOR_VERSION,
+        process: processor,
+      }
     );
 
     await runtime.initialize();
@@ -246,7 +257,10 @@ describe('AnalysisWorkerRuntime', () => {
       config,
       telemetry,
       Layer.succeed(AnalysisRunRepositoryTag, testRepository),
-      () => Effect.die('unexpected processor defect')
+      {
+        processorVersion: WORKSPACE_MESSAGE_INVENTORY_PROCESSOR_VERSION,
+        process: () => Effect.die('unexpected processor defect'),
+      }
     );
 
     await runtime.initialize();

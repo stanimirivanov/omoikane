@@ -330,22 +330,16 @@ Each item is a separate reviewable slice:
 3. **First hosted or local model adapter.** Implement one configured adapter in
    infrastructure and worker composition, including timeout, safe error
    mapping, metadata, and telemetry. Keep it disabled without configuration.
-   **Prerequisite completed:** `prepareAnalysisJobExtraction` loads authorized
-   frozen revision content through a worker-only RPC. The RPC reuses snapshot
-   acquisition's lease and access checks, including on retries. Provider/model
-   selection and model invocation remain. **Manifest prerequisite completed:**
-   a worker-only create-or-observe RPC pins immutable model, artifact, digest,
-   and policy metadata under a job lock. Retries observe the stored selection;
-   incompatible deployment configuration fails explicitly. Database and separate
-   concurrent-connection tests verify first-writer behavior and lease fencing.
-   **Protocol adapter completed:** the Ollama Layer maps the immutable prompt,
-   structured-output JSON Schema, zero-temperature/no-tools policy, response
-   metadata, token usage, and safe HTTP/transport failure categories. It also
-   rejects model substitution, tool calls, malformed JSON, and output-limit
-   termination. A narrow transport seam preserves the infrastructure library's
-   runtime-neutral type boundary. Node fetch composition and live job activation
-   remain paired with atomic candidate persistence so no model output is
-   silently discarded.
+   **Completed:** the Ollama Layer maps the immutable prompt, structured-output
+   JSON Schema, zero-temperature/no-tools policy, response metadata, token
+   usage, and safe failure categories. The Node worker supplies cancellable,
+   deadline-bounded HTTP and deterministic SHA-256 hashing. Application
+   orchestration pins the manifest before authorized content loading, validates
+   the provider response and evidence, and feeds one fingerprinted receipt into
+   atomic completion. Provider/model configuration is optional and all-or-none;
+   without it the worker retains the deterministic inventory processor. The
+   repository-owned local profile provisions a documented model while default
+   tests keep the network seam mocked.
 4. **Persist proposed decision candidates.** Add only the tables and atomic
    completion changes consumed by the validated extraction result.
    **Completed:** a dedicated lease-fenced command verifies the pinned manifest

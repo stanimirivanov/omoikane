@@ -6,9 +6,7 @@ import {
   claimNextAnalysisRunRequest,
   completeAnalysisJobSuccess,
   dispatchClaimedAnalysisRunRequest,
-  processAnalysisJob,
   type AnalysisFailureCategory,
-  type AnalysisJobProcessor,
   type AnalysisProcessorError,
   type AnalysisProcessorReceipt,
   type AnalysisJobExecution,
@@ -20,6 +18,10 @@ import {
 } from '@omoikane/infrastructure/analysis';
 import type { WorkerConfig } from '../config/worker-config';
 import type { WorkerTelemetry } from '../telemetry/worker-telemetry';
+import {
+  makeConfiguredAnalysisJobProcessor,
+  type ConfiguredAnalysisJobProcessor,
+} from './configured-analysis-job-processor';
 
 const safeFailure = (failure: unknown): string =>
   typeof failure === 'object' && failure !== null && '_tag' in failure
@@ -46,7 +48,9 @@ export class AnalysisWorkerRuntime {
     private readonly config: WorkerConfig,
     private readonly telemetry: WorkerTelemetry,
     repositoryLayer?: Layer.Layer<AnalysisRunRepository>,
-    private readonly processor: AnalysisJobProcessor = processAnalysisJob
+    private readonly processor: ConfiguredAnalysisJobProcessor = makeConfiguredAnalysisJobProcessor(
+      config
+    )
   ) {
     const clientLayer = makeSupabaseAnalysisClientLayer({
       url: config.supabaseUrl,
@@ -170,6 +174,7 @@ export class AnalysisWorkerRuntime {
       acquireNextAnalysisJob({
         workerId: this.config.workerId,
         leaseSeconds: this.config.jobLeaseSeconds,
+        processorVersion: this.processor.processorVersion,
       }).pipe(Effect.either)
     );
     if (Either.isLeft(acquisition)) {
@@ -197,7 +202,7 @@ export class AnalysisWorkerRuntime {
     >;
     try {
       processorResult = await this.managedRuntime.runPromise(
-        this.processor(execution).pipe(Effect.either)
+        this.processor.process(execution).pipe(Effect.either)
       );
     } catch {
       await this.completeFailure(
