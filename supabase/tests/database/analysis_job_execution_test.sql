@@ -44,12 +44,14 @@ LIMIT 1
 
 SET LOCAL ROLE service_role;
 
+-- Keep this lifecycle test's deterministic result fixture source-free while
+-- still exercising the required source-snapshot step before completion.
 SELECT analysis_run_id
 FROM public.start_analysis_run(
     :'workspace_workspace_id'::UUID,
     :'channel_channel_id'::UUID,
-    clock_timestamp() - INTERVAL '7 days',
-    clock_timestamp(),
+    clock_timestamp() - INTERVAL '100 years',
+    clock_timestamp() - INTERVAL '100 years' + INTERVAL '1 day',
     '10000000-0000-4000-8000-000000000001'::UUID,
     '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01',
     'omoikane=execute'
@@ -151,6 +153,14 @@ SELECT is(
 
 SET LOCAL ROLE service_role;
 
+SELECT count(*) AS source_count
+FROM public.load_analysis_job_sources(
+    :'attempt_analysis_job_id'::UUID,
+    :'attempt_analysis_job_attempt_id'::UUID,
+    :'attempt_lease_token'::UUID
+)
+\gset completed_snapshot_
+
 SELECT analysis_job_id
 FROM public.complete_analysis_job_success(
     :'attempt_analysis_job_id'::UUID,
@@ -241,12 +251,14 @@ SELECT ok(
     'The worker readiness command proves queue access without mutation'
 );
 
+-- Restart recovery is tested independently of source selection, so use the
+-- same intentionally empty historical range as the first lifecycle flow.
 SELECT analysis_run_id
 FROM public.start_analysis_run(
     :'workspace_workspace_id'::UUID,
     :'channel_channel_id'::UUID,
-    clock_timestamp() - INTERVAL '7 days',
-    clock_timestamp(),
+    clock_timestamp() - INTERVAL '100 years',
+    clock_timestamp() - INTERVAL '100 years' + INTERVAL '1 day',
     '10000000-0000-4000-8000-000000000001'::UUID,
     '00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01',
     NULL
@@ -315,6 +327,14 @@ SELECT throws_ok(
     'Analysis job lease is stale.',
     'The pre-restart worker is fenced from completion'
 );
+
+SELECT count(*) AS source_count
+FROM public.load_analysis_job_sources(
+    :'recovered_analysis_job_id'::UUID,
+    :'recovered_analysis_job_attempt_id'::UUID,
+    :'recovered_lease_token'::UUID
+)
+\gset recovered_snapshot_
 
 SELECT lives_ok(
     format(

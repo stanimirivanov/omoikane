@@ -4,7 +4,7 @@ import type {
   AnalysisJob,
   AnalysisJobExecution,
   AnalysisJobFailureCompletion,
-  AnalysisJobSource,
+  AnalysisJobSourceSnapshot,
   AnalysisProcessorReceipt,
 } from './analysis-job';
 import type { AnalysisJobExecutionRepositoryError } from './analysis-run-error';
@@ -59,10 +59,10 @@ export const acquireNextAnalysisJob = (
 
 const fingerprintSources = (
   execution: AnalysisJobExecution,
-  sources: ReadonlyArray<AnalysisJobSource>
+  snapshot: AnalysisJobSourceSnapshot
 ): string => {
   let hash = 0x811c9dc5;
-  for (const source of sources) {
+  for (const source of snapshot.sources) {
     for (const character of source.messageRevisionId) {
       hash ^= character.charCodeAt(0);
       hash = Math.imul(hash, 0x01000193);
@@ -71,7 +71,8 @@ const fingerprintSources = (
   return [
     WORKSPACE_MESSAGE_INVENTORY_PROCESSOR_VERSION,
     execution.analysisRunId,
-    sources.length,
+    snapshot.sources.length,
+    snapshot.sourceTruncated ? 'truncated' : 'complete',
     (hash >>> 0).toString(16).padStart(8, '0'),
   ].join('/');
 };
@@ -79,16 +80,16 @@ const fingerprintSources = (
 /** Builds the bounded inventory for the channel authorized by the run. */
 export const buildWorkspaceMessageInventory = (
   execution: AnalysisJobExecution,
-  availableSources: ReadonlyArray<AnalysisJobSource>
+  snapshot: AnalysisJobSourceSnapshot
 ): AnalysisProcessorReceipt => {
-  const sources = availableSources.slice(0, 100);
+  const sources = snapshot.sources;
   const participantCount = new Set(sources.map((source) => source.authorUserId))
     .size;
   const summary = `Analyzed ${sources.length} active message${sources.length === 1 ? '' : 's'} from ${participantCount} participant${participantCount === 1 ? '' : 's'}.`;
 
   return {
     processorVersion: WORKSPACE_MESSAGE_INVENTORY_PROCESSOR_VERSION,
-    resultFingerprint: fingerprintSources(execution, sources),
+    resultFingerprint: fingerprintSources(execution, snapshot),
     result: {
       kind: 'workspace-message-inventory',
       processorVersion: WORKSPACE_MESSAGE_INVENTORY_PROCESSOR_VERSION,
@@ -96,7 +97,7 @@ export const buildWorkspaceMessageInventory = (
       model: null,
       evaluationVersion: 'workspace-message-inventory.v1',
       sourceCount: sources.length,
-      sourceTruncated: availableSources.length > sources.length,
+      sourceTruncated: snapshot.sourceTruncated,
       sources: sources.map(({ messageId, messageRevisionId }) => ({
         messageId,
         messageRevisionId,
@@ -124,7 +125,9 @@ export const processAnalysisJob = (
   Effect.flatMap(AnalysisRunRepositoryTag, (repository) =>
     repository.loadJobSources({ execution })
   ).pipe(
-    Effect.map((sources) => buildWorkspaceMessageInventory(execution, sources)),
+    Effect.map((snapshot) =>
+      buildWorkspaceMessageInventory(execution, snapshot)
+    ),
     Effect.mapError(
       (error): AnalysisProcessorError =>
         error._tag === 'AnalysisSourceAccessRevokedError'

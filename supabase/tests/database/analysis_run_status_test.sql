@@ -179,12 +179,14 @@ SELECT is(
     'Failed status includes only its bounded failure category'
 );
 
+-- The status projection test uses a source-free result fixture but still
+-- follows the required snapshot-before-completion worker protocol.
 SELECT analysis_run_id
 FROM public.start_analysis_run(
     :'workspace_workspace_id'::UUID,
     :'channel_channel_id'::UUID,
-    clock_timestamp() - INTERVAL '7 days',
-    clock_timestamp(),
+    clock_timestamp() - INTERVAL '100 years',
+    clock_timestamp() - INTERVAL '100 years' + INTERVAL '1 day',
     '10000000-0000-4000-8000-000000000001'::UUID,
     '00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01',
     'omoikane=status-success'
@@ -206,6 +208,13 @@ FROM public.acquire_analysis_job(
     60
 )
 \gset success_attempt_
+SELECT count(*) AS source_count
+FROM public.load_analysis_job_sources(
+    :'success_attempt_analysis_job_id'::UUID,
+    :'success_attempt_analysis_job_attempt_id'::UUID,
+    :'success_attempt_lease_token'::UUID
+)
+\gset success_snapshot_
 SELECT *
 FROM public.complete_analysis_job_success(
     :'success_attempt_analysis_job_id'::UUID,

@@ -477,12 +477,14 @@ Each item is one reviewable vertical slice:
 6. **First result-bearing analysis.** Define source selection, immutable result
    records, findings, provider metadata, and evaluation fixtures in the product
    slice that consumes them. **Completed:** the deterministic workspace message
-   inventory selects at most the 100 newest active immutable revisions from the
-   run's selected channel, records
+   inventory now consumes an immutable source snapshot containing at most the
+   100 newest messages as they existed at the run's exclusive time boundary,
+   records
    exact evidence references and bounded processor metadata, and atomically
-   commits one proposed finding with terminal success. Access is rechecked when
-   the lease loads sources; evaluation fixtures cover empty, participant-count,
-   truncation, and deterministic replay cases.
+   commits one proposed finding with terminal success. The lease-fenced source
+   command creates that snapshot once, returns it chronologically on every
+   retry, and rechecks access before loading it. Evaluation fixtures cover
+   empty, participant-count, truncation, and deterministic replay cases.
 
 ## 15. Phase 4 exit criteria
 

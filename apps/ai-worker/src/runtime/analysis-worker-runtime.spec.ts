@@ -63,7 +63,7 @@ const repository = (
   dispatchOutboxEvent: () => Effect.die('unexpected dispatch'),
   checkWorkerReady: () => Effect.succeed(true),
   acquireNextJob: () => Effect.succeed(Option.none()),
-  loadJobSources: () => Effect.succeed([]),
+  loadJobSources: () => Effect.succeed({ sources: [], sourceTruncated: false }),
   completeJobSuccess: () => Effect.die('unexpected completion'),
   completeJobFailure: () => Effect.die('unexpected failed completion'),
   ...overrides,

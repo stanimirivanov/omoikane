@@ -316,7 +316,10 @@ Each item is a separate reviewable slice:
 
 1. **Immutable historical source snapshot.** Persist the bounded as-of-range
    message-revision set and make every retry observe the same identities. No
-   provider or candidate tables.
+   provider or candidate tables. **Completed:** the lease-fenced source command
+   atomically creates or observes a 100-message historical snapshot, preserves
+   truncation and chronological order, and constrains result evidence to the
+   frozen identities.
 2. **Extraction contract and deterministic conformance adapter.** Add the
    provider-independent port, schemas, typed failures, prompt artifact, and
    golden structured-output fixtures. No external network call.

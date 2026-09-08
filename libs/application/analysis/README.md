@@ -19,12 +19,14 @@ execution, receipt, and opaque-claim values are application contracts; lease
 ownership and transactional idempotency remain PostgreSQL responsibilities.
 Processor failures cross this boundary only as bounded retryable or terminal
 categories; unexpected defects are classified by the worker runtime. The
-deterministic processor consumes only immutable message/revision/author
-identities from the run's authorized channel, selects at most 100 sources, and produces a versioned proposed
-inventory finding without reading content or calling a model. Source selection
-uses the run's immutable inclusive-start, exclusive-end interval; the start use
-case rejects invalid, longer-than-31-day, and future-ending requests. Polling, worker
-lifecycle, hosted model execution, review workflows, and streaming remain
-outside this package.
+deterministic processor consumes at most 100 immutable
+message/revision/author identities from the run's authorized channel and
+produces a versioned proposed inventory finding without reading content or
+calling a model. Source selection
+returns one runtime-validated, retry-stable snapshot with its persisted
+truncation state. The snapshot uses the run's immutable inclusive-start,
+exclusive-end interval; the start use case rejects invalid, longer-than-31-day,
+and future-ending requests. Polling, worker lifecycle, hosted model execution,
+review workflows, and streaming remain outside this package.
 
 Verify with `pnpm exec nx run-many -t lint typecheck typecheck:test test -p analysis-application`.

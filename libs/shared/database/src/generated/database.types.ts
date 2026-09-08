@@ -431,6 +431,71 @@ export type Database = {
           },
         ]
       }
+      analysis_run_source_snapshot_items: {
+        Row: {
+          analysis_run_id: string
+          message_id: string
+          message_version_id: string
+          ordinal: number
+        }
+        Insert: {
+          analysis_run_id: string
+          message_id: string
+          message_version_id: string
+          ordinal: number
+        }
+        Update: {
+          analysis_run_id?: string
+          message_id?: string
+          message_version_id?: string
+          ordinal?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_run_source_snapshot__message_id_message_version_i_fkey"
+            columns: ["message_id", "message_version_id"]
+            isOneToOne: false
+            referencedRelation: "message_versions"
+            referencedColumns: ["message_id", "message_version_id"]
+          },
+          {
+            foreignKeyName: "analysis_run_source_snapshot_items_analysis_run_id_fkey"
+            columns: ["analysis_run_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_run_source_snapshots"
+            referencedColumns: ["analysis_run_id"]
+          },
+        ]
+      }
+      analysis_run_source_snapshots: {
+        Row: {
+          analysis_run_id: string
+          created_at: string
+          source_count: number
+          source_truncated: boolean
+        }
+        Insert: {
+          analysis_run_id: string
+          created_at?: string
+          source_count: number
+          source_truncated: boolean
+        }
+        Update: {
+          analysis_run_id?: string
+          created_at?: string
+          source_count?: number
+          source_truncated?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_run_source_snapshots_analysis_run_id_fkey"
+            columns: ["analysis_run_id"]
+            isOneToOne: true
+            referencedRelation: "analysis_runs"
+            referencedColumns: ["analysis_run_id"]
+          },
+        ]
+      }
       analysis_runs: {
         Row: {
           analysis_run_id: string
@@ -2190,6 +2255,7 @@ export type Database = {
           author_user_id: string
           message_id: string
           message_version_id: string
+          source_truncated: boolean
         }[]
       }
       mark_channel_read: {
