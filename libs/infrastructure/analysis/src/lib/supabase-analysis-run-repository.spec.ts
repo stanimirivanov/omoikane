@@ -1,6 +1,7 @@
-import { Effect, Option } from 'effect';
+import { Effect, Option, Schema } from 'effect';
 import { describe, expect, it, vi } from 'vitest';
 import type { PostgrestError } from '@supabase/supabase-js';
+import { AnalysisJobExecutionSchema } from '@omoikane/application/analysis';
 import type {
   AnalysisJobExecution,
   AnalysisRunOutboxClaim,
@@ -54,6 +55,9 @@ const client = (
   checkWorkerReady: vi.fn().mockResolvedValue({ data: true, error: null }),
   acquireNextJob: vi.fn().mockResolvedValue({ data: [], error: null }),
   loadJobSources: vi.fn().mockResolvedValue({ data: [], error: null }),
+  loadJobExtractionInput: vi
+    .fn()
+    .mockResolvedValue({ data: null, error: null }),
   completeJobSuccess: vi.fn().mockResolvedValue({ data: [], error: null }),
   completeJobFailure: vi.fn().mockResolvedValue({ data: [], error: null }),
   ...overrides,
@@ -76,6 +80,147 @@ const command = {
 >[0];
 
 describe('makeSupabaseAnalysisRunRepository', () => {
+  const contentExecution = () =>
+    Schema.decodeUnknownSync(AnalysisJobExecutionSchema)({
+      jobId: '60000000-0000-4000-8000-000000000001',
+      attemptId: '70000000-0000-4000-8000-000000000001',
+      leaseToken: '80000000-0000-4000-8000-000000000001',
+      analysisRunId: row.analysis_run_id,
+      workspaceId: row.workspace_id,
+      kind: 'analysis.execute',
+      version: 1,
+      attemptNumber: 1,
+      leaseExpiresAt: new Date('2026-09-08T12:00:00Z'),
+      processorVersion: 'analysis.workspace-message-inventory.v1',
+      traceContext: { traceparent: '', tracestate: null },
+    });
+  const contentInput = () => ({
+    analysisRunId: row.analysis_run_id,
+    sourceTruncated: false,
+    sources: [
+      {
+        messageId: '90000000-0000-4000-8000-000000000001',
+        messageRevisionId: '91000000-0000-4000-8000-000000000001',
+        authorUserId: row.requested_by,
+        content: 'PRIVATE_SOURCE_SENTINEL',
+      },
+    ],
+  });
+
+  it.each([false, true])(
+    'maps authorized content including empty=%s snapshots',
+    async (empty) => {
+      const input = {
+        ...contentInput(),
+        sources: empty ? [] : contentInput().sources,
+      };
+      const loadJobExtractionInput = vi
+        .fn()
+        .mockResolvedValue({ data: input, error: null });
+      const execution = contentExecution();
+      const repository = makeSupabaseAnalysisRunRepository(
+        client({ loadJobExtractionInput })
+      );
+      expect(
+        await Effect.runPromise(
+          repository.loadJobExtractionInput({ execution })
+        )
+      ).toEqual(input);
+      expect(loadJobExtractionInput).toHaveBeenCalledExactlyOnceWith({
+        p_job_id: execution.jobId,
+        p_attempt_id: execution.attemptId,
+        p_lease_token: execution.leaseToken,
+      });
+    }
+  );
+
+  it.each([
+    ['P0003', 'AnalysisJobLeaseLostError'],
+    ['P0004', 'AnalysisSourceAccessRevokedError'],
+    ['P0005', 'InvalidAnalysisRunDataError'],
+    ['XX000', 'AnalysisRunRepositoryUnavailableError'],
+  ])('translates content failure %s without raw details', async (code, tag) => {
+    const repository = makeSupabaseAnalysisRunRepository(
+      client({
+        loadJobExtractionInput: vi.fn().mockResolvedValue({
+          data: null,
+          error: {
+            code,
+            message: 'PRIVATE_SOURCE_SENTINEL',
+            details: 'PRIVATE_SOURCE_SENTINEL',
+            hint: '',
+          },
+        }),
+      })
+    );
+    const error = await Effect.runPromise(
+      Effect.flip(
+        repository.loadJobExtractionInput({ execution: contentExecution() })
+      )
+    );
+    expect(error._tag).toBe(tag);
+    expect(JSON.stringify(error)).not.toContain('PRIVATE_SOURCE_SENTINEL');
+  });
+
+  it('rejects malformed, excessive, or cross-run content without retaining source data', async () => {
+    for (const data of [
+      null,
+      {
+        ...contentInput(),
+        analysisRunId: '30000000-0000-4000-8000-000000000002',
+      },
+      { ...contentInput(), sourceTruncated: true },
+      {
+        ...contentInput(),
+        sources: [...contentInput().sources, ...contentInput().sources],
+      },
+      {
+        ...contentInput(),
+        sources: [
+          {
+            ...contentInput().sources[0],
+            content: 'PRIVATE_SOURCE_SENTINEL'.repeat(1000),
+          },
+        ],
+      },
+      {
+        ...contentInput(),
+        sources: [{ ...contentInput().sources[0], content: null }],
+      },
+    ]) {
+      const repository = makeSupabaseAnalysisRunRepository(
+        client({
+          loadJobExtractionInput: vi
+            .fn()
+            .mockResolvedValue({ data, error: null }),
+        })
+      );
+      const error = await Effect.runPromise(
+        Effect.flip(
+          repository.loadJobExtractionInput({ execution: contentExecution() })
+        )
+      );
+      expect(error._tag).toBe('InvalidAnalysisRunDataError');
+      expect(JSON.stringify(error)).not.toContain('PRIVATE_SOURCE_SENTINEL');
+    }
+  });
+
+  it('sanitizes rejected content transports', async () => {
+    const repository = makeSupabaseAnalysisRunRepository(
+      client({
+        loadJobExtractionInput: vi
+          .fn()
+          .mockRejectedValue(new Error('PRIVATE_SOURCE_SENTINEL')),
+      })
+    );
+    const error = await Effect.runPromise(
+      Effect.flip(
+        repository.loadJobExtractionInput({ execution: contentExecution() })
+      )
+    );
+    expect(error._tag).toBe('AnalysisRunRepositoryUnavailableError');
+    expect(JSON.stringify(error)).not.toContain('PRIVATE_SOURCE_SENTINEL');
+  });
   it('maps the canonical start result', async () => {
     const start = vi.fn().mockResolvedValue({ data: [row], error: null });
     const repository = makeSupabaseAnalysisRunRepository(client({ start }));

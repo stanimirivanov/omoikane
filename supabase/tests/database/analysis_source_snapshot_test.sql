@@ -1,7 +1,7 @@
 BEGIN;
 
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
-SELECT plan(18);
+SELECT plan(27);
 
 SELECT has_table(
     'public',
@@ -113,6 +113,30 @@ FROM public.acquire_analysis_job(
 )
 \gset attempt_
 
+SELECT public.load_analysis_job_extraction_input(
+    :'attempt_analysis_job_id', :'attempt_analysis_job_attempt_id', :'attempt_lease_token'
+) AS input
+\gset original_content_
+
+SELECT is(
+    :'original_content_input'::JSONB,
+    jsonb_build_object(
+        'analysisRunId', :'run_analysis_run_id',
+        'sourceTruncated', FALSE,
+        'sources', jsonb_build_array(
+            jsonb_build_object('messageId', 'a0000000-0000-4000-8000-000000000001',
+                'messageRevisionId', 'a1000000-0000-4000-8000-000000000012',
+                'authorUserId', '10000000-0000-4000-8000-000000000001',
+                'content', 'revision before the boundary'),
+            jsonb_build_object('messageId', 'a0000000-0000-4000-8000-000000000003',
+                'messageRevisionId', 'a1000000-0000-4000-8000-000000000031',
+                'authorUserId', '10000000-0000-4000-8000-000000000001',
+                'content', 'deleted after the boundary')
+        )
+    ),
+    'Content loading creates the snapshot and returns exact historical content in source order'
+);
+
 SELECT results_eq(
     format(
         'SELECT message_id, message_version_id, source_truncated FROM public.load_analysis_job_sources(%L, %L, %L)',
@@ -195,6 +219,21 @@ FROM public.acquire_analysis_job(
     60
 )
 \gset recovered_attempt_
+
+SELECT is(
+    public.load_analysis_job_extraction_input(
+        :'recovered_attempt_analysis_job_id', :'recovered_attempt_analysis_job_attempt_id',
+        :'recovered_attempt_lease_token'
+    ),
+    :'original_content_input'::JSONB,
+    'A recovered lease receives identical content despite later and backdated revisions'
+);
+SELECT throws_ok(
+    format('SELECT public.load_analysis_job_extraction_input(%L, %L, %L)',
+        :'attempt_analysis_job_id', :'attempt_analysis_job_attempt_id', :'attempt_lease_token'),
+    'P0003', 'Analysis job lease is stale.',
+    'A superseded attempt cannot load snapshot content'
+);
 
 SELECT results_eq(
     format(
@@ -464,6 +503,73 @@ SELECT results_eq(
     $$SELECT generate_series(2, 101)$$,
     'The selected newest sources are persisted in chronological order'
 );
+
+SET LOCAL ROLE service_role;
+SELECT ok(
+    (
+        SELECT (input->>'sourceTruncated')::BOOLEAN
+            AND jsonb_array_length(input->'sources') = 100
+        FROM (SELECT public.load_analysis_job_extraction_input(
+            :'bulk_attempt_analysis_job_id', :'bulk_attempt_analysis_job_attempt_id', :'bulk_attempt_lease_token'
+        ) AS input) AS loaded
+    ),
+    'Content preserves the persisted 100-source truncation boundary'
+);
+RESET ROLE;
+
+SELECT ok(NOT has_function_privilege('anon',
+    'public.load_analysis_job_extraction_input(uuid,uuid,uuid)', 'EXECUTE'),
+    'Anonymous clients cannot invoke content loading');
+SELECT ok(NOT has_function_privilege('authenticated',
+    'public.load_analysis_job_extraction_input(uuid,uuid,uuid)', 'EXECUTE'),
+    'Authenticated browser clients cannot invoke content loading');
+
+SET LOCAL ROLE service_role;
+SELECT analysis_run_id FROM public.start_analysis_run(
+    :'workspace_workspace_id', :'channel_channel_id',
+    '1926-01-01T00:00:00Z', '1926-01-02T00:00:00Z',
+    '10000000-0000-4000-8000-000000000001',
+    '00-11111111111111111111111111111111-2222222222222222-01', NULL
+) \gset empty_run_
+SELECT analysis_run_outbox_event_id, claim_token
+FROM public.claim_analysis_run_outbox_event('empty-content-dispatcher') \gset empty_outbox_
+SELECT analysis_job_id FROM public.dispatch_analysis_run_outbox_event(
+    :'empty_outbox_analysis_run_outbox_event_id', :'empty_outbox_claim_token'
+) \gset empty_job_
+SELECT * FROM public.acquire_analysis_job('empty-content-worker', 'analysis.workspace-message-inventory.v1', 60)
+\gset empty_attempt_
+SELECT is(
+    public.load_analysis_job_extraction_input(
+        :'empty_attempt_analysis_job_id', :'empty_attempt_analysis_job_attempt_id', :'empty_attempt_lease_token'
+    ),
+    jsonb_build_object('analysisRunId', :'empty_run_analysis_run_id', 'sourceTruncated', FALSE, 'sources', '[]'::JSONB),
+    'An empty snapshot returns a complete extraction input rather than null'
+);
+RESET ROLE;
+
+UPDATE public.channel_heads SET channel_status = 'archived'
+WHERE channel_id = :'channel_channel_id';
+SET LOCAL ROLE service_role;
+SELECT throws_ok(
+    format('SELECT public.load_analysis_job_extraction_input(%L, %L, %L)',
+        :'bulk_attempt_analysis_job_id', :'bulk_attempt_analysis_job_attempt_id', :'bulk_attempt_lease_token'),
+    'P0004', 'Analysis source access was revoked.',
+    'Archival blocks content loading even after snapshot creation'
+);
+RESET ROLE;
+UPDATE public.channel_heads SET channel_status = 'active'
+WHERE channel_id = :'channel_channel_id';
+UPDATE public.workspace_membership_heads SET membership_status = 'removed'
+WHERE workspace_id = :'workspace_workspace_id'
+    AND user_id = '10000000-0000-4000-8000-000000000001';
+SET LOCAL ROLE service_role;
+SELECT throws_ok(
+    format('SELECT public.load_analysis_job_extraction_input(%L, %L, %L)',
+        :'recovered_attempt_analysis_job_id', :'recovered_attempt_analysis_job_attempt_id', :'recovered_attempt_lease_token'),
+    'P0004', 'Analysis source access was revoked.',
+    'Membership removal blocks content loading even after snapshot creation'
+);
+RESET ROLE;
 
 SELECT * FROM finish();
 ROLLBACK;

@@ -21,6 +21,9 @@ import {
 import { getAnalysisRun } from './get-analysis-run';
 import { startAnalysisRun } from './start-analysis-run';
 import { dispatchNextAnalysisRun } from './dispatch-next-analysis-run';
+import { prepareAnalysisJobExtraction } from './prepare-analysis-job-extraction';
+import { AnalysisJobExecutionSchema } from './analysis-job';
+import { AnalysisSourceAccessRevokedError } from './analysis-run-error';
 
 const run = {
   id: '30000000-0000-4000-8000-000000000001',
@@ -59,12 +62,57 @@ const repository = (
   checkWorkerReady: () => Effect.die('unexpected worker readiness'),
   acquireNextJob: () => Effect.die('unexpected job acquisition'),
   loadJobSources: () => Effect.die('unexpected source load'),
+  loadJobExtractionInput: () => Effect.die('unexpected content load'),
   completeJobSuccess: () => Effect.die('unexpected job completion'),
   completeJobFailure: () => Effect.die('unexpected failed job completion'),
   ...overrides,
 });
 
 describe('Analysis Run use cases', () => {
+  it('prepares lease-owned extraction content and propagates access revocation', async () => {
+    const execution = Schema.decodeUnknownSync(AnalysisJobExecutionSchema)({
+      jobId: '60000000-0000-4000-8000-000000000001',
+      attemptId: '70000000-0000-4000-8000-000000000001',
+      leaseToken: '80000000-0000-4000-8000-000000000001',
+      analysisRunId: run.id,
+      workspaceId: run.workspaceId,
+      kind: 'analysis.execute',
+      version: 1,
+      attemptNumber: 1,
+      leaseExpiresAt: new Date('2026-09-08T12:00:00Z'),
+      processorVersion: WORKSPACE_MESSAGE_INVENTORY_PROCESSOR_VERSION,
+      traceContext,
+    });
+    const input = {
+      analysisRunId: run.id,
+      sourceTruncated: false,
+      sources: [],
+    };
+    const loadJobExtractionInput = vi.fn(() => Effect.succeed(input));
+    expect(
+      await Effect.runPromise(
+        prepareAnalysisJobExtraction(execution).pipe(
+          Effect.provide(layer(repository({ loadJobExtractionInput })))
+        )
+      )
+    ).toEqual(input);
+    expect(loadJobExtractionInput).toHaveBeenCalledExactlyOnceWith({
+      execution,
+    });
+    const error = new AnalysisSourceAccessRevokedError();
+    expect(
+      await Effect.runPromise(
+        prepareAnalysisJobExtraction(execution).pipe(
+          Effect.provide(
+            layer(
+              repository({ loadJobExtractionInput: () => Effect.fail(error) })
+            )
+          ),
+          Effect.flip
+        )
+      )
+    ).toEqual(error);
+  });
   it('starts a run with validated explicit identity and workspace scope', async () => {
     const start = vi.fn(() => Effect.succeed(run));
     const testRepository = repository({ start });

@@ -11,6 +11,13 @@ source identities from only the selected channel, and atomically commits the
 result, evidence, finding, attempt, and terminal fact. The source RPC creates
 or observes one immutable historical snapshot per run, so retries retain exact
 revision identities, chronological order, and truncation metadata.
+The separate `load_analysis_job_extraction_input` RPC first invokes that same
+lease/access gate, then joins frozen revision IDs to immutable message content.
+It returns one JSON input including the Analysis Run ID and truncation flag,
+even when the source array is empty. The adapter validates the extraction schema
+and checks the returned run ID against the execution. Neither message content
+nor raw transport/schema errors are attached to its failure values or spans.
+Browser roles cannot invoke this content capability.
 Only messages created at or after the inclusive start and before the exclusive
 end can become result sources. Edits and deletion are resolved as they existed
 at that exclusive boundary. PostgreSQL independently rejects missing,

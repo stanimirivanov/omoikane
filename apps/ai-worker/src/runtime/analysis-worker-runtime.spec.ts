@@ -64,6 +64,7 @@ const repository = (
   checkWorkerReady: () => Effect.succeed(true),
   acquireNextJob: () => Effect.succeed(Option.none()),
   loadJobSources: () => Effect.succeed({ sources: [], sourceTruncated: false }),
+  loadJobExtractionInput: () => Effect.die('unexpected content load'),
   completeJobSuccess: () => Effect.die('unexpected completion'),
   completeJobFailure: () => Effect.die('unexpected failed completion'),
   ...overrides,

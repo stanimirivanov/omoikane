@@ -1,4 +1,5 @@
 import { Context, type Effect, type Option } from 'effect';
+import type { DecisionExtractionInput } from './decision-extraction';
 import type { AuthenticatedRequestIdentity } from '@omoikane/application/authentication';
 import type { ChannelId } from '@omoikane/domain/channel';
 import type {
@@ -107,6 +108,13 @@ export interface AnalysisRunRepository {
   readonly completeJobSuccess: (
     command: CompleteAnalysisJobCommand
   ) => Effect.Effect<AnalysisJob, AnalysisJobExecutionRepositoryError>;
+  /** Rechecks lease and requester access before loading exact snapshot content, including empty snapshots. */
+  readonly loadJobExtractionInput: (
+    command: LoadAnalysisJobSourcesCommand
+  ) => Effect.Effect<
+    DecisionExtractionInput,
+    AnalysisJobExecutionRepositoryError
+  >;
   readonly completeJobFailure: (
     command: FailAnalysisJobCommand
   ) => Effect.Effect<

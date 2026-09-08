@@ -56,7 +56,18 @@ least one cited source; this intentionally excludes inferred silent participants
 Empty candidate collections are valid. Schema errors are translated without
 retaining raw content or provider output in error payloads.
 
-Future worker integration must load content through an authorized capability
-and pin the provider, model, prompt, schema, evaluation, and generation policy
+The worker-facing `prepareAnalysisJobExtraction` use case now loads content
+through `AnalysisRunRepository.loadJobExtractionInput`. It returns validated
+`DecisionExtractionInput` under the current lease, rechecking requester access.
+Empty snapshots remain valid inputs. Invalid/missing content and contract-limit
+violations produce `InvalidAnalysisRunDataError`; access denial and stale leases
+retain their existing typed failures. Future worker integration must
+pin the provider, model, prompt, schema, evaluation, and generation policy
 in the execution manifest before invoking a model. No fallback model is implied
 by this contract. Invalid output is terminal under the current no-repair policy.
+
+Content preparation is separate from `extractDecisions` so manifest pinning can
+occur before a model call. The existing inventory processor continues to request
+identities only; it does not load content it does not consume. When the model
+processor is wired, invalid snapshot data must be terminal, unavailable storage
+retryable, and lost leases must stop the attempt.
