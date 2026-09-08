@@ -24,6 +24,11 @@ import { dispatchNextAnalysisRun } from './dispatch-next-analysis-run';
 import { prepareAnalysisJobExtraction } from './prepare-analysis-job-extraction';
 import { AnalysisJobExecutionSchema } from './analysis-job';
 import { AnalysisSourceAccessRevokedError } from './analysis-run-error';
+import {
+  decisionExecutionConfiguration,
+  pinAnalysisJobExecutionManifest,
+} from './analysis-execution-manifest';
+import { buildDecisionExtractionRequest } from './extract-decisions';
 
 const run = {
   id: '30000000-0000-4000-8000-000000000001',
@@ -63,12 +68,129 @@ const repository = (
   acquireNextJob: () => Effect.die('unexpected job acquisition'),
   loadJobSources: () => Effect.die('unexpected source load'),
   loadJobExtractionInput: () => Effect.die('unexpected content load'),
+  pinJobExecutionManifest: () => Effect.die('unexpected manifest pin'),
   completeJobSuccess: () => Effect.die('unexpected job completion'),
   completeJobFailure: () => Effect.die('unexpected failed job completion'),
   ...overrides,
 });
 
 describe('Analysis Run use cases', () => {
+  describe('execution manifest pinning', () => {
+    const provider = { providerKind: 'deterministic', model: 'conformance.v1' };
+    const manifestExecution = () =>
+      Schema.decodeUnknownSync(AnalysisJobExecutionSchema)({
+        jobId: '60000000-0000-4000-8000-000000000001',
+        attemptId: '70000000-0000-4000-8000-000000000001',
+        leaseToken: '80000000-0000-4000-8000-000000000001',
+        analysisRunId: run.id,
+        workspaceId: run.workspaceId,
+        kind: 'analysis.execute',
+        version: 1,
+        attemptNumber: 1,
+        leaseExpiresAt: new Date('2026-09-08T12:00:00Z'),
+        processorVersion: 'analysis.decision-forensics.v1',
+        traceContext,
+      });
+    it('pins complete metadata consistent with the rendered extraction request', async () => {
+      const execution = manifestExecution();
+      const configuration = decisionExecutionConfiguration(provider);
+      const manifest = { analysisRunId: run.id, configuration };
+      const pinJobExecutionManifest = vi.fn(() => Effect.succeed(manifest));
+      expect(
+        await Effect.runPromise(
+          pinAnalysisJobExecutionManifest(execution, provider).pipe(
+            Effect.provide(layer(repository({ pinJobExecutionManifest })))
+          )
+        )
+      ).toEqual(manifest);
+      expect(pinJobExecutionManifest).toHaveBeenCalledExactlyOnceWith({
+        execution,
+        configuration,
+      });
+      const request = buildDecisionExtractionRequest({
+        analysisRunId: run.id,
+        sources: [],
+        sourceTruncated: false,
+      });
+      expect(configuration.generationPolicy).toEqual(request.generationPolicy);
+      expect(configuration.promptDigest).toBe(request.prompt.digest);
+      expect(configuration.promptVersion).toBe(request.prompt.version);
+      expect(configuration.resultSchemaVersion).toBe(request.schemaVersion);
+    });
+    it.each([
+      'providerKind',
+      'model',
+      'processorVersion',
+      'resultSchemaVersion',
+      'promptVersion',
+      'evaluationVersion',
+      'promptDigest',
+    ] as const)(
+      'rejects unsupported pinned %s without replacing it',
+      async (field) => {
+        const configuration = {
+          ...decisionExecutionConfiguration(provider),
+          [field]: field === 'promptDigest' ? '0'.repeat(64) : 'other.v2',
+        };
+        const pinJobExecutionManifest = vi.fn(() =>
+          Effect.succeed({ analysisRunId: run.id, configuration })
+        );
+        expect(
+          await Effect.runPromise(
+            pinAnalysisJobExecutionManifest(manifestExecution(), provider).pipe(
+              Effect.provide(layer(repository({ pinJobExecutionManifest }))),
+              Effect.flip
+            )
+          )
+        ).toMatchObject({
+          _tag: 'UnsupportedDecisionExtractionConfigurationError',
+        });
+        expect(pinJobExecutionManifest).toHaveBeenCalledTimes(1);
+      }
+    );
+    it('rejects invalid provider labels and mismatched processors before repository access', async () => {
+      const pinJobExecutionManifest = vi.fn(() => Effect.die('must not pin'));
+      for (const [execution, selected] of [
+        [manifestExecution(), { ...provider, model: '  ' }],
+        [
+          {
+            ...manifestExecution(),
+            processorVersion: WORKSPACE_MESSAGE_INVENTORY_PROCESSOR_VERSION,
+          },
+          provider,
+        ],
+      ] as const) {
+        expect(
+          await Effect.runPromise(
+            pinAnalysisJobExecutionManifest(execution, selected).pipe(
+              Effect.provide(layer(repository({ pinJobExecutionManifest }))),
+              Effect.flip
+            )
+          )
+        ).toMatchObject({
+          _tag: 'UnsupportedDecisionExtractionConfigurationError',
+        });
+      }
+      expect(pinJobExecutionManifest).not.toHaveBeenCalled();
+    });
+    it('preserves typed lease/access repository failures', async () => {
+      const error = new AnalysisSourceAccessRevokedError();
+      expect(
+        await Effect.runPromise(
+          pinAnalysisJobExecutionManifest(manifestExecution(), provider).pipe(
+            Effect.provide(
+              layer(
+                repository({
+                  pinJobExecutionManifest: () => Effect.fail(error),
+                })
+              )
+            ),
+            Effect.flip
+          )
+        )
+      ).toEqual(error);
+    });
+  });
   it('prepares lease-owned extraction content and propagates access revocation', async () => {
     const execution = Schema.decodeUnknownSync(AnalysisJobExecutionSchema)({
       jobId: '60000000-0000-4000-8000-000000000001',

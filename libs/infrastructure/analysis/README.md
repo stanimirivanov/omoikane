@@ -18,6 +18,16 @@ even when the source array is empty. The adapter validates the extraction schema
 and checks the returned run ID against the execution. Neither message content
 nor raw transport/schema errors are attached to its failure values or spans.
 Browser roles cannot invoke this content capability.
+
+`pin_analysis_job_execution_manifest` locks the current job, checks lease
+expiry after acquiring the lock, and rechecks active access. It inserts one
+immutable manifest per run or returns the existing value. Concurrent callers
+serialize on the job; the primary key also enforces one record per run.
+The mapper validates returned metadata without substituting the proposed
+configuration. Application policy decides whether this deployment supports it.
+Direct table access is revoked even for the worker role. Version 1 allows only
+the current no-tools/no-repair generation settings; changing policy requires
+an explicit schema migration and a supported application artifact.
 Only messages created at or after the inclusive start and before the exclusive
 end can become result sources. Edits and deletion are resolved as they existed
 at that exclusive boundary. PostgreSQL independently rejects missing,

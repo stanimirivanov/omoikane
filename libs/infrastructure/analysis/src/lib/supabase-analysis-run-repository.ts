@@ -1,6 +1,10 @@
 import { Effect, Option, Schema } from 'effect';
 import {
   AnalysisRunNotAccessibleError,
+  AnalysisExecutionManifestSchema,
+  UnsupportedDecisionExtractionConfigurationError,
+  type AnalysisExecutionManifest,
+  type AnalysisExecutionManifestError,
   DecisionExtractionInputSchema,
   type DecisionExtractionInput,
   AnalysisRunOutboxClaimLostError,
@@ -394,6 +398,67 @@ const mapFailedJob = (
 export const makeSupabaseAnalysisRunRepository = (
   client: SupabaseAnalysisClient
 ): AnalysisRunRepository => ({
+  pinJobExecutionManifest: ({ execution, configuration }) =>
+    Effect.tryPromise({
+      try: () =>
+        client.pinJobExecutionManifest({
+          p_job_id: execution.jobId,
+          p_attempt_id: execution.attemptId,
+          p_lease_token: execution.leaseToken,
+          p_configuration: {
+            ...configuration,
+            generationPolicy: { ...configuration.generationPolicy },
+          },
+        }),
+      catch: () =>
+        new AnalysisRunRepositoryUnavailableError({
+          operation: 'pinManifest',
+          cause: 'Manifest transport failed.',
+        }),
+    }).pipe(
+      Effect.flatMap(
+        (
+          result
+        ): Effect.Effect<
+          AnalysisExecutionManifest,
+          AnalysisExecutionManifestError
+        > => {
+          if (result.error?.code === 'P0003')
+            return Effect.fail(new AnalysisJobLeaseLostError());
+          if (result.error?.code === 'P0004')
+            return Effect.fail(new AnalysisSourceAccessRevokedError());
+          if (result.error?.code === '22023')
+            return Effect.fail(
+              new UnsupportedDecisionExtractionConfigurationError()
+            );
+          if (result.error !== null)
+            return Effect.fail(
+              new AnalysisRunRepositoryUnavailableError({
+                operation: 'pinManifest',
+                cause: 'Manifest command failed.',
+              })
+            );
+          return Schema.decodeUnknown(AnalysisExecutionManifestSchema)(
+            result.data,
+            { onExcessProperty: 'error' }
+          ).pipe(
+            Effect.mapError(
+              () => new UnsupportedDecisionExtractionConfigurationError()
+            ),
+            Effect.flatMap((manifest) =>
+              manifest.analysisRunId === execution.analysisRunId
+                ? Effect.succeed(manifest)
+                : Effect.fail(
+                    new InvalidAnalysisRunDataError({
+                      cause: 'Manifest belongs to another run.',
+                    })
+                  )
+            )
+          );
+        }
+      ),
+      Effect.withSpan('supabase.analysis_job.pin_manifest', { kind: 'client' })
+    ),
   start: ({ identity, workspaceId, channelId, timeRange, traceContext }) =>
     execute('start', () =>
       client.start({
