@@ -332,8 +332,9 @@ Its runtime exposes dependency-free liveness at
 `http://localhost:3333/health/live`, readiness at
 `http://localhost:3333/health/ready`, and OpenAPI JSON at
 `http://localhost:3333/openapi.json`. Its first trusted capability accepts and
-observes workspace-authorized Analysis Runs through Supabase without moving
-existing collaboration operations behind the server. See
+observes workspace-authorized Analysis Runs through Supabase, including
+validated inventory and proposed Decision Forensics result projections, without
+moving existing collaboration operations behind the server. See
 [`apps/server/README.md`](apps/server/README.md) for its boundary and commands.
 
 Seeded users

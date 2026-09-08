@@ -61,18 +61,117 @@
         @case ('succeeded') {
           <p>Run {{ run.id }} completed successfully.</p>
           @if (run.result; as result) {
-            <article aria-labelledby="analysis-result-title">
-              <h4 id="analysis-result-title">{{ result.finding.title }}</h4>
-              <p>{{ result.finding.summary }}</p>
-              <p>
-                Evidence: {{ result.sourceCount }} immutable message
-                {{ result.sourceCount === 1 ? 'revision' : 'revisions' }}.
-                @if (result.sourceTruncated) {
-                  The inventory was limited to the 100 newest active messages.
-                }
-              </p>
-              <p>Status: proposed</p>
-            </article>
+            @switch (result.kind) {
+              @case ('workspace-message-inventory') {
+                <article aria-labelledby="analysis-result-title">
+                  <h4 id="analysis-result-title">{{ result.finding.title }}</h4>
+                  <p>{{ result.finding.summary }}</p>
+                  <p>
+                    Evidence: {{ result.sourceCount }} immutable message
+                    {{ result.sourceCount === 1 ? 'revision' : 'revisions' }}.
+                    @if (result.sourceTruncated) {
+                      The inventory was limited to the 100 newest active
+                      messages.
+                    }
+                  </p>
+                  <p>Status: proposed</p>
+                </article>
+              }
+              @case ('decision-forensics') {
+                <section aria-labelledby="decision-forensics-title">
+                  <h4 id="decision-forensics-title">Decision Forensics</h4>
+                  <p>
+                    This is AI-generated proposed output requiring human review.
+                  </p>
+                  <p>{{ result.summary }}</p>
+                  <p>
+                    Model: {{ result.model }}. Usage:
+                    {{ result.usage.inputUnits ?? 'unreported' }} input units,
+                    {{ result.usage.outputUnits ?? 'unreported' }} output units.
+                  </p>
+                  @if (result.candidates.length === 0) {
+                    <p>No supported decision candidates were found.</p>
+                  } @else {
+                    <ol>
+                      @for (
+                        candidate of result.candidates;
+                        track candidate.id
+                      ) {
+                        <li>
+                          <article
+                            [attr.aria-labelledby]="
+                              'decision-candidate-' + candidate.id
+                            "
+                          >
+                            <h5 [id]="'decision-candidate-' + candidate.id">
+                              {{ candidate.title }}
+                            </h5>
+                            <p>{{ candidate.summary }}</p>
+                            <p>Disposition: {{ candidate.disposition }}.</p>
+                            <p>
+                              Model-assessed confidence:
+                              {{ candidate.confidence }} (0 to 1).
+                            </p>
+                            <p>Status: {{ candidate.status }}.</p>
+
+                            <h6>Claims</h6>
+                            <ul>
+                              @for (claim of candidate.claims; track $index) {
+                                <li>
+                                  <p>{{ claim.text }}</p>
+                                  <app-analysis-evidence-links
+                                    [sources]="claim.evidence"
+                                  />
+                                </li>
+                              }
+                            </ul>
+
+                            @if (candidate.assumptions.length > 0) {
+                              <h6>Assumptions</h6>
+                              <ul>
+                                @for (
+                                  assumption of candidate.assumptions;
+                                  track $index
+                                ) {
+                                  <li>
+                                    <p>{{ assumption.text }}</p>
+                                    <app-analysis-evidence-links
+                                      [sources]="assumption.evidence"
+                                    />
+                                  </li>
+                                }
+                              </ul>
+                            }
+
+                            @if (candidate.participants.length > 0) {
+                              <h6>Participants</h6>
+                              <ul>
+                                @for (
+                                  participant of candidate.participants;
+                                  track participant.profileId +
+                                    '/' +
+                                    participant.role
+                                ) {
+                                  <li>
+                                    <p>
+                                      {{ participant.profileId }}:
+                                      {{ participant.role }}
+                                    </p>
+                                    <app-analysis-evidence-links
+                                      [sources]="participant.evidence"
+                                    />
+                                  </li>
+                                }
+                              </ul>
+                            }
+                          </article>
+                        </li>
+                      }
+                    </ol>
+                  }
+                </section>
+              }
+            }
           }
         }
         @case ('failed') {

@@ -1,6 +1,6 @@
 import { Schema } from 'effect';
 import { ProfileIdSchema } from '@omoikane/domain/profile';
-import { AnalysisResultSourceSchema } from './analysis-result';
+import { AnalysisResultSourceSchema } from './analysis-result-source';
 
 const text = (length: number) =>
   Schema.String.pipe(
@@ -15,22 +15,28 @@ const evidence = Schema.Array(AnalysisResultSourceSchema).pipe(
       new Set(items.map((item) => item.messageId)).size === items.length
   )
 );
-const assertion = Schema.Struct({ text: text(500), evidence });
+export const DecisionAssertionSchema = Schema.Struct({
+  text: text(500),
+  evidence,
+});
+
+export const DecisionParticipantSchema = Schema.Struct({
+  profileId: ProfileIdSchema,
+  role: Schema.Literal('proposer', 'decision-maker', 'contributor'),
+  evidence,
+});
 
 /** Proposed interpretation of conversation evidence; identity and review belong to persistence. */
 export const DecisionCandidateSchema = Schema.Struct({
   title: text(120),
   summary: text(1000),
   disposition: Schema.Literal('made', 'deferred', 'changed', 'rejected'),
-  claims: Schema.Array(assertion).pipe(Schema.minItems(1), Schema.maxItems(20)),
-  assumptions: Schema.Array(assertion).pipe(Schema.maxItems(20)),
-  participants: Schema.Array(
-    Schema.Struct({
-      profileId: ProfileIdSchema,
-      role: Schema.Literal('proposer', 'decision-maker', 'contributor'),
-      evidence,
-    })
-  ).pipe(
+  claims: Schema.Array(DecisionAssertionSchema).pipe(
+    Schema.minItems(1),
+    Schema.maxItems(20)
+  ),
+  assumptions: Schema.Array(DecisionAssertionSchema).pipe(Schema.maxItems(20)),
+  participants: Schema.Array(DecisionParticipantSchema).pipe(
     Schema.maxItems(100),
     Schema.filter(
       (items) =>

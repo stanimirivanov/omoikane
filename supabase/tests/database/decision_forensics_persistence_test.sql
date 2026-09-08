@@ -1,6 +1,6 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
-SELECT plan(21);
+SELECT plan(28);
 
 SELECT has_table('public', 'analysis_decision_candidates', 'Decision candidates are durable');
 SELECT has_table('public', 'analysis_decision_assertions', 'Claims and assumptions are durable');
@@ -10,6 +10,7 @@ SELECT has_table('public', 'analysis_decision_participant_sources', 'Participant
 SELECT has_function('public', 'complete_decision_forensics_job_success', ARRAY['uuid','uuid','uuid','text','integer','jsonb'], 'Decision completion has a dedicated atomic command');
 SELECT ok(NOT has_function_privilege('authenticated', 'public.complete_decision_forensics_job_success(uuid,uuid,uuid,text,integer,jsonb)', 'EXECUTE'), 'Browser callers cannot complete Decision Forensics jobs');
 SELECT ok(NOT has_table_privilege('service_role', 'public.analysis_decision_candidates', 'SELECT'), 'Workers cannot read candidate tables directly');
+SELECT ok(NOT has_function_privilege('service_role', 'private.build_analysis_result_projection(uuid)', 'EXECUTE'), 'The internal result mapper is not an independent worker capability');
 
 SELECT workspace_id FROM public.workspaces
 WHERE created_by = '10000000-0000-4000-8000-000000000001' ORDER BY created_at LIMIT 1
@@ -62,7 +63,11 @@ SELECT jsonb_build_object(
             'text', 'Release on Friday.', 'evidence', jsonb_build_array(jsonb_build_object(
                 'messageId', 'b0000000-0000-4000-8000-000000000001',
                 'messageRevisionId', 'b1000000-0000-4000-8000-000000000001')))),
-        'assumptions', jsonb_build_array(),
+        'assumptions', jsonb_build_array(jsonb_build_object(
+            'text', 'Friday refers to the upcoming Friday.',
+            'evidence', jsonb_build_array(jsonb_build_object(
+                'messageId', 'b0000000-0000-4000-8000-000000000001',
+                'messageRevisionId', 'b1000000-0000-4000-8000-000000000001')))),
         'participants', jsonb_build_array(jsonb_build_object(
             'profileId', '10000000-0000-4000-8000-000000000001', 'role', 'decision-maker',
             'evidence', jsonb_build_array(jsonb_build_object(
@@ -106,13 +111,41 @@ RESET ROLE;
 SELECT is((SELECT count(*) FROM public.analysis_results WHERE analysis_run_id = :'run_analysis_run_id'), 1::BIGINT, 'Completion is idempotent for the same fingerprint');
 SELECT is((SELECT count(*) FROM public.analysis_decision_candidates), 1::BIGINT, 'One proposed candidate is persisted');
 SELECT is((SELECT count(*) FROM public.analysis_decision_assertions WHERE assertion_kind = 'claim'), 1::BIGINT, 'The supported claim is persisted');
-SELECT is((SELECT count(*) FROM public.analysis_decision_assertion_sources), 1::BIGINT, 'Claim evidence is persisted exactly once');
+SELECT is((SELECT count(*) FROM public.analysis_decision_assertion_sources WHERE assertion_kind = 'claim'), 1::BIGINT, 'Claim evidence is persisted exactly once');
 SELECT is((SELECT count(*) FROM public.analysis_decision_participants), 1::BIGINT, 'The participant role is persisted');
 SELECT is((SELECT count(*) FROM public.analysis_decision_participant_sources), 1::BIGINT, 'Authored participant evidence is persisted');
 SELECT results_eq(
     $$SELECT result_kind, provider_kind, model, input_units, output_units FROM public.analysis_results WHERE result_kind = 'decision-forensics'$$,
     $$VALUES ('decision-forensics'::TEXT, 'ollama'::TEXT, 'qwen3:8b'::TEXT, 42, 17)$$,
     'Provider identity and reported usage are persisted'
+);
+SET LOCAL ROLE service_role;
+SELECT result FROM public.get_analysis_run(
+    :'workspace_workspace_id', :'run_analysis_run_id',
+    '10000000-0000-4000-8000-000000000001'
+) \gset projected_
+RESET ROLE;
+SELECT is((:'projected_result'::JSONB)->>'kind', 'decision-forensics', 'The authorized projection preserves the result discriminator');
+SELECT is((:'projected_result'::JSONB)->'usage', '{"inputUnits":42,"outputUnits":17}'::JSONB, 'The authorized projection includes provider usage');
+SELECT is(
+    ((:'projected_result'::JSONB)#>'{candidates,0}') - ARRAY['id','claims','assumptions','participants'],
+    '{"status":"proposed","title":"Release timing","summary":"The release will happen Friday.","disposition":"made","confidence":0.9}'::JSONB,
+    'The authorized projection preserves candidate order and proposed state'
+);
+SELECT is(
+    (:'projected_result'::JSONB)#>'{candidates,0,claims,0,evidence,0}',
+    '{"messageId":"b0000000-0000-4000-8000-000000000001","messageRevisionId":"b1000000-0000-4000-8000-000000000001"}'::JSONB,
+    'The authorized projection retains exact ordered evidence identities'
+);
+SELECT is(
+    (:'projected_result'::JSONB)#>>'{candidates,0,assumptions,0,text}',
+    'Friday refers to the upcoming Friday.',
+    'The authorized projection includes assumptions'
+);
+SELECT is(
+    ((:'projected_result'::JSONB)#>'{candidates,0,participants,0}') - 'evidence',
+    '{"profileId":"10000000-0000-4000-8000-000000000001","role":"decision-maker"}'::JSONB,
+    'The authorized projection includes participant identity and role'
 );
 SELECT throws_ok('UPDATE public.analysis_decision_candidates SET title = ''changed''', '55000', 'Analysis output records are immutable.', 'Candidates cannot be rewritten');
 SELECT throws_ok('DELETE FROM public.analysis_decision_assertion_sources', '55000', 'Analysis output records are immutable.', 'Candidate evidence cannot be deleted');

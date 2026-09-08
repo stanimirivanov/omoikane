@@ -95,6 +95,9 @@ describe('Omoikane server runtime', () => {
     const document = response.json<{
       readonly info: { readonly title: string };
       readonly paths: Readonly<Record<string, unknown>>;
+      readonly components: {
+        readonly schemas: Readonly<Record<string, unknown>>;
+      };
     }>();
 
     expect(response.statusCode).toBe(200);
@@ -103,6 +106,24 @@ describe('Omoikane server runtime', () => {
     expect(document.paths).toHaveProperty(
       '/api/v1/workspaces/{workspaceId}/analysis-runs'
     );
+    expect(document.components.schemas).toHaveProperty(
+      'WorkspaceMessageInventoryResultResponse'
+    );
+    expect(document.components.schemas).toHaveProperty(
+      'DecisionForensicsResultResponse'
+    );
+    expect(document.components.schemas['AnalysisRunResponse']).toMatchObject({
+      properties: {
+        result: {
+          oneOf: [
+            {
+              $ref: '#/components/schemas/WorkspaceMessageInventoryResultResponse',
+            },
+            { $ref: '#/components/schemas/DecisionForensicsResultResponse' },
+          ],
+        },
+      },
+    });
   });
 
   it('initializes one Effect runtime and disposes it with Nest', async () => {
