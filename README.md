@@ -240,6 +240,23 @@ then open Grafana at `http://localhost:3000`. See
 [`apps/server/README.md`](apps/server/README.md#local-observability) for
 PowerShell, port-conflict, status, and shutdown instructions.
 
+### Run local Decision Forensics
+
+Start Ollama and provision the documented local model only when working on the
+AI slice:
+
+```bash
+pnpm dev:ai-local
+pnpm dev:ai-local:status
+```
+
+Copy the Ollama URL and Decision Forensics model values from `.env.example`
+into the worker environment, then run `pnpm worker:dev`. Without both values the
+worker deliberately retains the deterministic inventory processor. Stop the
+optional profile with `pnpm dev:ai-local:down`; its model volume is preserved.
+See [`apps/ai-worker/README.md`](apps/ai-worker/README.md) for the execution and
+security boundaries.
+
 ### Continuous integration
 
 GitHub Actions runs the same `pnpm verify`, `pnpm db:verify`, and `pnpm e2e`

@@ -7,15 +7,37 @@ import type {
   AnalysisJobSourceSnapshot,
   AnalysisProcessorReceipt,
   WorkspaceMessageInventoryProcessorReceipt,
+  DecisionForensicsProcessorReceipt,
 } from './analysis-job';
 import type { AnalysisJobExecutionRepositoryError } from './analysis-run-error';
 import {
   AnalysisRunRepositoryTag,
   type AnalysisRunRepository,
 } from './analysis-run-repository';
+import {
+  DECISION_EXTRACTION_PROMPT_DIGEST,
+  extractDecisions,
+} from './extract-decisions';
+import { prepareAnalysisJobExtraction } from './prepare-analysis-job-extraction';
+import {
+  pinAnalysisJobExecutionManifest,
+  type AnalysisExecutionManifestError,
+} from './analysis-execution-manifest';
+import type {
+  DecisionExtractionError,
+  DecisionExtractionInput,
+  DecisionExtractionResponse,
+  DecisionExtractor,
+} from './decision-extraction';
 
 export const WORKSPACE_MESSAGE_INVENTORY_PROCESSOR_VERSION =
   'analysis.workspace-message-inventory.v1';
+export const DECISION_FORENSICS_PROCESSOR_VERSION =
+  'analysis.decision-forensics.v1';
+
+export type SupportedAnalysisProcessorVersion =
+  | typeof WORKSPACE_MESSAGE_INVENTORY_PROCESSOR_VERSION
+  | typeof DECISION_FORENSICS_PROCESSOR_VERSION;
 
 export class RetryableAnalysisProcessorError extends Data.TaggedError(
   'RetryableAnalysisProcessorError'
@@ -40,6 +62,7 @@ export type AnalysisJobProcessor = (
 export interface AcquireNextAnalysisJobInput {
   readonly workerId: string;
   readonly leaseSeconds: number;
+  readonly processorVersion: SupportedAnalysisProcessorVersion;
 }
 
 /** Acquires at most one job; absence is ordinary idle-loop behavior. */
@@ -53,10 +76,165 @@ export const acquireNextAnalysisJob = (
   Effect.flatMap(AnalysisRunRepositoryTag, (repository) =>
     repository.acquireNextJob({
       workerId: input.workerId,
-      processorVersion: WORKSPACE_MESSAGE_INVENTORY_PROCESSOR_VERSION,
+      processorVersion: input.processorVersion,
       leaseSeconds: input.leaseSeconds,
     })
   );
+
+const mapManifestFailure = (
+  error: AnalysisExecutionManifestError
+): AnalysisProcessorError => {
+  switch (error._tag) {
+    case 'AnalysisRunRepositoryUnavailableError':
+      return new RetryableAnalysisProcessorError({
+        category: 'manifest.unavailable',
+      });
+    case 'AnalysisSourceAccessRevokedError':
+      return new TerminalAnalysisProcessorError({
+        category: 'authorization.revoked',
+      });
+    case 'AnalysisJobLeaseLostError':
+      return new TerminalAnalysisProcessorError({ category: 'lease.lost' });
+    case 'InvalidAnalysisRunDataError':
+      return new TerminalAnalysisProcessorError({
+        category: 'manifest.invalid',
+      });
+    case 'UnsupportedDecisionExtractionConfigurationError':
+      return new TerminalAnalysisProcessorError({
+        category: 'configuration.unsupported',
+      });
+  }
+};
+
+const mapSourceFailure = (
+  error: AnalysisJobExecutionRepositoryError
+): AnalysisProcessorError => {
+  switch (error._tag) {
+    case 'AnalysisRunRepositoryUnavailableError':
+      return new RetryableAnalysisProcessorError({
+        category: 'source.unavailable',
+      });
+    case 'AnalysisSourceAccessRevokedError':
+      return new TerminalAnalysisProcessorError({
+        category: 'authorization.revoked',
+      });
+    case 'AnalysisJobLeaseLostError':
+      return new TerminalAnalysisProcessorError({ category: 'lease.lost' });
+    case 'InvalidAnalysisRunDataError':
+      return new TerminalAnalysisProcessorError({ category: 'source.invalid' });
+  }
+};
+
+const mapExtractionFailure = (
+  error: DecisionExtractionError
+): AnalysisProcessorError => {
+  switch (error._tag) {
+    case 'DecisionExtractionUnavailableError':
+      return new RetryableAnalysisProcessorError({
+        category:
+          error.reason === 'rate-limited'
+            ? 'provider.rate-limited'
+            : error.reason === 'timeout'
+              ? 'provider.timeout'
+              : 'provider.unavailable',
+      });
+    case 'InvalidDecisionExtractionOutputError':
+      return new TerminalAnalysisProcessorError({
+        category: 'provider.invalid-output',
+      });
+    case 'DecisionExtractionLimitError':
+      return new TerminalAnalysisProcessorError({
+        category: `provider.${error.reason}-limit`,
+      });
+    case 'UnsupportedDecisionExtractionConfigurationError':
+      return new TerminalAnalysisProcessorError({
+        category: 'configuration.unsupported',
+      });
+  }
+};
+
+const buildDecisionResult = (
+  input: DecisionExtractionInput,
+  response: DecisionExtractionResponse
+): DecisionForensicsProcessorReceipt['result'] => {
+  const candidateCount = response.output.candidates.length;
+  return {
+    kind: 'decision-forensics',
+    processorVersion: DECISION_FORENSICS_PROCESSOR_VERSION,
+    providerKind: 'ollama',
+    model: response.model,
+    resultSchemaVersion: 'decision-forensics.result.v1',
+    promptVersion: 'decision-forensics.extract.v1',
+    promptDigest: DECISION_EXTRACTION_PROMPT_DIGEST,
+    evaluationVersion: 'decision-forensics.evaluation.v1',
+    generationPolicy: {
+      temperature: 0,
+      maxOutputTokens: 8192,
+      tools: false,
+      repairAttempts: 0,
+    },
+    usage: { ...response.usage },
+    sourceCount: input.sources.length,
+    sourceTruncated: input.sourceTruncated,
+    sources: input.sources.map(({ messageId, messageRevisionId }) => ({
+      messageId,
+      messageRevisionId,
+    })),
+    summary: `Extracted ${candidateCount} proposed decision candidate${candidateCount === 1 ? '' : 's'}.`,
+    candidates: response.output.candidates,
+  };
+};
+
+export interface ProcessDecisionForensicsJobInput {
+  readonly execution: AnalysisJobExecution;
+  readonly provider: {
+    readonly providerKind: 'ollama';
+    readonly model: string;
+  };
+  /** Returns lowercase SHA-256 for the supplied canonical result JSON. */
+  readonly fingerprint: (canonicalResult: string) => string;
+}
+
+/**
+ * Pins the provider contract, loads authorized frozen content, extracts and
+ * validates candidates, and returns the complete atomic persistence receipt.
+ * The outer runtime supplies SHA-256 without leaking a Node dependency inward.
+ */
+export const processDecisionForensicsJob = ({
+  execution,
+  provider,
+  fingerprint,
+}: ProcessDecisionForensicsJobInput): Effect.Effect<
+  DecisionForensicsProcessorReceipt,
+  AnalysisProcessorError,
+  AnalysisRunRepository | DecisionExtractor
+> =>
+  Effect.gen(function* () {
+    const manifest = yield* pinAnalysisJobExecutionManifest(
+      execution,
+      provider
+    ).pipe(Effect.mapError(mapManifestFailure));
+    const input = yield* prepareAnalysisJobExtraction(execution).pipe(
+      Effect.mapError(mapSourceFailure)
+    );
+    const response = yield* extractDecisions(input).pipe(
+      Effect.mapError(mapExtractionFailure)
+    );
+    if (
+      response.providerKind !== manifest.configuration.providerKind ||
+      response.model !== manifest.configuration.model
+    ) {
+      return yield* new TerminalAnalysisProcessorError({
+        category: 'configuration.unsupported',
+      });
+    }
+    const result = buildDecisionResult(input, response);
+    return {
+      processorVersion: DECISION_FORENSICS_PROCESSOR_VERSION,
+      resultFingerprint: fingerprint(JSON.stringify(result)),
+      result,
+    };
+  });
 
 const fingerprintSources = (
   execution: AnalysisJobExecution,
