@@ -7,6 +7,8 @@ import {
   output,
 } from '@angular/core';
 import type { MarkChannelReadInput } from '@omoikane/application/message';
+import { MatButtonModule } from '@angular/material/button';
+import { LucideRefreshCw } from '@lucide/angular';
 import type { ChannelId } from '@omoikane/domain/channel';
 import type { MessageId } from '@omoikane/domain/message';
 import { ChannelMessageComposerComponent } from './composer/channel-message-composer.component';
@@ -18,8 +20,14 @@ import { ChannelTypingStore } from '@client/features/channel-typing/channel-typi
 @Component({
   selector: 'app-channel-messages',
   standalone: true,
-  imports: [ChannelMessageHistoryComponent, ChannelMessageComposerComponent],
+  imports: [
+    ChannelMessageHistoryComponent,
+    ChannelMessageComposerComponent,
+    MatButtonModule,
+    LucideRefreshCw,
+  ],
   templateUrl: './channel-messages.component.html',
+  styleUrl: './channel-messages.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [ChannelMessagesStore, ChannelTypingStore],
 })

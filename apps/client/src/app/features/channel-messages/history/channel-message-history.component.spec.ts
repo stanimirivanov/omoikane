@@ -77,6 +77,7 @@ const configureComponent = async (
   const authenticatedUserId = signal<string | null>(currentUserId);
   const revisionHistoryMessageId = signal<Message['id'] | null>(null);
   const store = {
+    channelId: signal(messages[0]?.channelId ?? null),
     messages: signal(messages),
     authorProfiles: signal(authorProfiles),
     focusedMessageId: signal<Message['id'] | null>(null),
@@ -160,6 +161,9 @@ describe('ChannelMessageHistoryComponent', () => {
     expect(time.getAttribute('aria-label')).toMatch(/^Sent /);
     expect(time.textContent?.trim()).not.toBe('');
     expect(fixture.nativeElement.textContent).not.toContain('Edited');
+    expect(
+      fixture.nativeElement.querySelector('ol[aria-label="Channel messages"]')
+    ).not.toBeNull();
   });
 
   it('renders edited metadata only when an edit timestamp exists', async () => {

@@ -18,6 +18,7 @@ import type { AvatarUrl } from '@omoikane/domain/profile';
   selector: 'app-profile-avatar',
   standalone: true,
   templateUrl: './profile-avatar.component.html',
+  styleUrl: './profile-avatar.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProfileAvatarComponent {

@@ -1,14 +1,24 @@
 import { DatePipe } from '@angular/common';
 import {
+  afterRenderEffect,
   ChangeDetectionStrategy,
   Component,
   computed,
+  ElementRef,
   inject,
   input,
   signal,
+  viewChild,
 } from '@angular/core';
 import type { Message, MessageId } from '@omoikane/domain/message';
 import type { AvatarUrl, Profile } from '@omoikane/domain/profile';
+import { MatButtonModule } from '@angular/material/button';
+import {
+  LucideHistory,
+  LucidePencil,
+  LucideRefreshCw,
+  LucideTrash2,
+} from '@lucide/angular';
 import { AuthenticationStore } from '@client/features/authentication/store/authentication.store';
 import { ProfileAvatarComponent } from '@client/shared/profile-avatar/profile-avatar.component';
 import { ChannelMessagesStore } from '../channel-messages.store';
@@ -28,8 +38,17 @@ type MessageInteraction =
 @Component({
   selector: 'app-channel-message-history',
   standalone: true,
-  imports: [DatePipe, ProfileAvatarComponent],
+  imports: [
+    DatePipe,
+    ProfileAvatarComponent,
+    MatButtonModule,
+    LucideHistory,
+    LucidePencil,
+    LucideRefreshCw,
+    LucideTrash2,
+  ],
   templateUrl: './channel-message-history.component.html',
+  styleUrl: './channel-message-history.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChannelMessageHistoryComponent {
@@ -39,6 +58,11 @@ export class ChannelMessageHistoryComponent {
   protected readonly store = inject(ChannelMessagesStore);
 
   private readonly authenticationStore = inject(AuthenticationStore);
+  private readonly scrollRegion =
+    viewChild<ElementRef<HTMLElement>>('scrollRegion');
+  private lastChannelId: string | null = null;
+  private lastNewestMessageId: MessageId | null = null;
+  private followsLatestMessage = true;
 
   private readonly authorProfilesById = computed(
     () =>
@@ -50,6 +74,42 @@ export class ChannelMessageHistoryComponent {
   );
 
   protected readonly interaction = signal<MessageInteraction>({ kind: 'idle' });
+
+  constructor() {
+    afterRenderEffect({
+      mixedReadWrite: () => {
+        const channelId = this.store.channelId();
+        const newestMessageId = this.store.messages()[0]?.id ?? null;
+        const channelChanged = channelId !== this.lastChannelId;
+        const receivedNewLatestMessage =
+          newestMessageId !== null &&
+          newestMessageId !== this.lastNewestMessageId;
+        const scrollRegion = this.scrollRegion()?.nativeElement;
+
+        if (
+          scrollRegion !== undefined &&
+          (channelChanged ||
+            (receivedNewLatestMessage && this.followsLatestMessage))
+        ) {
+          scrollRegion.scrollTop = scrollRegion.scrollHeight;
+        }
+
+        this.lastChannelId = channelId;
+        this.lastNewestMessageId = newestMessageId;
+      },
+    });
+  }
+
+  protected recordScrollPosition(): void {
+    const scrollRegion = this.scrollRegion()?.nativeElement;
+    if (scrollRegion === undefined) return;
+
+    const distanceFromLatest =
+      scrollRegion.scrollHeight -
+      scrollRegion.scrollTop -
+      scrollRegion.clientHeight;
+    this.followsLatestMessage = distanceFromLatest <= 48;
+  }
 
   protected isAuthoredByCurrentUser(message: Message): boolean {
     return message.authorId === this.authenticationStore.currentUserId();

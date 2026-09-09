@@ -231,7 +231,7 @@ Playwright screenshots and traces from failed CI runs remain build artifacts.
 3. **UI-2 — Authenticated shell. Completed.** Add the desktop shell, workspace rail,
    channel sidebar, main pane, responsive drawers, top bar, and skip link while
    preserving URL and store ownership.
-4. **UI-3 — Conversation.** Redesign the channel header, continuous message
+4. **UI-3 — Conversation. Completed.** Redesign the channel header, continuous message
    timeline, metadata/actions, pagination, typing state, and composer.
 5. **UI-4 — Collaboration management.** Redesign workspace/channel lifecycle,
    member directory, invitations, archive history, and confirmations using
