@@ -1,50 +1,55 @@
 @let shellView = store.shellView();
 
 @if (shellView.kind === 'authenticated') {
-  <header class="application-header">
-    <div class="product-identity">
-      <span class="product-mark" aria-hidden="true">O</span>
+  <a class="skip-link" href="#omoikane-main-content">Skip to main content</a>
 
-      <p class="product-wordmark">
+  <div class="application-shell">
+    <header class="application-header">
+      <div class="product-identity" aria-label="Omoikane">
+        <span class="product-mark" aria-hidden="true">O</span>
         <strong>Omoikane</strong>
-        <span>The Collaborative Intelligence Platform</span>
-      </p>
-    </div>
+      </div>
 
-    <div class="account-actions">
-      <app-current-profile
-        [userId]="shellView.session.userId"
-        [fallbackEmail]="shellView.session.email"
-      />
+      <p class="application-context">Collaborative workspace</p>
 
-      <button
-        mat-stroked-button
-        type="button"
-        [disabled]="shellView.isSigningOut"
-        (click)="store.signOut()"
-      >
-        @if (shellView.isSigningOut) {
-          Signing out…
-        } @else {
-          Sign out
-        }
-      </button>
-    </div>
-  </header>
+      <div class="account-actions">
+        <app-current-profile
+          [userId]="shellView.session.userId"
+          [fallbackEmail]="shellView.session.email"
+        />
 
-  <main class="authenticated-content">
-    <app-workspace-navigation />
-  </main>
+        <button
+          mat-stroked-button
+          type="button"
+          [disabled]="shellView.isSigningOut"
+          (click)="store.signOut()"
+        >
+          @if (shellView.isSigningOut) {
+            Signing out…
+          } @else {
+            Sign out
+          }
+        </button>
+      </div>
+    </header>
 
-  @if (store.error(); as error) {
-    <p role="alert">
-      {{ error.message }}
-    </p>
+    <main
+      id="omoikane-main-content"
+      class="authenticated-content"
+      tabindex="-1"
+    >
+      <app-workspace-navigation />
+    </main>
 
-    <button mat-button type="button" (click)="store.clearError()">
-      Dismiss
-    </button>
-  }
+    @if (store.error(); as error) {
+      <div class="shell-alert" role="alert">
+        <span>{{ error.message }}</span>
+        <button mat-button type="button" (click)="store.clearError()">
+          Dismiss
+        </button>
+      </div>
+    }
+  </div>
 } @else {
   <div class="authentication-page">
     <aside class="brand-panel" aria-label="About Omoikane">

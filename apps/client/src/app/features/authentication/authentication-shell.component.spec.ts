@@ -130,6 +130,12 @@ describe('AuthenticationShellComponent', () => {
     });
 
     expect(fixture.nativeElement.textContent).toContain('owner@omoikane.local');
+    expect(
+      fixture.nativeElement.querySelector('.skip-link')?.getAttribute('href')
+    ).toBe('#omoikane-main-content');
+    expect(
+      fixture.nativeElement.querySelector('main#omoikane-main-content')
+    ).not.toBeNull();
   });
 
   it('renders sign-in content for an anonymous user', async () => {

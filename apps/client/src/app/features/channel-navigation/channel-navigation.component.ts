@@ -7,12 +7,18 @@ import {
   input,
   signal,
 } from '@angular/core';
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { MatButtonModule } from '@angular/material/button';
+import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, Router } from '@angular/router';
+import { LucideHash, LucideMenu, LucidePlus, LucideX } from '@lucide/angular';
 import { Schema } from 'effect';
 import type { Channel } from '@omoikane/domain/channel';
 import { MessageIdSchema } from '@omoikane/domain/message';
 import type { WorkspaceId } from '@omoikane/domain/workspace';
+import { map } from 'rxjs';
 import { AnalysisRunsComponent } from '@client/features/analysis-runs/analysis-runs.component';
 import { ArchivedChannelListComponent } from '@client/features/archived-channel-list/archived-channel-list.component';
 import { ChannelMessagesComponent } from '@client/features/channel-messages/channel-messages.component';
@@ -38,9 +44,17 @@ type ChannelInteraction =
     ArchivedChannelListComponent,
     ChannelMessagesComponent,
     AnalysisRunsComponent,
+    MatButtonModule,
+    MatSidenavModule,
+    MatTooltipModule,
+    LucideHash,
+    LucideMenu,
+    LucidePlus,
+    LucideX,
   ],
   providers: [ChannelNavigationStore],
   templateUrl: './channel-navigation.component.html',
+  styleUrl: './channel-navigation.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChannelNavigationComponent {
@@ -49,6 +63,14 @@ export class ChannelNavigationComponent {
   readonly canModerateMessages = input(false);
   protected readonly store = inject(ChannelNavigationStore);
   protected readonly interaction = signal<ChannelInteraction>('idle');
+  protected readonly channelNavigationOpen = signal(false);
+  private readonly breakpointObserver = inject(BreakpointObserver);
+  protected readonly compactChannelNavigation = toSignal(
+    this.breakpointObserver
+      .observe('(max-width: 47.999rem)')
+      .pipe(map(({ matches }) => matches)),
+    { initialValue: false }
+  );
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly queryParamMap = toSignal(this.route.queryParamMap, {
@@ -105,6 +127,7 @@ export class ChannelNavigationComponent {
    * Writes channel selection to browser history.
    */
   protected navigateToChannel(channelSlug: string): void {
+    this.channelNavigationOpen.set(false);
     void this.router.navigate([], {
       relativeTo: this.route,
       queryParams: {
@@ -113,6 +136,14 @@ export class ChannelNavigationComponent {
       },
       queryParamsHandling: 'merge',
     });
+  }
+
+  protected toggleChannelNavigation(): void {
+    this.channelNavigationOpen.update((open) => !open);
+  }
+
+  protected closeChannelNavigation(): void {
+    this.channelNavigationOpen.set(false);
   }
 
   protected beginChannelCreation(): void {
