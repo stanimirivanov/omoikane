@@ -8,6 +8,8 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { LucideRefreshCw, LucideUsers } from '@lucide/angular';
 import type { ProfileId } from '@omoikane/domain/profile';
 import type {
   WorkspaceId,
@@ -27,9 +29,15 @@ type MemberConfirmation =
 @Component({
   selector: 'app-workspace-member-directory',
   standalone: true,
-  imports: [ProfileAvatarComponent],
+  imports: [
+    ProfileAvatarComponent,
+    MatButtonModule,
+    LucideRefreshCw,
+    LucideUsers,
+  ],
   providers: [WorkspaceMemberDirectoryStore],
   templateUrl: './workspace-member-directory.component.html',
+  styleUrl: './workspace-member-directory.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WorkspaceMemberDirectoryComponent {

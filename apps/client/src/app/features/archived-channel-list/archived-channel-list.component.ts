@@ -8,6 +8,8 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { LucideArchiveRestore } from '@lucide/angular';
 import type { Channel, ChannelId } from '@omoikane/domain/channel';
 import type { WorkspaceId } from '@omoikane/domain/workspace';
 import { ArchivedChannelListStore } from './archived-channel-list.store';
@@ -16,9 +18,10 @@ import { ArchivedChannelListStore } from './archived-channel-list.store';
 @Component({
   selector: 'app-archived-channel-list',
   standalone: true,
-  imports: [DatePipe],
+  imports: [DatePipe, MatButtonModule, LucideArchiveRestore],
   providers: [ArchivedChannelListStore],
   templateUrl: './archived-channel-list.component.html',
+  styleUrl: './archived-channel-list.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ArchivedChannelListComponent {

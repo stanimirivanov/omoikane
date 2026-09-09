@@ -115,7 +115,7 @@
 }
 
 .context-drawer {
-  width: min(25rem, calc(100vw - 1rem));
+  width: min(28rem, calc(100vw - 1rem));
   border-left: 1px solid var(--omo-border);
   background: var(--omo-surface);
 }
@@ -142,6 +142,7 @@
 .context-header p,
 .context-header h2,
 .section-heading h3,
+.context-description,
 .inline-alert p,
 .confirmation-panel p {
   margin: 0;
@@ -183,6 +184,11 @@
   font-size: 0.9375rem;
 }
 
+.context-description {
+  color: var(--omo-text-muted);
+  font-size: 0.75rem;
+}
+
 .stacked-form {
   display: grid;
   gap: 0.5rem;
@@ -221,6 +227,10 @@
 
 .form-actions {
   margin-top: 0.5rem;
+}
+
+.danger-action {
+  color: var(--omo-danger);
 }
 
 .inline-alert,

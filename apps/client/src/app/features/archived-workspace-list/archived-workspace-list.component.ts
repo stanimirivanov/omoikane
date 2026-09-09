@@ -8,6 +8,8 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { LucideArchiveRestore } from '@lucide/angular';
 import type { Workspace, WorkspaceId } from '@omoikane/domain/workspace';
 import { ArchivedWorkspaceListStore } from './archived-workspace-list.store';
 
@@ -15,9 +17,10 @@ import { ArchivedWorkspaceListStore } from './archived-workspace-list.store';
 @Component({
   selector: 'app-archived-workspace-list',
   standalone: true,
-  imports: [DatePipe],
+  imports: [DatePipe, MatButtonModule, LucideArchiveRestore],
   providers: [ArchivedWorkspaceListStore],
   templateUrl: './archived-workspace-list.component.html',
+  styleUrl: './archived-workspace-list.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ArchivedWorkspaceListComponent {

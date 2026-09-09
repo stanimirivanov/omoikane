@@ -106,17 +106,17 @@
       mode="over"
       [opened]="contextPanelOpen()"
       [autoFocus]="true"
-      aria-label="Workspace tools"
+      aria-label="Workspace management"
     >
       <header class="context-header">
         <div>
-          <p>Context</p>
-          <h2>Workspace tools</h2>
+          <p>Collaboration</p>
+          <h2>Workspace management</h2>
         </div>
         <button
           mat-icon-button
           type="button"
-          aria-label="Close workspace tools"
+          aria-label="Close workspace management"
           (click)="closeContextPanel()"
         >
           <svg lucideX [size]="19"></svg>
@@ -158,6 +158,10 @@
                 </button>
               }
             </div>
+
+            <p class="context-description">
+              Create a separate space for another team or initiative.
+            </p>
 
             @if (workspaceInteraction === 'creating') {
               <form
@@ -249,6 +253,10 @@
               <div class="section-heading">
                 <h3 id="workspace-settings-heading">Workspace settings</h3>
               </div>
+
+              <p class="context-description">
+                Manage the selected workspace identity and lifecycle.
+              </p>
 
               @if (
                 canManageSelectedWorkspace() &&
@@ -365,6 +373,7 @@
                     </button>
                     <button
                       mat-button
+                      class="danger-action"
                       type="button"
                       [disabled]="operations.isBusy"
                       (click)="beginWorkspaceArchive()"
@@ -410,6 +419,7 @@
               ) {
                 <button
                   mat-button
+                  class="danger-action"
                   type="button"
                   [disabled]="operations.isBusy"
                   (click)="beginWorkspaceDeparture()"
@@ -510,8 +520,8 @@
           type="button"
           [attr.aria-expanded]="contextPanelOpen()"
           aria-controls="workspace-context-panel"
-          aria-label="Open workspace tools"
-          matTooltip="Workspace tools"
+          aria-label="Open workspace management"
+          matTooltip="Workspace management"
           (click)="toggleContextPanel()"
         >
           <svg lucidePanelRight [size]="20"></svg>
