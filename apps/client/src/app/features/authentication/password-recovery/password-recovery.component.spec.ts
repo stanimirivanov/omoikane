@@ -2,20 +2,19 @@ import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { describe, expect, it, vi } from 'vitest';
 import { AuthenticationStore } from '../store/authentication.store';
+import type { PasswordRecoveryView } from '../store/authentication.state';
 import { PasswordRecoveryComponent } from './password-recovery.component';
 
 describe('PasswordRecoveryComponent', () => {
   const configureComponent = async (
     options: {
-      readonly recoveryActive?: boolean;
-      readonly emailSent?: boolean;
-      readonly updateComplete?: boolean;
+      readonly view?: PasswordRecoveryView;
     } = {}
   ) => {
     const store = {
-      isPasswordRecoveryActive: signal(options.recoveryActive ?? false),
-      isPasswordResetEmailSent: signal(options.emailSent ?? false),
-      isPasswordUpdateComplete: signal(options.updateComplete ?? false),
+      passwordRecoveryView: signal<PasswordRecoveryView>(
+        options.view ?? 'request-form'
+      ),
       isRequestingPasswordReset: signal(false),
       isUpdatingPassword: signal(false),
       error: signal(null),
@@ -61,7 +60,9 @@ describe('PasswordRecoveryComponent', () => {
   });
 
   it('renders the same completion notice regardless of account existence', async () => {
-    const { fixture, store } = await configureComponent({ emailSent: true });
+    const { fixture, store } = await configureComponent({
+      view: 'email-sent',
+    });
 
     expect(fixture.nativeElement.querySelector('form')).toBeNull();
     expect(fixture.nativeElement.textContent).toContain(
@@ -77,7 +78,7 @@ describe('PasswordRecoveryComponent', () => {
 
   it('submits matching fields through the recovery session boundary', async () => {
     const { fixture, store } = await configureComponent({
-      recoveryActive: true,
+      view: 'update-form',
     });
     const passwordInput = fixture.nativeElement.querySelector(
       '#recovery-password'
@@ -100,7 +101,7 @@ describe('PasswordRecoveryComponent', () => {
 
   it('cancels recovery through the existing sign-out workflow', async () => {
     const { fixture, store } = await configureComponent({
-      recoveryActive: true,
+      view: 'update-form',
     });
     const cancelButton = Array.from(
       fixture.nativeElement.querySelectorAll('button')
@@ -116,8 +117,7 @@ describe('PasswordRecoveryComponent', () => {
 
   it('leaves a completed recovery screen only on explicit continuation', async () => {
     const { fixture, store } = await configureComponent({
-      recoveryActive: true,
-      updateComplete: true,
+      view: 'update-complete',
     });
 
     expect(fixture.nativeElement.querySelector('form')).toBeNull();

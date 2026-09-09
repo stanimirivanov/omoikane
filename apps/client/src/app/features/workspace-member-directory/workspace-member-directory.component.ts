@@ -44,7 +44,7 @@ export class WorkspaceMemberDirectoryComponent {
    * independently authorize the current provider session.
    */
   protected readonly canManageMembers = computed(() => {
-    const currentProfileId = this.authenticationStore.session()?.userId;
+    const currentProfileId = this.authenticationStore.currentUserId();
 
     return this.store
       .entries()
@@ -61,8 +61,7 @@ export class WorkspaceMemberDirectoryComponent {
   constructor() {
     effect(() => {
       const workspaceId = this.workspaceId();
-      const currentProfileId =
-        this.authenticationStore.session()?.userId ?? null;
+      const currentProfileId = this.authenticationStore.currentUserId();
       this.pendingRemovalProfileId.set(null);
       this.pendingSuspensionProfileId.set(null);
       void this.store.load(workspaceId, currentProfileId);
@@ -74,20 +73,20 @@ export class WorkspaceMemberDirectoryComponent {
   }
 
   protected isCurrentUser(profileId: ProfileId): boolean {
-    return this.authenticationStore.session()?.userId === profileId;
+    return this.authenticationStore.currentUserId() === profileId;
   }
 
   protected retryLoad(): void {
     void this.store.load(
       this.workspaceId(),
-      this.authenticationStore.session()?.userId ?? null
+      this.authenticationStore.currentUserId()
     );
   }
 
   protected refreshMembers(): void {
     void this.store.load(
       this.workspaceId(),
-      this.authenticationStore.session()?.userId ?? null,
+      this.authenticationStore.currentUserId(),
       { force: true }
     );
   }

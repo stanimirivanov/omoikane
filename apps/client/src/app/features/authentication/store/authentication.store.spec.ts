@@ -141,6 +141,10 @@ describe('AuthenticationStore', () => {
     expect(store.session()).toBeNull();
 
     expect(store.isInitializing()).toBe(true);
+
+    expect(store.shellView()).toBe('initializing');
+
+    expect(store.currentUserId()).toBeNull();
   });
 
   it('becomes anonymous without a restored session', async () => {
@@ -151,6 +155,8 @@ describe('AuthenticationStore', () => {
     expect(store.status()).toBe('anonymous');
 
     expect(store.session()).toBeNull();
+
+    expect(store.shellView()).toBe('anonymous');
   });
 
   it('restores an authenticated session', async () => {
@@ -163,6 +169,10 @@ describe('AuthenticationStore', () => {
     expect(store.status()).toBe('authenticated');
 
     expect(store.session()).toEqual(session);
+
+    expect(store.shellView()).toBe('authenticated');
+
+    expect(store.currentUserId()).toBe(session.userId);
   });
 
   it('does not overwrite a recovery event with an older restoration snapshot', async () => {
@@ -188,6 +198,8 @@ describe('AuthenticationStore', () => {
     expect(store.session()).toEqual(session);
     expect(store.isPasswordRecoveryActive()).toBe(true);
     expect(store.passwordRecoveryStatus()).toBe('ready');
+    expect(store.shellView()).toBe('password-recovery');
+    expect(store.passwordRecoveryView()).toBe('update-form');
   });
 
   it('exposes a restoration failure and remains anonymous', async () => {
@@ -657,11 +669,13 @@ describe('AuthenticationStore', () => {
       'owner@omoikane.local'
     );
     expect(store.isPasswordResetEmailSent()).toBe(true);
+    expect(store.passwordRecoveryView()).toBe('email-sent');
     expect(store.error()).toBeNull();
 
     store.resetPasswordResetRequest();
 
     expect(store.passwordResetRequestStatus()).toBe('idle');
+    expect(store.passwordRecoveryView()).toBe('request-form');
   });
 
   it('presents password-reset rate limits without provider details', async () => {
@@ -723,12 +737,15 @@ describe('AuthenticationStore', () => {
       passwordConfirmation: 'Replacement123!',
     });
     expect(store.isPasswordUpdateComplete()).toBe(true);
+    expect(store.passwordRecoveryView()).toBe('update-complete');
 
     store.finishPasswordRecovery();
 
     expect(store.isPasswordRecoveryActive()).toBe(false);
     expect(store.status()).toBe('authenticated');
     expect(store.session()).toEqual(session);
+    expect(store.shellView()).toBe('authenticated');
+    expect(store.passwordRecoveryView()).toBe('request-form');
   });
 
   it('presents invalid replacement-password input inside recovery', async () => {
@@ -749,6 +766,7 @@ describe('AuthenticationStore', () => {
 
     await expect(store.updatePassword('one', 'two')).resolves.toBe(false);
     expect(store.passwordRecoveryStatus()).toBe('failed');
+    expect(store.passwordRecoveryView()).toBe('update-form');
     expect(store.error()).toEqual({
       message: 'The password confirmation must match.',
     });
@@ -766,6 +784,8 @@ describe('AuthenticationStore', () => {
     observer.emitPasswordRecovery(session);
 
     const result = store.updatePassword('Replacement123!', 'Replacement123!');
+    expect(store.passwordRecoveryStatus()).toBe('pending');
+    expect(store.passwordRecoveryView()).toBe('update-form');
     observer.emitSession(session);
     update.resolve(Either.right(undefined));
 

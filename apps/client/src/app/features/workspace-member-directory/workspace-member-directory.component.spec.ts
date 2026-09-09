@@ -79,10 +79,7 @@ const renderComponent = async (currentProfileId: ProfileId) => {
       {
         provide: AuthenticationStore,
         useValue: {
-          session: signal({
-            userId: currentProfileId,
-            email: 'member@omoikane.local',
-          }),
+          currentUserId: signal(currentProfileId),
         },
       },
     ],

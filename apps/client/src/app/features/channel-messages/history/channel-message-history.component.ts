@@ -49,7 +49,7 @@ export class ChannelMessageHistoryComponent {
   protected readonly deletingMessageId = signal<MessageId | null>(null);
 
   protected isAuthoredByCurrentUser(message: Message): boolean {
-    return message.authorId === this.authenticationStore.session()?.userId;
+    return message.authorId === this.authenticationStore.currentUserId();
   }
 
   protected canDeleteMessage(message: Message): boolean {
