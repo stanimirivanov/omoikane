@@ -35,6 +35,34 @@ export interface WorkspaceNavigationError {
   readonly message: string;
 }
 
+export interface WorkspaceNavigationOperationsView {
+  readonly isBusy: boolean;
+  readonly isCreating: boolean;
+  readonly isUpdating: boolean;
+  readonly isArchiving: boolean;
+  readonly isLeaving: boolean;
+}
+
+export type WorkspaceNavigationContent =
+  | { readonly kind: 'loading' }
+  | { readonly kind: 'error'; readonly error: WorkspaceNavigationError }
+  | {
+      readonly kind: 'ready';
+      readonly workspaces: readonly Workspace[];
+      readonly selectedWorkspace: Workspace | null;
+    };
+
+/** Complete rendering state for workspace navigation. */
+export interface WorkspaceNavigationView {
+  readonly content: WorkspaceNavigationContent;
+  readonly operations: WorkspaceNavigationOperationsView;
+  readonly realtimeError: WorkspaceNavigationError | null;
+  readonly creationError: WorkspaceNavigationError | null;
+  readonly updateError: WorkspaceNavigationError | null;
+  readonly archiveError: WorkspaceNavigationError | null;
+  readonly departureError: WorkspaceNavigationError | null;
+}
+
 /**
  * Presentation state for workspace discovery and explicit selection.
  */

@@ -6,8 +6,7 @@ import { ChannelMessageComposerComponent } from './channel-message-composer.comp
 
 const configureComponent = async (sent: boolean) => {
   const store = {
-    isSending: signal(false),
-    sendError: signal(null),
+    composerView: signal({ isSending: false, error: null }),
     send: vi.fn().mockResolvedValue(sent),
     clearSendError: vi.fn(),
   };
@@ -39,6 +38,8 @@ const submitDraft = async (
   const form = fixture.nativeElement.querySelector('form') as HTMLFormElement;
 
   input.value = draft;
+  input.dispatchEvent(new Event('input'));
+  fixture.detectChanges();
   form.dispatchEvent(new Event('submit'));
   await fixture.whenStable();
   fixture.detectChanges();

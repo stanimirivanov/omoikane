@@ -29,7 +29,7 @@ export class WorkspaceMessageSearchComponent {
     });
   }
 
-  protected submit(queryInput: HTMLInputElement): void {
-    void this.store.search(queryInput.value);
+  protected submit(query: string): void {
+    void this.store.search(query);
   }
 }

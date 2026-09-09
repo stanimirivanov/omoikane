@@ -22,7 +22,11 @@ import type { Channel, ChannelId } from '@omoikane/domain/channel';
 import type { WorkspaceId } from '@omoikane/domain/workspace';
 import { ChannelApplicationService } from '@client/core/channel/channel-application.service';
 import { MessageApplicationService } from '@client/core/message/message-application.service';
-import { initialChannelNavigationState } from './channel-navigation.state';
+import {
+  initialChannelNavigationState,
+  type ChannelNavigationContent,
+  type ChannelNavigationView,
+} from './channel-navigation.state';
 
 /**
  * Owns channel discovery and selection for one workspace navigation feature.
@@ -31,11 +35,6 @@ export const ChannelNavigationStore = signalStore(
   withState(initialChannelNavigationState),
 
   withComputed((store) => ({
-    isLoading: computed(() => store.loadStatus() === 'loading'),
-    isCreating: computed(() => store.creationStatus() === 'creating'),
-    isUpdating: computed(() => store.updateStatus() === 'updating'),
-    isArchiving: computed(() => store.archiveStatus() === 'archiving'),
-    hasChannels: computed(() => store.channels().length > 0),
     unreadCountByChannel: computed(
       () =>
         new Map(
@@ -51,6 +50,47 @@ export const ChannelNavigationStore = signalStore(
         store.channels().find((channel) => channel.id === selectedChannelId) ??
         null
       );
+    }),
+  })),
+
+  withComputed((store) => ({
+    view: computed<ChannelNavigationView>(() => {
+      const error = store.error();
+      const content: ChannelNavigationContent =
+        store.loadStatus() === 'loading'
+          ? { kind: 'loading' }
+          : store.loadStatus() === 'failed' && error !== null
+            ? { kind: 'error', error }
+            : {
+                kind: 'ready',
+                channels: store.channels(),
+                selectedChannel: store.selectedChannel(),
+                unreadCountByChannel: store.unreadCountByChannel(),
+              };
+
+      const isCreating = store.creationStatus() === 'creating';
+      const isUpdating = store.updateStatus() === 'updating';
+      const isArchiving = store.archiveStatus() === 'archiving';
+
+      return {
+        content,
+        operations: {
+          isBusy:
+            content.kind === 'loading' ||
+            isCreating ||
+            isUpdating ||
+            isArchiving,
+          isCreating,
+          isUpdating,
+          isArchiving,
+        },
+        realtimeError: store.realtimeError(),
+        unreadError: store.unreadError(),
+        unreadRealtimeError: store.unreadRealtimeError(),
+        creationError: store.creationError(),
+        updateError: store.updateError(),
+        archiveError: store.archiveError(),
+      };
     }),
   })),
 

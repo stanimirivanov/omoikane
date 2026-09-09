@@ -40,6 +40,9 @@ Effect Layers, generated database types, or repositories.
 
 - Keep transient state local when no sibling or service needs it. Examples are
   an open editor, a selected anonymous authentication form, and confirmation UI.
+- Represent mutually exclusive local interaction modes with one discriminated
+  signal, such as `idle | editing | confirming-delete`, rather than several
+  booleans that can become true at the same time.
 - Move state to a Signal Store when it coordinates multiple components,
   survives component replacement, represents asynchronous work, or must be
   reconciled with an authoritative external stream.
@@ -68,6 +71,9 @@ methods own state transitions and asynchronous coordination.
 - Return a discriminated presentation model when a rendered state requires
   correlated data. For example, an authenticated view should carry its
   non-null session and a confirmation-required view should carry its email.
+- Compose nested presentation models when a feature contains independent
+  subworkflows, such as recipient and owner invitation states. Do not flatten
+  them into an artificial cross-product or one feature-wide loading flag.
 - Keep operation statuses when they protect concurrency, stale-result handling,
   retry behavior, or progress feedback. Do not collapse independent operations
   into one generic loading flag.
@@ -97,6 +103,9 @@ low-level store fields.
 - Ask the store for a presentation model when a condition encodes precedence or
   correlates several values. Do not recreate that condition independently in a
   header, body, and child component.
+- Render an existing domain or application discriminant directly when it
+  already expresses the complete UI decision. Do not add a second presentation
+  union that merely renames its cases.
 - Use `@let` to give a meaningful name to a repeatedly consumed reactive value
   or to keep one coherent value within a render branch. `@let` is not a
   substitute for a missing store-level abstraction.

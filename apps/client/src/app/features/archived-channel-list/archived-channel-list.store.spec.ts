@@ -101,7 +101,7 @@ describe('ArchivedChannelListStore', () => {
 
     const restoration = store.restore(channel.id);
 
-    expect(store.isRestoring()).toBe(true);
+    expect(store.view().isRestoring).toBe(true);
     expect(store.restoringChannelId()).toBe(channel.id);
     await expect(restoration).resolves.toEqual(restoredChannel);
     expect(restoreChannel).toHaveBeenCalledExactlyOnceWith({

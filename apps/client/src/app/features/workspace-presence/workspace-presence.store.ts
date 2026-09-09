@@ -8,14 +8,27 @@ import {
 } from '@ngrx/signals';
 import type { WorkspaceId } from '@omoikane/domain/workspace';
 import { WorkspaceApplicationService } from '@client/core/workspace/workspace-application.service';
-import { initialWorkspacePresenceState } from './workspace-presence.state';
+import {
+  initialWorkspacePresenceState,
+  type WorkspacePresenceView,
+} from './workspace-presence.state';
 
 /** Owns the private Presence subscription for one selected workspace. */
 export const WorkspacePresenceStore = signalStore(
   withState(initialWorkspacePresenceState),
   withComputed((store) => ({
-    onlineCount: computed(() => store.onlineProfileIds().length),
-    isConnecting: computed(() => store.status() === 'connecting'),
+    view: computed<WorkspacePresenceView>(() => {
+      if (store.status() === 'connecting') {
+        return { kind: 'connecting' };
+      }
+
+      const error = store.error();
+      if (store.status() === 'failed' && error !== null) {
+        return { kind: 'error', error };
+      }
+
+      return { kind: 'online', count: store.onlineProfileIds().length };
+    }),
   })),
   withMethods(
     (

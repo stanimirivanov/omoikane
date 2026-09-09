@@ -12,7 +12,10 @@ import {
   withState,
 } from '@ngrx/signals';
 import { ProfileApplicationService } from '@client/core/profile/profile-application.service';
-import { initialCurrentProfileState } from './current-profile.state';
+import {
+  initialCurrentProfileState,
+  type CurrentProfileView,
+} from './current-profile.state';
 
 /**
  * Owns current-profile loading and self-service editing for one authenticated
@@ -25,8 +28,22 @@ export const CurrentProfileStore = signalStore(
   withState(initialCurrentProfileState),
 
   withComputed((store) => ({
-    isLoading: computed(() => store.loadStatus() === 'loading'),
-    isUpdating: computed(() => store.updateStatus() === 'updating'),
+    view: computed<CurrentProfileView>(() => {
+      const profile = store.profile();
+      if (profile !== null) {
+        return {
+          kind: 'profile',
+          profile,
+          isUpdating: store.updateStatus() === 'updating',
+          updateError: store.updateError(),
+        };
+      }
+
+      const error = store.error();
+      return store.loadStatus() === 'failed' && error !== null
+        ? { kind: 'error', error }
+        : { kind: 'loading' };
+    }),
   })),
 
   withMethods(

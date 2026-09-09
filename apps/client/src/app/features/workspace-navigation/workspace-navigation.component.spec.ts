@@ -1,4 +1,4 @@
-import { Component, input, output, signal } from '@angular/core';
+import { Component, computed, input, output, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import {
@@ -117,20 +117,36 @@ const configureComponent = async ({
   const router = {
     navigate: vi.fn().mockResolvedValue(true),
   };
+  const workspaceCollection = signal(workspaces);
+  const selectedWorkspaceSignal = signal(selectedWorkspace);
+  const realtimeError = signal<{ readonly message: string } | null>(null);
   const store = {
-    workspaces: signal(workspaces),
+    workspaces: workspaceCollection,
     selectedWorkspaceId: signal(selectedWorkspace?.id ?? null),
-    selectedWorkspace: signal(selectedWorkspace),
-    isLoading: signal(false),
-    isCreating: signal(false),
-    isUpdating: signal(false),
-    isArchiving: signal(false),
-    isLeaving: signal(false),
-    hasWorkspaces: signal(workspaces.length > 0),
+    selectedWorkspace: selectedWorkspaceSignal,
+    view: computed(() => ({
+      content: {
+        kind: 'ready' as const,
+        workspaces: workspaceCollection(),
+        selectedWorkspace: selectedWorkspaceSignal(),
+      },
+      operations: {
+        isBusy: false,
+        isCreating: false,
+        isUpdating: false,
+        isArchiving: false,
+        isLeaving: false,
+      },
+      realtimeError: realtimeError(),
+      creationError: null,
+      updateError: null,
+      archiveError: null,
+      departureError: null,
+    })),
     loadStatus: signal('loaded'),
     error: signal(null),
     realtimeStatus: signal('observing'),
-    realtimeError: signal<{ readonly message: string } | null>(null),
+    realtimeError,
     creationError: signal(null),
     updateError: signal(null),
     archiveError: signal(null),

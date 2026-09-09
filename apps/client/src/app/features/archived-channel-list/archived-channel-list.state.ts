@@ -13,6 +13,22 @@ export interface ArchivedChannelListError {
 
 export type ChannelRestorationStatus = 'idle' | 'restoring' | 'failed';
 
+export type ArchivedChannelListContent =
+  | { readonly kind: 'loading' }
+  | { readonly kind: 'error'; readonly error: ArchivedChannelListError }
+  | { readonly kind: 'empty' }
+  | {
+      readonly kind: 'channels';
+      readonly channels: readonly ArchivedChannel[];
+    };
+
+/** Coherent rendering state for archive discovery and restoration. */
+export interface ArchivedChannelListView {
+  readonly content: ArchivedChannelListContent;
+  readonly isRestoring: boolean;
+  readonly restorationError: ArchivedChannelListError | null;
+}
+
 /** Workspace-keyed presentation state for archived-channel discovery. */
 export interface ArchivedChannelListState {
   readonly workspaceId: WorkspaceId | null;

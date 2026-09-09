@@ -78,9 +78,9 @@ describe('ChannelTypingStore', () => {
     configured.connected();
     configured.event(true);
 
-    expect(configured.store.typingCount()).toBe(1);
+    expect(configured.store.view()).toEqual({ kind: 'typing', count: 1 });
     await vi.advanceTimersByTimeAsync(5_000);
-    expect(configured.store.typingCount()).toBe(0);
+    expect(configured.store.view()).toEqual({ kind: 'idle' });
   });
 
   it('exposes failure, closes the old connection, and retries', () => {

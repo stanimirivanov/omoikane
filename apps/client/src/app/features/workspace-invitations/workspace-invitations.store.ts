@@ -23,7 +23,12 @@ import type {
 import { WorkspaceApplicationService } from '@client/core/workspace/workspace-application.service';
 import {
   initialWorkspaceInvitationsState,
+  type WorkspaceInvitationCreationFeedback,
+  type WorkspaceInvitationOwnerView,
+  type WorkspaceInvitationRecipientView,
   type WorkspaceInvitationResponseKind,
+  type WorkspaceInvitationResponseView,
+  type WorkspaceInvitationsView,
 } from './workspace-invitations.state';
 
 /** Owns recipient consent and selected-workspace owner invitation management. */
@@ -31,20 +36,74 @@ export const WorkspaceInvitationsStore = signalStore(
   withState(initialWorkspaceInvitationsState),
 
   withComputed((store) => ({
-    isLoading: computed(() => store.loadStatus() === 'loading'),
-    isCreating: computed(() => store.creationStatus() === 'pending'),
-    isResponding: computed(() => store.responseStatus() === 'pending'),
-    isOwnerLoading: computed(() => store.ownerLoadStatus() === 'loading'),
-    isCancelling: computed(() => store.cancellationStatus() === 'pending'),
-    isMutatingOwnerInvitations: computed(
-      () =>
-        store.creationStatus() === 'pending' ||
-        store.cancellationStatus() === 'pending'
-    ),
-    hasInvitations: computed(() => store.invitations().length > 0),
-    hasManagedInvitations: computed(
-      () => store.managedInvitations().length > 0
-    ),
+    view: computed<WorkspaceInvitationsView>(() => {
+      const responseKind = store.responseKind();
+      const respondingInvitationId = store.respondingInvitationId();
+      const response: WorkspaceInvitationResponseView =
+        store.responseStatus() === 'pending' &&
+        responseKind !== null &&
+        respondingInvitationId !== null
+          ? {
+              kind: responseKind,
+              invitationId: respondingInvitationId,
+            }
+          : { kind: 'idle' };
+
+      const invitations = store.invitations();
+      const recipient: WorkspaceInvitationRecipientView = (() => {
+        if (store.loadStatus() === 'loading') return { kind: 'loading' };
+        const error = store.error();
+        if (store.loadStatus() === 'failed' && error !== null) {
+          return { kind: 'error', error };
+        }
+        return invitations.length === 0
+          ? { kind: 'empty' }
+          : {
+              kind: 'invitations',
+              invitations,
+              response,
+              responseError: store.responseError(),
+            };
+      })();
+
+      const owner: WorkspaceInvitationOwnerView = (() => {
+        if (store.ownerLoadStatus() === 'idle') return { kind: 'idle' };
+        if (store.ownerLoadStatus() === 'loading') return { kind: 'loading' };
+        const error = store.ownerError();
+        if (store.ownerLoadStatus() === 'failed' && error !== null) {
+          return { kind: 'error', error };
+        }
+        return {
+          kind: 'ready',
+          invitations: store.managedInvitations(),
+          isMutating:
+            store.creationStatus() === 'pending' ||
+            store.cancellationStatus() === 'pending',
+          isCreating: store.creationStatus() === 'pending',
+          cancellationError: store.cancellationError(),
+        };
+      })();
+
+      const creationError = store.creationError();
+      const creationFeedback: WorkspaceInvitationCreationFeedback =
+        store.creationStatus() === 'succeeded'
+          ? { kind: 'succeeded' }
+          : store.creationStatus() === 'failed' && creationError !== null
+            ? { kind: 'error', error: creationError }
+            : { kind: 'none' };
+
+      return {
+        isBusy:
+          store.loadStatus() === 'loading' ||
+          store.creationStatus() === 'pending' ||
+          store.responseStatus() === 'pending' ||
+          store.ownerLoadStatus() === 'loading' ||
+          store.cancellationStatus() === 'pending',
+        recipient,
+        owner,
+        creationFeedback,
+      };
+    }),
   })),
 
   withMethods(

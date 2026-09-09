@@ -32,6 +32,49 @@ export interface WorkspaceInvitationsError {
   readonly message: string;
 }
 
+export type WorkspaceInvitationResponseView =
+  | {
+      readonly kind: WorkspaceInvitationResponseKind;
+      readonly invitationId: WorkspaceInvitationId;
+    }
+  | { readonly kind: 'idle' };
+
+export type WorkspaceInvitationRecipientView =
+  | { readonly kind: 'loading' }
+  | { readonly kind: 'error'; readonly error: WorkspaceInvitationsError }
+  | { readonly kind: 'empty' }
+  | {
+      readonly kind: 'invitations';
+      readonly invitations: readonly PendingWorkspaceInvitation[];
+      readonly response: WorkspaceInvitationResponseView;
+      readonly responseError: WorkspaceInvitationsError | null;
+    };
+
+export type WorkspaceInvitationOwnerView =
+  | { readonly kind: 'idle' }
+  | { readonly kind: 'loading' }
+  | { readonly kind: 'error'; readonly error: WorkspaceInvitationsError }
+  | {
+      readonly kind: 'ready';
+      readonly invitations: readonly PendingWorkspaceInvitationForOwner[];
+      readonly isMutating: boolean;
+      readonly isCreating: boolean;
+      readonly cancellationError: WorkspaceInvitationsError | null;
+    };
+
+export type WorkspaceInvitationCreationFeedback =
+  | { readonly kind: 'none' }
+  | { readonly kind: 'succeeded' }
+  | { readonly kind: 'error'; readonly error: WorkspaceInvitationsError };
+
+/** Coherent rendering state for recipient and owner invitation workflows. */
+export interface WorkspaceInvitationsView {
+  readonly isBusy: boolean;
+  readonly recipient: WorkspaceInvitationRecipientView;
+  readonly owner: WorkspaceInvitationOwnerView;
+  readonly creationFeedback: WorkspaceInvitationCreationFeedback;
+}
+
 /** Presentation state for recipient responses and selected-owner creation. */
 export interface WorkspaceInvitationsState {
   readonly invitations: readonly PendingWorkspaceInvitation[];

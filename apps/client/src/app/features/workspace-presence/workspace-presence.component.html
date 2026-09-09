@@ -1,15 +1,20 @@
 <section aria-labelledby="workspace-presence-heading">
+  @let view = store.view();
+
   <h3 id="workspace-presence-heading">Presence</h3>
 
-  @if (store.isConnecting()) {
-    <p>Connecting presence&hellip;</p>
-  } @else if (store.error(); as error) {
-    <p role="alert">{{ error.message }}</p>
-    <button type="button" (click)="store.retry()">Retry presence</button>
-  } @else {
-    <p aria-live="polite">
-      {{ store.onlineCount() }}
-      {{ store.onlineCount() === 1 ? 'member' : 'members' }} online
-    </p>
+  @switch (view.kind) {
+    @case ('connecting') {
+      <p>Connecting presence&hellip;</p>
+    }
+    @case ('error') {
+      <p role="alert">{{ view.error.message }}</p>
+      <button type="button" (click)="store.retry()">Retry presence</button>
+    }
+    @case ('online') {
+      <p aria-live="polite">
+        {{ view.count }} {{ view.count === 1 ? 'member' : 'members' }} online
+      </p>
+    }
   }
 </section>

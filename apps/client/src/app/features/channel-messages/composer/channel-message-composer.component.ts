@@ -3,6 +3,7 @@ import {
   Component,
   inject,
   output,
+  signal,
 } from '@angular/core';
 import { ChannelMessagesStore } from '../channel-messages.store';
 
@@ -16,13 +17,19 @@ export class ChannelMessageComposerComponent {
   readonly typingActivity = output<void>();
   readonly typingStopped = output<void>();
   protected readonly store = inject(ChannelMessagesStore);
+  protected readonly draft = signal('');
 
-  protected async sendMessage(inputElement: HTMLInputElement): Promise<void> {
+  protected updateDraft(content: string): void {
+    this.draft.set(content);
+    this.typingActivity.emit();
+  }
+
+  protected async sendMessage(content: string): Promise<void> {
     this.typingStopped.emit();
-    const sent = await this.store.send(inputElement.value);
+    const sent = await this.store.send(content);
 
     if (sent) {
-      inputElement.value = '';
+      this.draft.set('');
     }
   }
 }

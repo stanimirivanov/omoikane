@@ -22,10 +22,16 @@ describe('CurrentProfileComponent', () => {
   const configureComponent = async (profile: Profile | null) => {
     const store = {
       profile: signal(profile),
-      isLoading: signal(false),
-      isUpdating: signal(false),
-      error: signal(null),
-      updateError: signal(null),
+      view: signal(
+        profile === null
+          ? ({ kind: 'loading' } as const)
+          : ({
+              kind: 'profile',
+              profile,
+              isUpdating: false,
+              updateError: null,
+            } as const)
+      ),
       load: vi.fn().mockResolvedValue(undefined),
       update: vi.fn().mockResolvedValue(true),
       clearUpdateError: vi.fn(),

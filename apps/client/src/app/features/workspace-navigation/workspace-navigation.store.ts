@@ -17,7 +17,11 @@ import {
 } from '@ngrx/signals';
 import type { Workspace, WorkspaceId } from '@omoikane/domain/workspace';
 import { WorkspaceApplicationService } from '@client/core/workspace/workspace-application.service';
-import { initialWorkspaceNavigationState } from './workspace-navigation.state';
+import {
+  initialWorkspaceNavigationState,
+  type WorkspaceNavigationContent,
+  type WorkspaceNavigationView,
+} from './workspace-navigation.state';
 
 /**
  * Owns accessible workspace discovery, realtime reconciliation, and the
@@ -27,12 +31,6 @@ export const WorkspaceNavigationStore = signalStore(
   withState(initialWorkspaceNavigationState),
 
   withComputed((store) => ({
-    isLoading: computed(() => store.loadStatus() === 'loading'),
-    isCreating: computed(() => store.creationStatus() === 'creating'),
-    isUpdating: computed(() => store.updateStatus() === 'updating'),
-    isArchiving: computed(() => store.archiveStatus() === 'archiving'),
-    isLeaving: computed(() => store.departureStatus() === 'leaving'),
-    hasWorkspaces: computed(() => store.workspaces().length > 0),
     selectedWorkspace: computed(() => {
       const selectedWorkspaceId = store.selectedWorkspaceId();
 
@@ -41,6 +39,48 @@ export const WorkspaceNavigationStore = signalStore(
           .workspaces()
           .find((workspace) => workspace.id === selectedWorkspaceId) ?? null
       );
+    }),
+  })),
+
+  withComputed((store) => ({
+    view: computed<WorkspaceNavigationView>(() => {
+      const error = store.error();
+      const content: WorkspaceNavigationContent =
+        store.loadStatus() === 'loading'
+          ? { kind: 'loading' }
+          : store.loadStatus() === 'failed' && error !== null
+            ? { kind: 'error', error }
+            : {
+                kind: 'ready',
+                workspaces: store.workspaces(),
+                selectedWorkspace: store.selectedWorkspace(),
+              };
+
+      const isCreating = store.creationStatus() === 'creating';
+      const isUpdating = store.updateStatus() === 'updating';
+      const isArchiving = store.archiveStatus() === 'archiving';
+      const isLeaving = store.departureStatus() === 'leaving';
+
+      return {
+        content,
+        operations: {
+          isBusy:
+            content.kind === 'loading' ||
+            isCreating ||
+            isUpdating ||
+            isArchiving ||
+            isLeaving,
+          isCreating,
+          isUpdating,
+          isArchiving,
+          isLeaving,
+        },
+        realtimeError: store.realtimeError(),
+        creationError: store.creationError(),
+        updateError: store.updateError(),
+        archiveError: store.archiveError(),
+        departureError: store.departureError(),
+      };
     }),
   })),
 

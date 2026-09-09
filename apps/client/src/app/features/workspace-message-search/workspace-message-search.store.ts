@@ -9,14 +9,38 @@ import {
 } from '@ngrx/signals';
 import type { WorkspaceId } from '@omoikane/domain/workspace';
 import { MessageApplicationService } from '@client/core/message/message-application.service';
-import { initialWorkspaceMessageSearchState } from './workspace-message-search.state';
+import {
+  initialWorkspaceMessageSearchState,
+  type WorkspaceMessageSearchView,
+} from './workspace-message-search.state';
 
 /** Owns request and result state for workspace-scoped message search. */
 export const WorkspaceMessageSearchStore = signalStore(
   withState(initialWorkspaceMessageSearchState),
   withComputed((store) => ({
-    isSearching: computed(() => store.status() === 'searching'),
-    hasSearched: computed(() => store.status() === 'completed'),
+    view: computed<WorkspaceMessageSearchView>(() => {
+      const query = store.query();
+
+      switch (store.status()) {
+        case 'idle':
+          return { kind: 'idle', query };
+        case 'searching':
+          return { kind: 'searching', query };
+        case 'failed':
+          return {
+            kind: 'error',
+            query,
+            message:
+              store.error() ?? 'Message search is currently unavailable.',
+          };
+        case 'completed': {
+          const results = store.results();
+          return results.length === 0
+            ? { kind: 'empty', query }
+            : { kind: 'results', query, results };
+        }
+      }
+    }),
   })),
   withMethods(
     (store, messageApplication = inject(MessageApplicationService)) => ({

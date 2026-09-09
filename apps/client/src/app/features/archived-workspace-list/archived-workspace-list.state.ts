@@ -13,6 +13,22 @@ export interface ArchivedWorkspaceListError {
 
 export type WorkspaceRestorationStatus = 'idle' | 'restoring' | 'failed';
 
+export type ArchivedWorkspaceListContent =
+  | { readonly kind: 'loading' }
+  | { readonly kind: 'error'; readonly error: ArchivedWorkspaceListError }
+  | { readonly kind: 'empty' }
+  | {
+      readonly kind: 'workspaces';
+      readonly workspaces: readonly ArchivedWorkspace[];
+    };
+
+/** Coherent rendering state for archive discovery and restoration. */
+export interface ArchivedWorkspaceListView {
+  readonly content: ArchivedWorkspaceListContent;
+  readonly isRestoring: boolean;
+  readonly restorationError: ArchivedWorkspaceListError | null;
+}
+
 /** Independent presentation state for archived-workspace discovery. */
 export interface ArchivedWorkspaceListState {
   readonly workspaces: readonly ArchivedWorkspace[];

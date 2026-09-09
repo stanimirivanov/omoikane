@@ -26,34 +26,33 @@ const ownerAvatarUrl = Schema.decodeUnknownSync(AvatarUrlSchema)(
 );
 
 const renderComponent = async (currentProfileId: ProfileId) => {
+  const entries = [
+    {
+      profileId: ownerId,
+      displayName: 'Workspace Owner',
+      avatarUrl: ownerAvatarUrl,
+      role: 'owner' as const,
+    },
+    {
+      profileId: memberId,
+      displayName: 'Workspace Member',
+      avatarUrl: null,
+      role: 'member' as const,
+    },
+  ];
   const store = {
-    entries: signal([
-      {
-        profileId: ownerId,
-        displayName: 'Workspace Owner',
-        avatarUrl: ownerAvatarUrl,
-        role: 'owner' as const,
-      },
-      {
-        profileId: memberId,
-        displayName: 'Workspace Member',
-        avatarUrl: null,
-        role: 'member' as const,
-      },
-    ]),
-    isLoading: signal(false),
-    loadStatus: signal('loaded'),
-    isLoadingMore: signal(false),
-    hasMoreMembers: signal(false),
-    hasMembers: signal(true),
-    error: signal(null),
-    paginationError: signal(null),
-    mutationError: signal(null),
-    isMutatingMember: signal(false),
-    isChangingRole: signal(false),
-    isRemovingMember: signal(false),
-    isSuspendingMember: signal(false),
-    mutatingProfileId: signal(null),
+    entries: signal(entries),
+    view: signal({
+      isBusy: false,
+      canRefresh: true,
+      mutationError: null,
+      content: {
+        kind: 'members',
+        entries,
+        pagination: { hasMore: false, isLoading: false, error: null },
+        mutation: { kind: 'idle' },
+      } as const,
+    }),
     load: vi.fn().mockResolvedValue(undefined),
     loadMore: vi.fn().mockResolvedValue(undefined),
     changeMemberRole: vi.fn().mockResolvedValue(true),

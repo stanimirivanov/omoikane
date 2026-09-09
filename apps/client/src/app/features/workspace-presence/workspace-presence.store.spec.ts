@@ -69,7 +69,7 @@ describe('WorkspacePresenceStore', () => {
 
     expect(store.status()).toBe('observing');
     expect(store.onlineProfileIds()).toEqual([profileId]);
-    expect(store.onlineCount()).toBe(1);
+    expect(store.view()).toEqual({ kind: 'online', count: 1 });
   });
 
   it('releases the old workspace and ignores its stale snapshot', () => {

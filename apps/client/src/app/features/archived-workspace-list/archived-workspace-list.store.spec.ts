@@ -61,7 +61,10 @@ describe('ArchivedWorkspaceListStore', () => {
 
     expect(store.workspaces()).toEqual([workspace]);
     expect(store.loadStatus()).toBe('loaded');
-    expect(store.hasWorkspaces()).toBe(true);
+    expect(store.view().content).toEqual({
+      kind: 'workspaces',
+      workspaces: [workspace],
+    });
     expect(listArchivedWorkspaces).toHaveBeenCalledOnce();
   });
 

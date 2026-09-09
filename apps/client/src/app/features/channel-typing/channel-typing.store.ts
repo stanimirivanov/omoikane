@@ -13,7 +13,10 @@ import {
   ChannelApplicationService,
   type ChannelTypingController,
 } from '@client/core/channel/channel-application.service';
-import { initialChannelTypingState } from './channel-typing.state';
+import {
+  initialChannelTypingState,
+  type ChannelTypingView,
+} from './channel-typing.state';
 
 const LOCAL_TYPING_IDLE_MS = 1_500;
 const REMOTE_TYPING_EXPIRY_MS = 5_000;
@@ -22,8 +25,19 @@ const REMOTE_TYPING_EXPIRY_MS = 5_000;
 export const ChannelTypingStore = signalStore(
   withState(initialChannelTypingState),
   withComputed((store) => ({
-    typingCount: computed(() => store.typingProfileIds().length),
-    isConnecting: computed(() => store.status() === 'connecting'),
+    view: computed<ChannelTypingView>(() => {
+      if (store.status() === 'connecting') {
+        return { kind: 'connecting' };
+      }
+
+      const error = store.error();
+      if (store.status() === 'failed' && error !== null) {
+        return { kind: 'error', error };
+      }
+
+      const count = store.typingProfileIds().length;
+      return count === 0 ? { kind: 'idle' } : { kind: 'typing', count };
+    }),
   })),
   withMethods(
     (

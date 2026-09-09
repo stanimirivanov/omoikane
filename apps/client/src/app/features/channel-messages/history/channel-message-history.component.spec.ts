@@ -1,4 +1,4 @@
-import { signal } from '@angular/core';
+import { computed, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Schema } from 'effect';
 import { describe, expect, it, vi } from 'vitest';
@@ -75,29 +75,38 @@ const configureComponent = async (
   canModerateMessages = false
 ) => {
   const authenticatedUserId = signal<string | null>(currentUserId);
+  const revisionHistoryMessageId = signal<Message['id'] | null>(null);
   const store = {
     messages: signal(messages),
     authorProfiles: signal(authorProfiles),
-    isLoading: signal(false),
-    error: signal(null),
-    hasMessages: signal(messages.length > 0),
-    isEditing: signal(false),
-    isDeleting: signal(false),
-    canLoadOlder: signal(false),
-    isLoadingOlder: signal(false),
-    editError: signal(null),
-    deleteError: signal(null),
-    realtimeError: signal(realtimeError),
     focusedMessageId: signal<Message['id'] | null>(null),
-    focusedMessage: signal<Message | null>(null),
-    focusedMessageStatus: signal('idle'),
-    focusedMessageError: signal(null),
-    revisionHistoryMessageId: signal<Message['id'] | null>(null),
-    messageRevisions: signal([revision]),
-    isLoadingMessageRevisions: signal(false),
-    isLoadingOlderMessageRevisions: signal(false),
-    canLoadOlderMessageRevisions: signal(false),
-    messageRevisionsError: signal(null),
+    focusedMessageView: signal({ kind: 'idle' } as const),
+    historyView: signal({
+      content:
+        messages.length === 0
+          ? ({ kind: 'empty' } as const)
+          : ({ kind: 'messages', messages } as const),
+      isEditing: false,
+      isDeleting: false,
+      canLoadOlder: false,
+      isLoadingOlder: false,
+      editError: null,
+      deleteError: null,
+      realtimeError,
+    }),
+    revisionHistoryView: computed(() => {
+      const messageId = revisionHistoryMessageId();
+      return messageId === null
+        ? ({ kind: 'closed' } as const)
+        : ({
+            kind: 'revisions',
+            messageId,
+            revisions: [revision],
+            canLoadOlder: false,
+            isLoadingOlder: false,
+          } as const);
+    }),
+    revisionHistoryMessageId,
     refresh: vi.fn(),
     loadOlder: vi.fn(),
     edit: vi.fn().mockResolvedValue(true),

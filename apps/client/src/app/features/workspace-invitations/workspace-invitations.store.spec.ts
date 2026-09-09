@@ -91,6 +91,12 @@ describe('WorkspaceInvitationsStore', () => {
 
     expect(store.invitations()).toEqual([pending]);
     expect(store.loadStatus()).toBe('loaded');
+    expect(store.view().recipient).toEqual({
+      kind: 'invitations',
+      invitations: [pending],
+      response: { kind: 'idle' },
+      responseError: null,
+    });
     await store.load();
     expect(service.listPendingWorkspaceInvitations).toHaveBeenCalledOnce();
   });
