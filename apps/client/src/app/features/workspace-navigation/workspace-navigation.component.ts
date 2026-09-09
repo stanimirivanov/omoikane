@@ -5,10 +5,21 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { MatButtonModule } from '@angular/material/button';
+import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, Router } from '@angular/router';
+import {
+  LucideMenu,
+  LucidePanelRight,
+  LucidePlus,
+  LucideX,
+} from '@lucide/angular';
 import type { WorkspaceMessageSearchResult } from '@omoikane/application/message';
 import type { Workspace } from '@omoikane/domain/workspace';
+import { map } from 'rxjs';
 import { ArchivedWorkspaceListComponent } from '@client/features/archived-workspace-list/archived-workspace-list.component';
 import { ChannelNavigationComponent } from '@client/features/channel-navigation/channel-navigation.component';
 import { WorkspaceMemberDirectoryComponent } from '@client/features/workspace-member-directory/workspace-member-directory.component';
@@ -38,9 +49,17 @@ type WorkspaceInteraction =
     WorkspaceMemberDirectoryComponent,
     WorkspacePresenceComponent,
     WorkspaceMessageSearchComponent,
+    MatButtonModule,
+    MatSidenavModule,
+    MatTooltipModule,
+    LucideMenu,
+    LucidePanelRight,
+    LucidePlus,
+    LucideX,
   ],
   providers: [WorkspaceNavigationStore],
   templateUrl: './workspace-navigation.component.html',
+  styleUrl: './workspace-navigation.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WorkspaceNavigationComponent {
@@ -48,6 +67,15 @@ export class WorkspaceNavigationComponent {
   protected readonly interaction = signal<WorkspaceInteraction>('idle');
   protected readonly archivedWorkspaceRefreshVersion = signal(0);
   protected readonly canManageSelectedWorkspace = signal(false);
+  protected readonly workspaceNavigationOpen = signal(false);
+  protected readonly contextPanelOpen = signal(false);
+  private readonly breakpointObserver = inject(BreakpointObserver);
+  protected readonly compactWorkspaceNavigation = toSignal(
+    this.breakpointObserver
+      .observe('(max-width: 63.999rem)')
+      .pipe(map(({ matches }) => matches)),
+    { initialValue: false }
+  );
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly queryParamMap = toSignal(this.route.queryParamMap, {
@@ -96,6 +124,7 @@ export class WorkspaceNavigationComponent {
    * channel slug is meaningful only inside its owning workspace.
    */
   protected navigateToWorkspace(workspaceSlug: string): void {
+    this.workspaceNavigationOpen.set(false);
     void this.router.navigate([], {
       relativeTo: this.route,
       queryParams: {
@@ -107,12 +136,29 @@ export class WorkspaceNavigationComponent {
     });
   }
 
+  protected toggleWorkspaceNavigation(): void {
+    this.workspaceNavigationOpen.update((open) => !open);
+  }
+
+  protected closeWorkspaceNavigation(): void {
+    this.workspaceNavigationOpen.set(false);
+  }
+
+  protected toggleContextPanel(): void {
+    this.contextPanelOpen.update((open) => !open);
+  }
+
+  protected closeContextPanel(): void {
+    this.contextPanelOpen.set(false);
+  }
+
   protected beginWorkspaceCreation(): void {
     this.store.clearCreationError();
     this.store.clearUpdateError();
     this.store.clearArchiveError();
     this.store.clearDepartureError();
     this.interaction.set('creating');
+    this.contextPanelOpen.set(true);
   }
 
   protected cancelWorkspaceCreation(): void {

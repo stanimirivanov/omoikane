@@ -228,7 +228,7 @@ Playwright screenshots and traces from failed CI runs remain build artifacts.
 2. **UI-1 — Foundation and authentication. Completed.** Install the selected packages,
    configure the Material theme and tokens, establish document-level styles,
    capture the anonymous baseline, and redesign all anonymous/recovery states.
-3. **UI-2 — Authenticated shell.** Add the desktop shell, workspace rail,
+3. **UI-2 — Authenticated shell. Completed.** Add the desktop shell, workspace rail,
    channel sidebar, main pane, responsive drawers, top bar, and skip link while
    preserving URL and store ownership.
 4. **UI-3 — Conversation.** Redesign the channel header, continuous message

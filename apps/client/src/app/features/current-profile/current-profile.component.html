@@ -17,6 +17,7 @@
 
       @if (isEditing()) {
         <form
+          class="profile-editor"
           (submit)="
             $event.preventDefault();
             saveProfile(
@@ -75,13 +76,15 @@
           </button>
         </form>
       } @else {
-        <strong>{{ profile.displayName }}</strong>
+        <strong class="profile-name">{{ profile.displayName }}</strong>
 
         @if (profile.username; as username) {
-          <span>{{ '@' + username }}</span>
+          <span class="profile-username">{{ '@' + username }}</span>
         }
 
-        <button type="button" (click)="beginEdit()">Edit profile</button>
+        <button class="profile-edit" type="button" (click)="beginEdit()">
+          Edit profile
+        </button>
       }
 
       @if (view.updateError; as error) {
@@ -100,5 +103,5 @@
     }
   }
 
-  <span>{{ fallbackEmail() }}</span>
+  <span class="profile-email">{{ fallbackEmail() }}</span>
 </section>

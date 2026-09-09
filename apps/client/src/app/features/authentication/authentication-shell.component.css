@@ -171,13 +171,39 @@
   text-align: center;
 }
 
+.skip-link {
+  position: fixed;
+  z-index: 1000;
+  top: 0.5rem;
+  left: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.25rem;
+  background: var(--omo-surface);
+  color: var(--omo-text);
+  box-shadow: var(--omo-shadow-overlay);
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+.application-shell {
+  display: grid;
+  height: 100dvh;
+  grid-template-rows: 3rem minmax(0, 1fr);
+  overflow: hidden;
+  background: var(--omo-canvas);
+}
+
 .application-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  min-height: 4rem;
-  padding: 0.75rem 1.25rem;
+  min-width: 0;
+  height: 3rem;
+  padding: 0 0.75rem;
   border-bottom: 1px solid var(--omo-border);
   background: var(--omo-surface);
 }
@@ -191,37 +217,55 @@
 
 .product-mark {
   display: grid;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2rem;
+  height: 2rem;
   place-items: center;
   flex: 0 0 auto;
   border-radius: 0.5rem;
   background: var(--omo-nav-rail);
   color: var(--omo-nav-text);
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 600;
 }
 
-.product-wordmark {
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-  margin: 0;
-  line-height: 1.15;
-}
-
-.product-wordmark strong {
+.product-identity strong {
   color: var(--omo-text);
-  font-size: 1.125rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
 }
 
-.product-wordmark span {
+.application-context {
+  overflow: hidden;
+  flex: 1;
+  margin: 0;
   color: var(--omo-text-muted);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .authenticated-content {
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.shell-alert {
+  position: fixed;
+  z-index: 20;
+  right: 1rem;
+  bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: min(28rem, calc(100vw - 2rem));
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--omo-danger);
+  border-radius: 0.5rem;
+  background: var(--omo-danger-soft);
+  color: var(--omo-danger);
+  box-shadow: var(--omo-shadow-overlay);
 }
 
 @media (max-width: 47.999rem) {
@@ -260,17 +304,20 @@
     margin-top: 1.5rem;
   }
 
-  .application-header,
-  .account-actions {
-    align-items: flex-start;
-  }
-
   .application-header {
-    flex-direction: column;
+    gap: 0.5rem;
   }
 
   .account-actions {
-    width: 100%;
-    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .application-context,
+  .product-identity strong {
+    display: none;
+  }
+
+  .product-identity {
+    margin-right: auto;
   }
 }

@@ -19,6 +19,7 @@ import { ProfileAvatarComponent } from '@client/shared/profile-avatar/profile-av
   imports: [ProfileAvatarComponent],
   providers: [CurrentProfileStore],
   templateUrl: './current-profile.component.html',
+  styleUrl: './current-profile.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CurrentProfileComponent {

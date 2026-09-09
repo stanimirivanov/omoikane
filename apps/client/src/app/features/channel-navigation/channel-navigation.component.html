@@ -1,313 +1,441 @@
 @let view = store.view();
 @let operations = view.operations;
+@let channelInteraction = interaction();
+@let compactNavigation = compactChannelNavigation();
 
 <section
+  class="channel-frame"
   aria-labelledby="channel-navigation-heading"
   [attr.aria-busy]="operations.isBusy"
 >
-  <h3 id="channel-navigation-heading">Channels</h3>
-
-  @if (view.realtimeError; as error) {
-    <p role="alert">{{ error.message }}</p>
-    <button type="button" (click)="store.retryRealtime()">
-      Retry live updates
-    </button>
-  }
-
-  @if (view.unreadError; as error) {
-    <p role="alert">{{ error.message }}</p>
-    <button type="button" (click)="store.retryUnreadCounts()">
-      Retry unread state
-    </button>
-  }
-
-  @if (view.unreadRealtimeError; as error) {
-    <p role="alert">{{ error.message }}</p>
-    <button type="button" (click)="store.retryUnreadRealtime()">
-      Retry live unread updates
-    </button>
-  }
-
-  @switch (view.content.kind) {
-    @case ('loading') {
-      <p>Loading channels&hellip;</p>
-    }
-    @case ('error') {
-      <p role="alert">{{ view.content.error.message }}</p>
-      <button type="button" (click)="store.load(workspaceId())">
-        Try again
-      </button>
-    }
-    @case ('ready') {
-      @if (interaction() === 'creating') {
-        <form
-          (submit)="
-            $event.preventDefault();
-            saveChannel(
-              nameInput.value,
-              slugInput.value,
-              descriptionInput.value
-            )
-          "
-        >
-          <label for="channel-name">Channel name</label>
-          <input
-            #nameInput
-            id="channel-name"
-            name="channel-name"
-            type="text"
-            required
-            [disabled]="
-              operations.isCreating ||
-              operations.isUpdating ||
-              operations.isArchiving
-            "
-          />
-
-          <label for="channel-slug">Channel URL</label>
-          <input
-            #slugInput
-            id="channel-slug"
-            name="channel-slug"
-            type="text"
-            required
-            aria-describedby="channel-slug-help"
-            [disabled]="
-              operations.isCreating ||
-              operations.isUpdating ||
-              operations.isArchiving
-            "
-          />
-          <small id="channel-slug-help">
-            Lowercase letters, numbers, and single hyphens.
-          </small>
-
-          <label for="channel-description">Description</label>
-          <textarea
-            #descriptionInput
-            id="channel-description"
-            name="channel-description"
-            [disabled]="
-              operations.isCreating ||
-              operations.isUpdating ||
-              operations.isArchiving
-            "
-          ></textarea>
-
-          <button
-            type="submit"
-            [disabled]="
-              operations.isCreating ||
-              operations.isUpdating ||
-              operations.isArchiving
-            "
-          >
-            @if (operations.isCreating) {
-              Creating&hellip;
-            } @else {
-              Create channel
-            }
-          </button>
-
-          <button
-            type="button"
-            [disabled]="
-              operations.isCreating ||
-              operations.isUpdating ||
-              operations.isArchiving
-            "
-            (click)="cancelChannelCreation()"
-          >
-            Cancel
-          </button>
-        </form>
-      } @else {
+  <mat-drawer-container
+    class="channel-shell"
+    [hasBackdrop]="compactNavigation"
+    (backdropClick)="closeChannelNavigation()"
+  >
+    <mat-drawer
+      class="channel-sidebar"
+      position="start"
+      [mode]="compactNavigation ? 'over' : 'side'"
+      [opened]="!compactNavigation || channelNavigationOpen()"
+      [autoFocus]="compactNavigation"
+      aria-label="Channel navigation"
+    >
+      <header class="channel-sidebar-header">
+        <div>
+          <p>Navigate</p>
+          <h3 id="channel-navigation-heading">Channels</h3>
+        </div>
         <button
+          mat-icon-button
+          class="channel-close-button"
           type="button"
-          [disabled]="operations.isUpdating || operations.isArchiving"
-          (click)="beginChannelCreation()"
+          aria-label="Close channel navigation"
+          (click)="closeChannelNavigation()"
         >
-          Create channel
+          <svg lucideX [size]="18"></svg>
         </button>
-      }
+      </header>
 
-      @if (view.creationError; as error) {
-        <p role="alert">{{ error.message }}</p>
-        <button type="button" (click)="store.clearCreationError()">
-          Dismiss
-        </button>
-      }
+      <div class="channel-sidebar-content">
+        @if (view.realtimeError; as error) {
+          <div class="navigation-alert" role="alert">
+            <p>{{ error.message }}</p>
+            <button mat-button type="button" (click)="store.retryRealtime()">
+              Retry live updates
+            </button>
+          </div>
+        }
 
-      @if (view.content.channels.length === 0) {
-        <p>This workspace has no active channels.</p>
-      } @else {
-        <nav aria-label="Workspace channels">
-          <ul>
-            @for (channel of view.content.channels; track channel.id) {
-              <li>
+        @if (view.unreadError; as error) {
+          <div class="navigation-alert" role="alert">
+            <p>{{ error.message }}</p>
+            <button
+              mat-button
+              type="button"
+              (click)="store.retryUnreadCounts()"
+            >
+              Retry unread state
+            </button>
+          </div>
+        }
+
+        @if (view.unreadRealtimeError; as error) {
+          <div class="navigation-alert" role="alert">
+            <p>{{ error.message }}</p>
+            <button
+              mat-button
+              type="button"
+              (click)="store.retryUnreadRealtime()"
+            >
+              Retry live unread updates
+            </button>
+          </div>
+        }
+
+        @switch (view.content.kind) {
+          @case ('loading') {
+            <p class="sidebar-state" role="status">Loading channels&hellip;</p>
+          }
+          @case ('error') {
+            <div class="sidebar-state">
+              <p role="alert">{{ view.content.error.message }}</p>
+              <button
+                mat-button
+                type="button"
+                (click)="store.load(workspaceId())"
+              >
+                Try again
+              </button>
+            </div>
+          }
+          @case ('ready') {
+            <div class="channel-list-heading">
+              <span>Workspace channels</span>
+              @if (channelInteraction !== 'creating') {
                 <button
+                  mat-icon-button
                   type="button"
-                  [attr.aria-current]="
-                    store.selectedChannelId() === channel.id ? 'page' : null
-                  "
-                  (click)="navigateToChannel(channel.slug)"
+                  aria-label="Create channel"
+                  matTooltip="Create channel"
+                  [disabled]="operations.isBusy"
+                  (click)="beginChannelCreation()"
                 >
-                  {{ channel.name }}
-                  @if (
-                    view.content.unreadCountByChannel.get(channel.id) ?? 0;
-                    as unreadCount
-                  ) {
-                    @if (unreadCount > 0) {
-                      <span
-                        [attr.aria-label]="unreadCount + ' unread messages'"
-                      >
-                        ({{ unreadCount }})
-                      </span>
-                    }
-                  }
+                  <svg lucidePlus [size]="17"></svg>
+                  <span class="visually-hidden">Create channel</span>
                 </button>
-              </li>
-            }
-          </ul>
-        </nav>
+              }
+            </div>
 
-        @if (view.content.selectedChannel; as channel) {
-          <section [attr.aria-label]="channel.name + ' messages'">
-            @if (channel.description) {
-              <p>{{ channel.description }}</p>
-            }
+            @if (channelInteraction === 'creating') {
+              <form
+                class="channel-form"
+                (submit)="
+                  $event.preventDefault();
+                  saveChannel(
+                    nameInput.value,
+                    slugInput.value,
+                    descriptionInput.value
+                  )
+                "
+              >
+                <label for="channel-name">Channel name</label>
+                <input
+                  #nameInput
+                  id="channel-name"
+                  name="channel-name"
+                  type="text"
+                  required
+                  [disabled]="operations.isBusy"
+                />
 
-            <app-analysis-runs
-              [workspaceId]="workspaceId()"
-              [channelId]="channel.id"
-            />
+                <label for="channel-slug">Channel URL</label>
+                <input
+                  #slugInput
+                  id="channel-slug"
+                  name="channel-slug"
+                  type="text"
+                  required
+                  aria-describedby="channel-slug-help"
+                  [disabled]="operations.isBusy"
+                />
+                <small id="channel-slug-help">
+                  Lowercase letters, numbers, and single hyphens.
+                </small>
 
-            @if (canManageChannels()) {
-              @if (interaction() === 'editing') {
-                <form
-                  (submit)="
-                    $event.preventDefault();
-                    saveChannelChanges(
-                      editNameInput.value,
-                      editDescriptionInput.value
-                    )
-                  "
-                >
-                  <label for="channel-edit-name">Channel name</label>
-                  <input
-                    #editNameInput
-                    id="channel-edit-name"
-                    name="channel-edit-name"
-                    type="text"
-                    required
-                    [value]="channel.name"
-                    [disabled]="operations.isUpdating || operations.isArchiving"
-                  />
+                <label for="channel-description">Description</label>
+                <textarea
+                  #descriptionInput
+                  id="channel-description"
+                  name="channel-description"
+                  [disabled]="operations.isBusy"
+                ></textarea>
 
-                  <label for="channel-edit-description">Description</label>
-                  <textarea
-                    #editDescriptionInput
-                    id="channel-edit-description"
-                    name="channel-edit-description"
-                    [value]="channel.description ?? ''"
-                    [disabled]="operations.isUpdating || operations.isArchiving"
-                  ></textarea>
-
+                <div class="form-actions">
                   <button
+                    mat-flat-button
                     type="submit"
-                    [disabled]="operations.isUpdating || operations.isArchiving"
+                    [disabled]="operations.isBusy"
                   >
-                    @if (operations.isUpdating) {
-                      Saving&hellip;
+                    @if (operations.isCreating) {
+                      Creating&hellip;
                     } @else {
-                      Save changes
+                      Create channel
                     }
                   </button>
                   <button
+                    mat-button
                     type="button"
-                    [disabled]="operations.isUpdating || operations.isArchiving"
-                    (click)="cancelChannelEditing()"
+                    [disabled]="operations.isBusy"
+                    (click)="cancelChannelCreation()"
                   >
                     Cancel
                   </button>
-                </form>
-              } @else if (interaction() === 'confirming-archive') {
-                <p>
-                  Archive {{ channel.name }}? It will be removed from active
-                  navigation, while its message history is preserved.
-                </p>
+                </div>
+              </form>
+            }
+
+            @if (view.creationError; as error) {
+              <div class="navigation-alert" role="alert">
+                <p>{{ error.message }}</p>
                 <button
+                  mat-button
                   type="button"
-                  [disabled]="operations.isArchiving"
-                  (click)="confirmChannelArchive(channel)"
+                  (click)="store.clearCreationError()"
                 >
-                  @if (operations.isArchiving) {
-                    Archiving&hellip;
-                  } @else {
-                    Confirm archive
+                  Dismiss
+                </button>
+              </div>
+            }
+
+            @if (view.content.channels.length === 0) {
+              <p class="sidebar-state">
+                This workspace has no active channels.
+              </p>
+            } @else {
+              <nav aria-label="Workspace channels">
+                <ul class="channel-list">
+                  @for (channel of view.content.channels; track channel.id) {
+                    @let unreadCount =
+                      view.content.unreadCountByChannel.get(channel.id) ?? 0;
+                    <li>
+                      <button
+                        type="button"
+                        class="channel-link"
+                        [class.channel-link--selected]="
+                          store.selectedChannelId() === channel.id
+                        "
+                        [attr.aria-current]="
+                          store.selectedChannelId() === channel.id
+                            ? 'page'
+                            : null
+                        "
+                        (click)="navigateToChannel(channel.slug)"
+                      >
+                        <svg lucideHash [size]="15" aria-hidden="true"></svg>
+                        <span>{{ channel.name }}</span>
+                        @if (unreadCount > 0) {
+                          <span
+                            class="unread-count"
+                            [attr.aria-label]="unreadCount + ' unread messages'"
+                          >
+                            {{ unreadCount }}
+                          </span>
+                        }
+                      </button>
+                    </li>
                   }
-                </button>
+                </ul>
+              </nav>
+            }
+
+            @if (canManageChannels()) {
+              <app-archived-channel-list
+                [workspaceId]="workspaceId()"
+                [activeChannels]="view.content.channels"
+                (channelRestored)="onChannelRestored($event)"
+              />
+            }
+          }
+        }
+      </div>
+    </mat-drawer>
+
+    <mat-drawer-content class="channel-content">
+      @switch (view.content.kind) {
+        @case ('loading') {
+          <div class="channel-state" role="status">
+            <p>Loading channels&hellip;</p>
+          </div>
+        }
+        @case ('error') {
+          <div class="channel-state">
+            <p role="alert">{{ view.content.error.message }}</p>
+          </div>
+        }
+        @case ('ready') {
+          @if (view.content.selectedChannel; as channel) {
+            <div class="selected-channel">
+              <header class="channel-toolbar">
                 <button
+                  mat-icon-button
+                  class="channel-menu-button"
                   type="button"
-                  [disabled]="operations.isArchiving"
-                  (click)="cancelChannelArchive()"
+                  aria-label="Open channel navigation"
+                  (click)="toggleChannelNavigation()"
                 >
-                  Cancel
+                  <svg lucideMenu [size]="20"></svg>
                 </button>
-              } @else {
+
+                <div class="channel-heading">
+                  <h3><span aria-hidden="true">#</span> {{ channel.name }}</h3>
+                  @if (channel.description) {
+                    <p>{{ channel.description }}</p>
+                  }
+                </div>
+
+                @if (canManageChannels() && channelInteraction === 'idle') {
+                  <div class="channel-actions">
+                    <button
+                      mat-button
+                      type="button"
+                      [disabled]="operations.isBusy"
+                      (click)="beginChannelEditing()"
+                    >
+                      Edit channel
+                    </button>
+                    <button
+                      mat-button
+                      type="button"
+                      [disabled]="operations.isBusy"
+                      (click)="beginChannelArchive()"
+                    >
+                      Archive channel
+                    </button>
+                  </div>
+                }
+              </header>
+
+              @if (canManageChannels()) {
+                @if (channelInteraction === 'editing') {
+                  <form
+                    class="channel-edit-panel"
+                    (submit)="
+                      $event.preventDefault();
+                      saveChannelChanges(
+                        editNameInput.value,
+                        editDescriptionInput.value
+                      )
+                    "
+                  >
+                    <label for="channel-edit-name">Channel name</label>
+                    <input
+                      #editNameInput
+                      id="channel-edit-name"
+                      name="channel-edit-name"
+                      type="text"
+                      required
+                      [value]="channel.name"
+                      [disabled]="operations.isBusy"
+                    />
+                    <label for="channel-edit-description">Description</label>
+                    <textarea
+                      #editDescriptionInput
+                      id="channel-edit-description"
+                      name="channel-edit-description"
+                      [value]="channel.description ?? ''"
+                      [disabled]="operations.isBusy"
+                    ></textarea>
+                    <div class="form-actions">
+                      <button
+                        mat-flat-button
+                        type="submit"
+                        [disabled]="operations.isBusy"
+                      >
+                        @if (operations.isUpdating) {
+                          Saving&hellip;
+                        } @else {
+                          Save changes
+                        }
+                      </button>
+                      <button
+                        mat-button
+                        type="button"
+                        [disabled]="operations.isBusy"
+                        (click)="cancelChannelEditing()"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                } @else if (channelInteraction === 'confirming-archive') {
+                  <div class="channel-confirmation">
+                    <p>
+                      Archive {{ channel.name }}? It will be removed from active
+                      navigation, while its message history is preserved.
+                    </p>
+                    <div class="form-actions">
+                      <button
+                        mat-flat-button
+                        type="button"
+                        [disabled]="operations.isBusy"
+                        (click)="confirmChannelArchive(channel)"
+                      >
+                        @if (operations.isArchiving) {
+                          Archiving&hellip;
+                        } @else {
+                          Confirm archive
+                        }
+                      </button>
+                      <button
+                        mat-button
+                        type="button"
+                        [disabled]="operations.isBusy"
+                        (click)="cancelChannelArchive()"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                }
+              }
+
+              @if (view.updateError; as error) {
+                <div class="content-alert" role="alert">
+                  <p>{{ error.message }}</p>
+                  <button
+                    mat-button
+                    type="button"
+                    (click)="store.clearUpdateError()"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              }
+              @if (view.archiveError; as error) {
+                <div class="content-alert" role="alert">
+                  <p>{{ error.message }}</p>
+                  <button
+                    mat-button
+                    type="button"
+                    (click)="store.clearArchiveError()"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              }
+
+              <div class="channel-primary-content">
+                <app-analysis-runs
+                  [workspaceId]="workspaceId()"
+                  [channelId]="channel.id"
+                />
+
+                <app-channel-messages
+                  [channelId]="channel.id"
+                  [focusedMessageId]="focusedMessageId()"
+                  [canModerateMessages]="canModerateMessages()"
+                  (readThrough)="store.markChannelRead($event)"
+                />
+              </div>
+            </div>
+          } @else {
+            <div class="channel-state">
+              <h3>Select a channel</h3>
+              <p>Choose a channel to view its conversation.</p>
+              @if (compactNavigation) {
                 <button
+                  mat-flat-button
                   type="button"
-                  [disabled]="operations.isCreating || operations.isArchiving"
-                  (click)="beginChannelEditing()"
+                  (click)="toggleChannelNavigation()"
                 >
-                  Edit channel
-                </button>
-                <button
-                  type="button"
-                  [disabled]="
-                    operations.isCreating ||
-                    operations.isUpdating ||
-                    operations.isArchiving
-                  "
-                  (click)="beginChannelArchive()"
-                >
-                  Archive channel
+                  Browse channels
                 </button>
               }
-            }
-
-            @if (view.updateError; as error) {
-              <p role="alert">{{ error.message }}</p>
-              <button type="button" (click)="store.clearUpdateError()">
-                Dismiss
-              </button>
-            }
-
-            @if (view.archiveError; as error) {
-              <p role="alert">{{ error.message }}</p>
-              <button type="button" (click)="store.clearArchiveError()">
-                Dismiss
-              </button>
-            }
-
-            <app-channel-messages
-              [channelId]="channel.id"
-              [focusedMessageId]="focusedMessageId()"
-              [canModerateMessages]="canModerateMessages()"
-              (readThrough)="store.markChannelRead($event)"
-            />
-          </section>
-        } @else {
-          <p>Select a channel to view its messages.</p>
+            </div>
+          }
         }
       }
-      @if (canManageChannels()) {
-        <app-archived-channel-list
-          [workspaceId]="workspaceId()"
-          [activeChannels]="view.content.channels"
-          (channelRestored)="onChannelRestored($event)"
-        />
-      }
-    }
-  }
+    </mat-drawer-content>
+  </mat-drawer-container>
 </section>

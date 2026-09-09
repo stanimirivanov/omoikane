@@ -20,6 +20,15 @@ forms share one local stylesheet rather than a speculative component library.
 Presentation work must preserve this README's feature-state ownership and
 Angular execution boundaries.
 
+UI-2 establishes the authenticated application shell without changing feature
+ownership. The 48-pixel top bar, 68-pixel workspace rail, channel sidebar, and
+scrolling primary pane use nested Material drawers at the existing workspace
+and channel boundaries. Below 64rem the workspace rail becomes an overlay;
+below 48rem the channel sidebar does the same. Workspace utilities occupy an
+explicit end context drawer until their contents are redesigned in later UI
+slices. Drawer state is local presentation state, while the existing stores
+and query parameters remain the authoritative selection owners.
+
 ## Layer responsibilities
 
 - `core/`: application-wide runtime composition and thin Angular boundary
