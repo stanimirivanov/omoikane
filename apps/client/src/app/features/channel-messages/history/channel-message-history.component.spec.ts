@@ -2,7 +2,6 @@ import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Schema } from 'effect';
 import { describe, expect, it, vi } from 'vitest';
-import type { AuthenticationSession } from '@omoikane/application/authentication';
 import {
   MessageRevisionSchema,
   MessageSchema,
@@ -75,10 +74,7 @@ const configureComponent = async (
   } | null = null,
   canModerateMessages = false
 ) => {
-  const session = signal<AuthenticationSession | null>({
-    userId: currentUserId,
-    email: 'owner@omoikane.local',
-  });
+  const authenticatedUserId = signal<string | null>(currentUserId);
   const store = {
     messages: signal(messages),
     authorProfiles: signal(authorProfiles),
@@ -123,7 +119,7 @@ const configureComponent = async (
       },
       {
         provide: AuthenticationStore,
-        useValue: { session },
+        useValue: { currentUserId: authenticatedUserId },
       },
     ],
   }).compileComponents();
@@ -133,7 +129,7 @@ const configureComponent = async (
   fixture.componentRef.setInput('canModerateMessages', canModerateMessages);
   fixture.detectChanges();
 
-  return { fixture, session, store };
+  return { authenticatedUserId, fixture, store };
 };
 
 const findButton = (
@@ -276,11 +272,8 @@ describe('ChannelMessageHistoryComponent', () => {
   });
 
   it('reacts to an authoritative session identity change', async () => {
-    const { fixture, session } = await configureComponent();
-    session.set({
-      userId: otherUserId,
-      email: 'member@omoikane.local',
-    });
+    const { authenticatedUserId, fixture } = await configureComponent();
+    authenticatedUserId.set(otherUserId);
     fixture.detectChanges();
 
     const items: NodeListOf<HTMLLIElement> =

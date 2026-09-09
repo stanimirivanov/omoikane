@@ -7,23 +7,25 @@ import type { AuthenticationSession } from '@omoikane/application/authentication
 import { ProfileApplicationService } from '@client/core/profile/profile-application.service';
 import { WorkspaceApplicationService } from '@client/core/workspace/workspace-application.service';
 import { AuthenticationStore } from './store/authentication.store';
+import type {
+  AuthenticationShellView,
+  PasswordRecoveryView,
+} from './store/authentication.state';
 import { AuthenticationShellComponent } from './authentication-shell.component';
 
 describe('AuthenticationShellComponent', () => {
   const configureComponent = async (
     options: {
-      readonly initializing?: boolean;
-      readonly authenticated?: boolean;
-      readonly recovering?: boolean;
+      readonly view?: AuthenticationShellView;
       readonly session?: AuthenticationSession | null;
     } = {}
   ) => {
     const store = {
-      isInitializing: signal(options.initializing ?? false),
+      shellView: signal<AuthenticationShellView>(options.view ?? 'anonymous'),
 
-      isAuthenticated: signal(options.authenticated ?? false),
-
-      isPasswordRecoveryActive: signal(options.recovering ?? false),
+      passwordRecoveryView: signal<PasswordRecoveryView>(
+        options.view === 'password-recovery' ? 'update-form' : 'request-form'
+      ),
 
       isSigningIn: signal(false),
 
@@ -33,11 +35,7 @@ describe('AuthenticationShellComponent', () => {
 
       isRequestingPasswordReset: signal(false),
 
-      isPasswordResetEmailSent: signal(false),
-
       isUpdatingPassword: signal(false),
-
-      isPasswordUpdateComplete: signal(false),
 
       isSigningOut: signal(false),
 
@@ -127,7 +125,7 @@ describe('AuthenticationShellComponent', () => {
 
   it('initializes authentication once when created', async () => {
     const { store } = await configureComponent({
-      initializing: true,
+      view: 'initializing',
     });
 
     expect(store.initialize).toHaveBeenCalledOnce();
@@ -135,7 +133,7 @@ describe('AuthenticationShellComponent', () => {
 
   it('renders the restored session email', async () => {
     const { fixture } = await configureComponent({
-      authenticated: true,
+      view: 'authenticated',
 
       session: {
         userId: '00000000-0000-4000-8000-000000000001',
@@ -149,8 +147,7 @@ describe('AuthenticationShellComponent', () => {
 
   it('renders sign-in content for an anonymous user', async () => {
     const { fixture } = await configureComponent({
-      initializing: false,
-      authenticated: false,
+      view: 'anonymous',
     });
 
     expect(fixture.nativeElement.textContent).toContain('Omoikane');
@@ -195,8 +192,7 @@ describe('AuthenticationShellComponent', () => {
 
   it('gives an active recovery session precedence over authenticated content', async () => {
     const { fixture } = await configureComponent({
-      authenticated: true,
-      recovering: true,
+      view: 'password-recovery',
       session: {
         userId: '00000000-0000-4000-8000-000000000001',
         email: 'owner@omoikane.local',

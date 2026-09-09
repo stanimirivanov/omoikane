@@ -13,7 +13,11 @@ import type {
   AuthenticationSessionChange,
 } from '@omoikane/application/authentication';
 import { AuthenticationApplicationService } from '@client/core/authentication/authentication-application.service';
-import { initialAuthenticationState } from './authentication.state';
+import {
+  initialAuthenticationState,
+  type AuthenticationShellView,
+  type PasswordRecoveryView,
+} from './authentication.state';
 import { toAuthenticationPresentationError } from './to-authentication-presentation-error';
 
 /**
@@ -33,6 +37,8 @@ export const AuthenticationStore = signalStore(
     isInitializing: computed(() => store.status() === 'initializing'),
 
     isAuthenticated: computed(() => store.status() === 'authenticated'),
+
+    currentUserId: computed(() => store.session()?.userId ?? null),
 
     isSigningIn: computed(() => store.signInStatus() === 'pending'),
 
@@ -71,6 +77,43 @@ export const AuthenticationStore = signalStore(
     ),
 
     isSigningOut: computed(() => store.signOutStatus() === 'pending'),
+  })),
+
+  /*
+   * Compose low-level authentication facts into mutually exclusive views so
+   * templates do not need to reproduce workflow precedence.
+   */
+  withComputed((store) => ({
+    shellView: computed<AuthenticationShellView>(() => {
+      const status = store.status();
+
+      if (status === 'initializing') {
+        return 'initializing';
+      }
+
+      if (store.isPasswordRecoveryActive()) {
+        return 'password-recovery';
+      }
+
+      return status;
+    }),
+
+    passwordRecoveryView: computed<PasswordRecoveryView>(() => {
+      switch (store.passwordRecoveryStatus()) {
+        case 'completed':
+          return 'update-complete';
+
+        case 'ready':
+        case 'pending':
+        case 'failed':
+          return 'update-form';
+
+        case 'idle':
+          return store.isPasswordResetEmailSent()
+            ? 'email-sent'
+            : 'request-form';
+      }
+    }),
   })),
 
   withMethods(

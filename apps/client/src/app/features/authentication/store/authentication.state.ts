@@ -9,6 +9,18 @@ export type AuthenticationStatus =
   | 'authenticated';
 
 /**
+ * Mutually exclusive presentation selected by the authentication shell.
+ *
+ * Password recovery intentionally takes precedence over an authenticated
+ * session once initialization has completed.
+ */
+export type AuthenticationShellView =
+  | 'initializing'
+  | 'password-recovery'
+  | 'authenticated'
+  | 'anonymous';
+
+/**
  * State of one user-triggered authentication operation.
  */
 export type AuthenticationOperationStatus = 'idle' | 'pending' | 'failed';
@@ -33,6 +45,13 @@ export type PasswordRecoveryStatus =
   | 'pending'
   | 'failed'
   | 'completed';
+
+/** Mutually exclusive step rendered by the password-recovery component. */
+export type PasswordRecoveryView =
+  | 'update-complete'
+  | 'update-form'
+  | 'email-sent'
+  | 'request-form';
 
 /**
  * Safe error representation rendered by Angular.

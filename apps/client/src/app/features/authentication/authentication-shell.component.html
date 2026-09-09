@@ -1,8 +1,8 @@
-@if (
-  !store.isInitializing() &&
-  store.isAuthenticated() &&
-  !store.isPasswordRecoveryActive()
-) {
+@let shellView = store.shellView();
+
+@if (shellView === 'authenticated') {
+  @let isSigningOut = store.isSigningOut();
+
   <header class="application-header">
     <div class="product-identity">
       <span class="product-mark" aria-hidden="true">O</span>
@@ -24,10 +24,10 @@
       <button
         mat-stroked-button
         type="button"
-        [disabled]="store.isSigningOut()"
+        [disabled]="isSigningOut"
         (click)="store.signOut()"
       >
-        @if (store.isSigningOut()) {
+        @if (isSigningOut) {
           Signing out…
         } @else {
           Sign out
@@ -77,65 +77,83 @@
       </div>
 
       <div class="account-card">
-        @if (store.isInitializing()) {
-          <section class="session-loading" aria-labelledby="session-heading">
-            <mat-spinner diameter="34" />
-            <div>
-              <h1 id="session-heading">Welcome back</h1>
-              <p role="status">Restoring session…</p>
-            </div>
-          </section>
-        } @else if (store.isPasswordRecoveryActive()) {
-          <app-password-recovery />
-        } @else {
-          <nav class="account-tabs" aria-label="Account access">
-            <button
-              mat-button
-              type="button"
-              [class.account-tab--active]="anonymousView() === 'sign-in'"
-              [attr.aria-pressed]="anonymousView() === 'sign-in'"
-              (click)="showAnonymousView('sign-in')"
-            >
-              Sign in
-            </button>
+        @switch (shellView) {
+          @case ('initializing') {
+            <section class="session-loading" aria-labelledby="session-heading">
+              <mat-spinner diameter="34" />
+              <div>
+                <h1 id="session-heading">Welcome back</h1>
+                <p role="status">Restoring session…</p>
+              </div>
+            </section>
+          }
 
-            <button
-              mat-button
-              type="button"
-              [class.account-tab--active]="anonymousView() === 'sign-up'"
-              [attr.aria-pressed]="anonymousView() === 'sign-up'"
-              (click)="showAnonymousView('sign-up')"
-            >
-              Create account
-            </button>
-          </nav>
-
-          @if (anonymousView() === 'sign-in') {
-            <app-sign-in />
-
-            <button
-              mat-button
-              class="account-link"
-              type="button"
-              (click)="showAnonymousView('password-recovery')"
-            >
-              Forgot password?
-              <svg lucideArrowRight [size]="16"></svg>
-            </button>
-          } @else if (anonymousView() === 'sign-up') {
-            <app-sign-up />
-          } @else {
+          @case ('password-recovery') {
             <app-password-recovery />
+          }
 
-            <button
-              mat-button
-              class="account-link"
-              type="button"
-              (click)="showAnonymousView('sign-in')"
-            >
-              Back to sign in
-              <svg lucideArrowRight [size]="16"></svg>
-            </button>
+          @case ('anonymous') {
+            @let selectedAnonymousView = anonymousView();
+
+            <nav class="account-tabs" aria-label="Account access">
+              <button
+                mat-button
+                type="button"
+                [class.account-tab--active]="
+                  selectedAnonymousView === 'sign-in'
+                "
+                [attr.aria-pressed]="selectedAnonymousView === 'sign-in'"
+                (click)="showAnonymousView('sign-in')"
+              >
+                Sign in
+              </button>
+
+              <button
+                mat-button
+                type="button"
+                [class.account-tab--active]="
+                  selectedAnonymousView === 'sign-up'
+                "
+                [attr.aria-pressed]="selectedAnonymousView === 'sign-up'"
+                (click)="showAnonymousView('sign-up')"
+              >
+                Create account
+              </button>
+            </nav>
+
+            @switch (selectedAnonymousView) {
+              @case ('sign-in') {
+                <app-sign-in />
+
+                <button
+                  mat-button
+                  class="account-link"
+                  type="button"
+                  (click)="showAnonymousView('password-recovery')"
+                >
+                  Forgot password?
+                  <svg lucideArrowRight [size]="16"></svg>
+                </button>
+              }
+
+              @case ('sign-up') {
+                <app-sign-up />
+              }
+
+              @case ('password-recovery') {
+                <app-password-recovery />
+
+                <button
+                  mat-button
+                  class="account-link"
+                  type="button"
+                  (click)="showAnonymousView('sign-in')"
+                >
+                  Back to sign in
+                  <svg lucideArrowRight [size]="16"></svg>
+                </button>
+              }
+            }
           }
         }
       </div>

@@ -14,6 +14,8 @@ import { AuthenticationStore } from './store/authentication.store';
 import { CurrentProfileComponent } from '../current-profile/current-profile.component';
 import { WorkspaceNavigationComponent } from '../workspace-navigation/workspace-navigation.component';
 
+type AnonymousAuthenticationView = 'sign-in' | 'sign-up' | 'password-recovery';
+
 /**
  * Application entry shell selected by authentication state.
  *
@@ -44,9 +46,8 @@ import { WorkspaceNavigationComponent } from '../workspace-navigation/workspace-
 export class AuthenticationShellComponent {
   protected readonly store = inject(AuthenticationStore);
 
-  protected readonly anonymousView = signal<
-    'sign-in' | 'sign-up' | 'password-recovery'
-  >('sign-in');
+  protected readonly anonymousView =
+    signal<AnonymousAuthenticationView>('sign-in');
 
   constructor() {
     /*
@@ -56,9 +57,7 @@ export class AuthenticationShellComponent {
     void this.store.initialize();
   }
 
-  protected showAnonymousView(
-    view: 'sign-in' | 'sign-up' | 'password-recovery'
-  ): void {
+  protected showAnonymousView(view: AnonymousAuthenticationView): void {
     this.store.clearError();
     this.anonymousView.set(view);
   }

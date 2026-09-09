@@ -1,5 +1,9 @@
 <section class="auth-form" aria-labelledby="sign-up-heading">
-  @if (store.requiresEmailConfirmation()) {
+  @let requiresEmailConfirmation = store.requiresEmailConfirmation();
+
+  @if (requiresEmailConfirmation) {
+    @let isResendingConfirmationEmail = store.isResendingConfirmationEmail();
+
     <span class="auth-completion-icon" aria-hidden="true">
       <svg lucideMailCheck [size]="24"></svg>
     </span>
@@ -31,10 +35,10 @@
       <button
         mat-flat-button
         type="button"
-        [disabled]="store.isResendingConfirmationEmail()"
+        [disabled]="isResendingConfirmationEmail"
         (click)="store.resendConfirmationEmail()"
       >
-        @if (store.isResendingConfirmationEmail()) {
+        @if (isResendingConfirmationEmail) {
           <mat-spinner diameter="18" />
           Sending confirmation...
         } @else {
@@ -45,13 +49,15 @@
       <button
         mat-stroked-button
         type="button"
-        [disabled]="store.isResendingConfirmationEmail()"
+        [disabled]="isResendingConfirmationEmail"
         (click)="store.resetSignUp()"
       >
         Register another email
       </button>
     </div>
   } @else {
+    @let isSigningUp = store.isSigningUp();
+
     <div class="auth-form__heading">
       <h1 id="sign-up-heading">Create your Omoikane account</h1>
       <p>Start with a secure account. Your workspace can grow from there.</p>
@@ -69,7 +75,7 @@
           type="email"
           autocomplete="email"
           required
-          [disabled]="store.isSigningUp()"
+          [disabled]="isSigningUp"
         />
       </mat-form-field>
 
@@ -84,7 +90,7 @@
           type="password"
           autocomplete="new-password"
           required
-          [disabled]="store.isSigningUp()"
+          [disabled]="isSigningUp"
         />
       </mat-form-field>
 
@@ -92,9 +98,9 @@
         mat-flat-button
         class="auth-primary-action"
         type="submit"
-        [disabled]="store.isSigningUp()"
+        [disabled]="isSigningUp"
       >
-        @if (store.isSigningUp()) {
+        @if (isSigningUp) {
           <mat-spinner diameter="18" />
           Creating account...
         } @else {
