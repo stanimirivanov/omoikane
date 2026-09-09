@@ -1,4 +1,6 @@
 <section class="auth-form" aria-labelledby="sign-in-heading">
+  @let isSigningIn = store.isSigningIn();
+
   <div class="auth-form__heading">
     <h1 id="sign-in-heading">Sign in to Omoikane</h1>
     <p>Continue to your workspaces, conversations, and analysis.</p>
@@ -16,7 +18,7 @@
         type="email"
         autocomplete="email"
         required
-        [disabled]="store.isSigningIn()"
+        [disabled]="isSigningIn"
       />
     </mat-form-field>
 
@@ -31,7 +33,7 @@
         type="password"
         autocomplete="current-password"
         required
-        [disabled]="store.isSigningIn()"
+        [disabled]="isSigningIn"
       />
     </mat-form-field>
 
@@ -39,9 +41,9 @@
       mat-flat-button
       class="auth-primary-action"
       type="submit"
-      [disabled]="store.isSigningIn()"
+      [disabled]="isSigningIn"
     >
-      @if (store.isSigningIn()) {
+      @if (isSigningIn) {
         <mat-spinner diameter="18" />
         Signing in…
       } @else {
