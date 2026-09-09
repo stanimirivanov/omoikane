@@ -1,4 +1,13 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import {
+  LucideArrowRight,
+  LucideLockKeyhole,
+  LucideMail,
+} from '@lucide/angular';
 import { AuthenticationStore } from '../store/authentication.store';
 
 /**
@@ -10,7 +19,17 @@ import { AuthenticationStore } from '../store/authentication.store';
 @Component({
   selector: 'app-sign-in',
   standalone: true,
+  imports: [
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatProgressSpinnerModule,
+    LucideArrowRight,
+    LucideLockKeyhole,
+    LucideMail,
+  ],
   templateUrl: './sign-in.component.html',
+  styleUrl: '../authentication-form.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SignInComponent {

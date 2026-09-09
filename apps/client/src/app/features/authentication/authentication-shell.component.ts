@@ -4,6 +4,9 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { LucideArrowRight, LucideSparkles } from '@lucide/angular';
 import { SignInComponent } from './sign-in/sign-in.component';
 import { SignUpComponent } from './sign-up/sign-up.component';
 import { PasswordRecoveryComponent } from './password-recovery/password-recovery.component';
@@ -29,6 +32,10 @@ import { WorkspaceNavigationComponent } from '../workspace-navigation/workspace-
     PasswordRecoveryComponent,
     CurrentProfileComponent,
     WorkspaceNavigationComponent,
+    MatButtonModule,
+    MatProgressSpinnerModule,
+    LucideArrowRight,
+    LucideSparkles,
   ],
   templateUrl: './authentication-shell.component.html',
   styleUrl: './authentication-shell.component.css',

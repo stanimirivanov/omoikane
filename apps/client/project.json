@@ -20,7 +20,7 @@
             "input": "apps/client/public"
           }
         ],
-        "styles": ["apps/client/src/styles.css"]
+        "styles": ["apps/client/src/styles.scss"]
       },
       "configurations": {
         "production": {

@@ -1,11 +1,15 @@
-<section aria-labelledby="sign-in-heading">
-  <h1 id="sign-in-heading">Sign in to Omoikane</h1>
+<section class="auth-form" aria-labelledby="sign-in-heading">
+  <div class="auth-form__heading">
+    <h1 id="sign-in-heading">Sign in to Omoikane</h1>
+    <p>Continue to your workspaces, conversations, and analysis.</p>
+  </div>
 
   <form (submit)="$event.preventDefault(); submit(emailInput, passwordInput)">
-    <div>
-      <label for="sign-in-email"> Email </label>
-
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Email</mat-label>
+      <svg matPrefix lucideMail [size]="18"></svg>
       <input
+        matInput
         #emailInput
         id="sign-in-email"
         name="email"
@@ -14,12 +18,13 @@
         required
         [disabled]="store.isSigningIn()"
       />
-    </div>
+    </mat-form-field>
 
-    <div>
-      <label for="sign-in-password"> Password </label>
-
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Password</mat-label>
+      <svg matPrefix lucideLockKeyhole [size]="18"></svg>
       <input
+        matInput
         #passwordInput
         id="sign-in-password"
         name="password"
@@ -28,22 +33,30 @@
         required
         [disabled]="store.isSigningIn()"
       />
-    </div>
+    </mat-form-field>
 
-    <button type="submit" [disabled]="store.isSigningIn()">
+    <button
+      mat-flat-button
+      class="auth-primary-action"
+      type="submit"
+      [disabled]="store.isSigningIn()"
+    >
       @if (store.isSigningIn()) {
+        <mat-spinner diameter="18" />
         Signing in…
       } @else {
         Sign in
+        <svg lucideArrowRight [size]="17"></svg>
       }
     </button>
   </form>
 
   @if (store.error(); as error) {
-    <p role="alert">
-      {{ error.message }}
-    </p>
-
-    <button type="button" (click)="store.clearError()">Dismiss</button>
+    <div class="auth-feedback auth-feedback--error" role="alert">
+      <p>{{ error.message }}</p>
+      <button mat-button type="button" (click)="store.clearError()">
+        Dismiss
+      </button>
+    </div>
   }
 </section>

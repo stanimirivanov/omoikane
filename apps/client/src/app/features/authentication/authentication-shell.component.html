@@ -1,18 +1,18 @@
-<header class="application-header">
-  <div class="product-identity">
-    <span class="product-mark" aria-hidden="true">O</span>
+@if (
+  !store.isInitializing() &&
+  store.isAuthenticated() &&
+  !store.isPasswordRecoveryActive()
+) {
+  <header class="application-header">
+    <div class="product-identity">
+      <span class="product-mark" aria-hidden="true">O</span>
 
-    <p class="product-wordmark">
-      <strong>Omoikane</strong>
-      <span>The Collaborative Intelligence Platform</span>
-    </p>
-  </div>
+      <p class="product-wordmark">
+        <strong>Omoikane</strong>
+        <span>The Collaborative Intelligence Platform</span>
+      </p>
+    </div>
 
-  @if (
-    !store.isInitializing() &&
-    store.isAuthenticated() &&
-    !store.isPasswordRecoveryActive()
-  ) {
     <div class="account-actions">
       @if (store.session(); as session) {
         <app-current-profile
@@ -22,6 +22,7 @@
       }
 
       <button
+        mat-stroked-button
         type="button"
         [disabled]="store.isSigningOut()"
         (click)="store.signOut()"
@@ -33,19 +34,9 @@
         }
       </button>
     </div>
-  }
-</header>
+  </header>
 
-@if (store.isInitializing()) {
-  <main>
-    <p>Restoring session…</p>
-  </main>
-} @else if (store.isPasswordRecoveryActive()) {
-  <main>
-    <app-password-recovery />
-  </main>
-} @else if (store.isAuthenticated()) {
-  <main>
+  <main class="authenticated-content">
     <app-workspace-navigation />
   </main>
 
@@ -54,40 +45,104 @@
       {{ error.message }}
     </p>
 
-    <button type="button" (click)="store.clearError()">Dismiss</button>
+    <button mat-button type="button" (click)="store.clearError()">
+      Dismiss
+    </button>
   }
 } @else {
-  <nav aria-label="Account access">
-    <button
-      type="button"
-      [attr.aria-pressed]="anonymousView() === 'sign-in'"
-      (click)="showAnonymousView('sign-in')"
-    >
-      Sign in
-    </button>
+  <div class="authentication-page">
+    <aside class="brand-panel" aria-label="About Omoikane">
+      <div class="brand-lockup">
+        <span class="brand-mark" aria-hidden="true">O</span>
+        <span class="brand-name">Omoikane</span>
+      </div>
 
-    <button
-      type="button"
-      [attr.aria-pressed]="anonymousView() === 'sign-up'"
-      (click)="showAnonymousView('sign-up')"
-    >
-      Create account
-    </button>
-  </nav>
+      <div class="brand-message">
+        <p class="brand-eyebrow">
+          <svg lucideSparkles [size]="17"></svg>
+          Collaborative intelligence
+        </p>
+        <h2>Turn everyday collaboration into shared understanding.</h2>
+        <p>
+          Keep conversations, context, and evidence together in one focused
+          workspace.
+        </p>
+      </div>
+    </aside>
 
-  @if (anonymousView() === 'sign-in') {
-    <app-sign-in />
+    <main class="account-access">
+      <div class="mobile-brand" aria-hidden="true">
+        <span class="brand-mark">O</span>
+        <span class="brand-name">Omoikane</span>
+      </div>
 
-    <button type="button" (click)="showAnonymousView('password-recovery')">
-      Forgot password?
-    </button>
-  } @else if (anonymousView() === 'sign-up') {
-    <app-sign-up />
-  } @else {
-    <app-password-recovery />
+      <div class="account-card">
+        @if (store.isInitializing()) {
+          <section class="session-loading" aria-labelledby="session-heading">
+            <mat-spinner diameter="34" />
+            <div>
+              <h1 id="session-heading">Welcome back</h1>
+              <p role="status">Restoring session…</p>
+            </div>
+          </section>
+        } @else if (store.isPasswordRecoveryActive()) {
+          <app-password-recovery />
+        } @else {
+          <nav class="account-tabs" aria-label="Account access">
+            <button
+              mat-button
+              type="button"
+              [class.account-tab--active]="anonymousView() === 'sign-in'"
+              [attr.aria-pressed]="anonymousView() === 'sign-in'"
+              (click)="showAnonymousView('sign-in')"
+            >
+              Sign in
+            </button>
 
-    <button type="button" (click)="showAnonymousView('sign-in')">
-      Back to sign in
-    </button>
-  }
+            <button
+              mat-button
+              type="button"
+              [class.account-tab--active]="anonymousView() === 'sign-up'"
+              [attr.aria-pressed]="anonymousView() === 'sign-up'"
+              (click)="showAnonymousView('sign-up')"
+            >
+              Create account
+            </button>
+          </nav>
+
+          @if (anonymousView() === 'sign-in') {
+            <app-sign-in />
+
+            <button
+              mat-button
+              class="account-link"
+              type="button"
+              (click)="showAnonymousView('password-recovery')"
+            >
+              Forgot password?
+              <svg lucideArrowRight [size]="16"></svg>
+            </button>
+          } @else if (anonymousView() === 'sign-up') {
+            <app-sign-up />
+          } @else {
+            <app-password-recovery />
+
+            <button
+              mat-button
+              class="account-link"
+              type="button"
+              (click)="showAnonymousView('sign-in')"
+            >
+              Back to sign in
+              <svg lucideArrowRight [size]="16"></svg>
+            </button>
+          }
+        }
+      </div>
+
+      <p class="account-footer">
+        Omoikane · The Collaborative Intelligence Platform
+      </p>
+    </main>
+  </div>
 }

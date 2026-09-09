@@ -1,4 +1,14 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import {
+  LucideArrowRight,
+  LucideLockKeyhole,
+  LucideMail,
+  LucideMailCheck,
+} from '@lucide/angular';
 import { AuthenticationStore } from '../store/authentication.store';
 
 /**
@@ -11,7 +21,18 @@ import { AuthenticationStore } from '../store/authentication.store';
 @Component({
   selector: 'app-sign-up',
   standalone: true,
+  imports: [
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatProgressSpinnerModule,
+    LucideArrowRight,
+    LucideLockKeyhole,
+    LucideMail,
+    LucideMailCheck,
+  ],
   templateUrl: './sign-up.component.html',
+  styleUrl: '../authentication-form.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SignUpComponent {

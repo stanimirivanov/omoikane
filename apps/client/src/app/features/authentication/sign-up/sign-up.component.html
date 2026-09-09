@@ -1,51 +1,68 @@
-<section aria-labelledby="sign-up-heading">
+<section class="auth-form" aria-labelledby="sign-up-heading">
   @if (store.requiresEmailConfirmation()) {
-    <h1 id="sign-up-heading">Check your email</h1>
+    <span class="auth-completion-icon" aria-hidden="true">
+      <svg lucideMailCheck [size]="24"></svg>
+    </span>
 
-    <p role="status">
-      Confirm your email address before signing in to Omoikane.
-    </p>
+    <div class="auth-form__heading">
+      <h1 id="sign-up-heading">Check your email</h1>
+      <p role="status">
+        Confirm your email address before signing in to Omoikane.
+      </p>
+    </div>
 
     @if (store.confirmationEmail(); as email) {
-      <p>
+      <p class="auth-supporting-text">
         Confirmation was requested for <strong>{{ email }}</strong
         >.
       </p>
     }
 
     @if (store.wasConfirmationEmailResent()) {
-      <p role="status">
-        If the address still requires confirmation, another email has been sent.
-      </p>
+      <div class="auth-feedback auth-feedback--success" role="status">
+        <p>
+          If the address still requires confirmation, another email has been
+          sent.
+        </p>
+      </div>
     }
 
-    <button
-      type="button"
-      [disabled]="store.isResendingConfirmationEmail()"
-      (click)="store.resendConfirmationEmail()"
-    >
-      @if (store.isResendingConfirmationEmail()) {
-        Sending confirmation...
-      } @else {
-        Resend confirmation email
-      }
-    </button>
+    <div class="auth-secondary-actions">
+      <button
+        mat-flat-button
+        type="button"
+        [disabled]="store.isResendingConfirmationEmail()"
+        (click)="store.resendConfirmationEmail()"
+      >
+        @if (store.isResendingConfirmationEmail()) {
+          <mat-spinner diameter="18" />
+          Sending confirmation...
+        } @else {
+          Resend confirmation email
+        }
+      </button>
 
-    <button
-      type="button"
-      [disabled]="store.isResendingConfirmationEmail()"
-      (click)="store.resetSignUp()"
-    >
-      Register another email
-    </button>
+      <button
+        mat-stroked-button
+        type="button"
+        [disabled]="store.isResendingConfirmationEmail()"
+        (click)="store.resetSignUp()"
+      >
+        Register another email
+      </button>
+    </div>
   } @else {
-    <h1 id="sign-up-heading">Create your Omoikane account</h1>
+    <div class="auth-form__heading">
+      <h1 id="sign-up-heading">Create your Omoikane account</h1>
+      <p>Start with a secure account. Your workspace can grow from there.</p>
+    </div>
 
     <form (submit)="$event.preventDefault(); submit(emailInput, passwordInput)">
-      <div>
-        <label for="sign-up-email"> Email </label>
-
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Email</mat-label>
+        <svg matPrefix lucideMail [size]="18"></svg>
         <input
+          matInput
           #emailInput
           id="sign-up-email"
           name="email"
@@ -54,12 +71,13 @@
           required
           [disabled]="store.isSigningUp()"
         />
-      </div>
+      </mat-form-field>
 
-      <div>
-        <label for="sign-up-password"> Password </label>
-
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Password</mat-label>
+        <svg matPrefix lucideLockKeyhole [size]="18"></svg>
         <input
+          matInput
           #passwordInput
           id="sign-up-password"
           name="password"
@@ -68,23 +86,31 @@
           required
           [disabled]="store.isSigningUp()"
         />
-      </div>
+      </mat-form-field>
 
-      <button type="submit" [disabled]="store.isSigningUp()">
+      <button
+        mat-flat-button
+        class="auth-primary-action"
+        type="submit"
+        [disabled]="store.isSigningUp()"
+      >
         @if (store.isSigningUp()) {
+          <mat-spinner diameter="18" />
           Creating account...
         } @else {
           Create account
+          <svg lucideArrowRight [size]="17"></svg>
         }
       </button>
     </form>
   }
 
   @if (store.error(); as error) {
-    <p role="alert">
-      {{ error.message }}
-    </p>
-
-    <button type="button" (click)="store.clearError()">Dismiss</button>
+    <div class="auth-feedback auth-feedback--error" role="alert">
+      <p>{{ error.message }}</p>
+      <button mat-button type="button" (click)="store.clearError()">
+        Dismiss
+      </button>
+    </div>
   }
 </section>

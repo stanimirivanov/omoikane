@@ -13,8 +13,7 @@ the [Omoikane documentation](docs/README.md).
 ## Technology
 
 - Angular 22 for the browser application and dependency-injection boundary
-- Angular Material and Lucide as the approved presentation foundation; package
-  installation begins with UI-1
+- Angular Material and Lucide as the Angular client's presentation foundation
 - NgRx Signal Store for feature-local presentation state
 - Effect for typed application workflows, dependency injection, and failures
 - Supabase for authentication, PostgreSQL, row-level security, realtime, and
