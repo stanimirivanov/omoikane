@@ -12,6 +12,8 @@ import {
   signOut,
   updatePassword,
   type AuthenticationError,
+  type AuthenticationOperation,
+  type AuthenticationService,
   type AuthenticationSession,
   type AuthenticationSessionChange,
   type SignInInput,
@@ -34,15 +36,30 @@ import { logAuthenticationError } from './log-authentication-error';
 export class AuthenticationApplicationService {
   private readonly document = inject(DOCUMENT);
 
+  /** Executes one authentication Effect with consistent safe diagnostics. */
+  private run<A>(
+    operation: AuthenticationOperation,
+    program: Effect.Effect<A, AuthenticationError, AuthenticationService>
+  ): Promise<Either.Either<A, AuthenticationError>> {
+    return applicationRuntime.runPromise(
+      program.pipe(
+        Effect.tapError((error) =>
+          Effect.sync(() => {
+            logAuthenticationError(operation, error);
+          })
+        ),
+        Effect.either
+      )
+    );
+  }
+
   private rootCallbackUrl(): string {
     return new URL('/', this.document.location.origin).toString();
   }
 
   /** Retrieves a transient token for one trusted API call without storing it. */
   currentAccessToken(): Promise<Either.Either<string, AuthenticationError>> {
-    return applicationRuntime.runPromise(
-      getCurrentAccessToken.pipe(Effect.either)
-    );
+    return this.run('get-access-token', getCurrentAccessToken);
   }
 
   /**
@@ -51,16 +68,7 @@ export class AuthenticationApplicationService {
   restoreSession(): Promise<
     Either.Either<AuthenticationSession | null, AuthenticationError>
   > {
-    const program = restoreSession.pipe(
-      Effect.tapError((error) =>
-        Effect.sync(() => {
-          logAuthenticationError('restore-session', error);
-        })
-      ),
-      Effect.either
-    );
-
-    return applicationRuntime.runPromise(program);
+    return this.run('restore-session', restoreSession);
   }
 
   /**
@@ -71,16 +79,7 @@ export class AuthenticationApplicationService {
   signIn(
     input: SignInInput
   ): Promise<Either.Either<AuthenticationSession, AuthenticationError>> {
-    const program = signIn(input).pipe(
-      Effect.tapError((error) =>
-        Effect.sync(() => {
-          logAuthenticationError('sign-in', error);
-        })
-      ),
-      Effect.either
-    );
-
-    return applicationRuntime.runPromise(program);
+    return this.run('sign-in', signIn(input));
   }
 
   /**
@@ -92,35 +91,20 @@ export class AuthenticationApplicationService {
   signUp(
     input: SignUpInput
   ): Promise<Either.Either<SignUpResult, AuthenticationError>> {
-    const program = signUp(input).pipe(
-      Effect.tapError((error) =>
-        Effect.sync(() => {
-          logAuthenticationError('sign-up', error);
-        })
-      ),
-      Effect.either
-    );
-
-    return applicationRuntime.runPromise(program);
+    return this.run('sign-up', signUp(input));
   }
 
   /** Resends confirmation for an account awaiting email verification. */
   resendConfirmationEmail(
     email: string
   ): Promise<Either.Either<void, AuthenticationError>> {
-    const program = resendConfirmationEmail({
-      email,
-      redirectUrl: this.rootCallbackUrl(),
-    }).pipe(
-      Effect.tapError((error) =>
-        Effect.sync(() => {
-          logAuthenticationError('resend-confirmation-email', error);
-        })
-      ),
-      Effect.either
+    return this.run(
+      'resend-confirmation-email',
+      resendConfirmationEmail({
+        email,
+        redirectUrl: this.rootCallbackUrl(),
+      })
     );
-
-    return applicationRuntime.runPromise(program);
   }
 
   /**
@@ -133,51 +117,27 @@ export class AuthenticationApplicationService {
   requestPasswordReset(
     email: string
   ): Promise<Either.Either<void, AuthenticationError>> {
-    const program = requestPasswordReset({
-      email,
-      redirectUrl: this.rootCallbackUrl(),
-    }).pipe(
-      Effect.tapError((error) =>
-        Effect.sync(() => {
-          logAuthenticationError('request-password-reset', error);
-        })
-      ),
-      Effect.either
+    return this.run(
+      'request-password-reset',
+      requestPasswordReset({
+        email,
+        redirectUrl: this.rootCallbackUrl(),
+      })
     );
-
-    return applicationRuntime.runPromise(program);
   }
 
   /** Updates the password belonging to the active recovery session. */
   updatePassword(
     input: UpdatePasswordInput
   ): Promise<Either.Either<void, AuthenticationError>> {
-    const program = updatePassword(input).pipe(
-      Effect.tapError((error) =>
-        Effect.sync(() => {
-          logAuthenticationError('update-password', error);
-        })
-      ),
-      Effect.either
-    );
-
-    return applicationRuntime.runPromise(program);
+    return this.run('update-password', updatePassword(input));
   }
 
   /**
    * Ends the current browser session.
    */
   signOut(): Promise<Either.Either<void, AuthenticationError>> {
-    const program = signOut.pipe(
-      Effect.tapError((error) =>
-        Effect.sync(() => {
-          logAuthenticationError('sign-out', error);
-        })
-      ),
-      Effect.either
-    );
-
-    return applicationRuntime.runPromise(program);
+    return this.run('sign-out', signOut);
   }
 
   /**

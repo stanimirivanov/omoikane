@@ -17,6 +17,7 @@ import {
   initialAuthenticationState,
   type AuthenticationShellView,
   type PasswordRecoveryView,
+  type SignUpView,
 } from './authentication.state';
 import { toAuthenticationPresentationError } from './to-authentication-presentation-error';
 
@@ -34,84 +35,87 @@ export const AuthenticationStore = signalStore(
   withState(initialAuthenticationState),
 
   withComputed((store) => ({
-    isInitializing: computed(() => store.status() === 'initializing'),
-
-    isAuthenticated: computed(() => store.status() === 'authenticated'),
-
     currentUserId: computed(() => store.session()?.userId ?? null),
 
     isSigningIn: computed(() => store.signInStatus() === 'pending'),
 
-    isSigningUp: computed(() => store.signUpStatus() === 'pending'),
-
-    requiresEmailConfirmation: computed(
-      () => store.signUpStatus() === 'confirmation-required'
+    isAuthenticationCommandPending: computed(
+      () =>
+        store.signInStatus() === 'pending' ||
+        store.signUpStatus() === 'pending' ||
+        store.confirmationEmailResendStatus() === 'pending' ||
+        store.signOutStatus() === 'pending' ||
+        store.passwordResetRequestStatus() === 'pending' ||
+        store.passwordRecoveryStatus() === 'pending'
     ),
 
-    isResendingConfirmationEmail: computed(
-      () => store.confirmationEmailResendStatus() === 'pending'
-    ),
+    signUpView: computed<SignUpView>(() => {
+      const status = store.signUpStatus();
+      const confirmationEmail = store.confirmationEmail();
 
-    wasConfirmationEmailResent: computed(
-      () => store.confirmationEmailResendStatus() === 'sent'
-    ),
+      if (status === 'confirmation-required' && confirmationEmail !== null) {
+        const resendStatus = store.confirmationEmailResendStatus();
 
-    isRequestingPasswordReset: computed(
-      () => store.passwordResetRequestStatus() === 'pending'
-    ),
+        return {
+          kind: 'confirmation-required',
+          email: confirmationEmail,
+          isResending: resendStatus === 'pending',
+          wasResent: resendStatus === 'sent',
+        };
+      }
 
-    isPasswordResetEmailSent: computed(
-      () => store.passwordResetRequestStatus() === 'sent'
-    ),
+      return {
+        kind: 'form',
+        isSubmitting: status === 'pending',
+      };
+    }),
 
-    isPasswordRecoveryActive: computed(
-      () => store.passwordRecoveryStatus() !== 'idle'
-    ),
-
-    isUpdatingPassword: computed(
-      () => store.passwordRecoveryStatus() === 'pending'
-    ),
-
-    isPasswordUpdateComplete: computed(
-      () => store.passwordRecoveryStatus() === 'completed'
-    ),
-
-    isSigningOut: computed(() => store.signOutStatus() === 'pending'),
-  })),
-
-  /*
-   * Compose low-level authentication facts into mutually exclusive views so
-   * templates do not need to reproduce workflow precedence.
-   */
-  withComputed((store) => ({
     shellView: computed<AuthenticationShellView>(() => {
       const status = store.status();
 
       if (status === 'initializing') {
-        return 'initializing';
+        return { kind: 'initializing' };
       }
 
-      if (store.isPasswordRecoveryActive()) {
-        return 'password-recovery';
+      if (store.passwordRecoveryStatus() !== 'idle') {
+        return { kind: 'password-recovery' };
       }
 
-      return status;
+      const session = store.session();
+
+      if (status === 'authenticated' && session !== null) {
+        return {
+          kind: 'authenticated',
+          session,
+          isSigningOut: store.signOutStatus() === 'pending',
+        };
+      }
+
+      return { kind: 'anonymous' };
     }),
 
     passwordRecoveryView: computed<PasswordRecoveryView>(() => {
-      switch (store.passwordRecoveryStatus()) {
+      const recoveryStatus = store.passwordRecoveryStatus();
+
+      switch (recoveryStatus) {
         case 'completed':
-          return 'update-complete';
+          return { kind: 'update-complete' };
 
         case 'ready':
         case 'pending':
         case 'failed':
-          return 'update-form';
+          return {
+            kind: 'update-form',
+            isSubmitting: recoveryStatus === 'pending',
+          };
 
         case 'idle':
-          return store.isPasswordResetEmailSent()
-            ? 'email-sent'
-            : 'request-form';
+          return store.passwordResetRequestStatus() === 'sent'
+            ? { kind: 'email-sent' }
+            : {
+                kind: 'request-form',
+                isSubmitting: store.passwordResetRequestStatus() === 'pending',
+              };
       }
     }),
   })),
@@ -161,14 +165,6 @@ export const AuthenticationStore = signalStore(
               : 'idle',
         });
       };
-
-      const isAuthenticationCommandPending = (): boolean =>
-        store.signInStatus() === 'pending' ||
-        store.signUpStatus() === 'pending' ||
-        store.confirmationEmailResendStatus() === 'pending' ||
-        store.signOutStatus() === 'pending' ||
-        store.passwordResetRequestStatus() === 'pending' ||
-        store.passwordRecoveryStatus() === 'pending';
 
       /**
        * Applies an authoritative provider notification and invalidates
@@ -293,7 +289,7 @@ export const AuthenticationStore = signalStore(
          * avoiding overlapping provider requests.
          */
         async signIn(email: string, password: string): Promise<boolean> {
-          if (isAuthenticationCommandPending()) {
+          if (store.isAuthenticationCommandPending()) {
             return false;
           }
 
@@ -349,7 +345,7 @@ export const AuthenticationStore = signalStore(
          * completion state instead of treating the absent session as failure.
          */
         async signUp(email: string, password: string): Promise<boolean> {
-          if (isAuthenticationCommandPending()) {
+          if (store.isAuthenticationCommandPending()) {
             return false;
           }
 
@@ -424,7 +420,7 @@ export const AuthenticationStore = signalStore(
             email === null ||
             store.status() !== 'anonymous' ||
             store.signUpStatus() !== 'confirmation-required' ||
-            isAuthenticationCommandPending()
+            store.isAuthenticationCommandPending()
           ) {
             return false;
           }
@@ -483,7 +479,7 @@ export const AuthenticationStore = signalStore(
         async requestPasswordReset(email: string): Promise<boolean> {
           if (
             store.status() !== 'anonymous' ||
-            isAuthenticationCommandPending()
+            store.isAuthenticationCommandPending()
           ) {
             return false;
           }
@@ -539,7 +535,7 @@ export const AuthenticationStore = signalStore(
             recoverySession === null ||
             (store.passwordRecoveryStatus() !== 'ready' &&
               store.passwordRecoveryStatus() !== 'failed') ||
-            isAuthenticationCommandPending()
+            store.isAuthenticationCommandPending()
           ) {
             return false;
           }
@@ -588,7 +584,7 @@ export const AuthenticationStore = signalStore(
          * Returns `false` while another authentication command is pending.
          */
         async signOut(): Promise<boolean> {
-          if (isAuthenticationCommandPending()) {
+          if (store.isAuthenticationCommandPending()) {
             return false;
           }
 

@@ -3,7 +3,6 @@ import { signal } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { Either } from 'effect';
 import { describe, expect, it, vi } from 'vitest';
-import type { AuthenticationSession } from '@omoikane/application/authentication';
 import { ProfileApplicationService } from '@client/core/profile/profile-application.service';
 import { WorkspaceApplicationService } from '@client/core/workspace/workspace-application.service';
 import { AuthenticationStore } from './store/authentication.store';
@@ -17,37 +16,24 @@ describe('AuthenticationShellComponent', () => {
   const configureComponent = async (
     options: {
       readonly view?: AuthenticationShellView;
-      readonly session?: AuthenticationSession | null;
     } = {}
   ) => {
     const store = {
-      shellView: signal<AuthenticationShellView>(options.view ?? 'anonymous'),
+      shellView: signal<AuthenticationShellView>(
+        options.view ?? { kind: 'anonymous' }
+      ),
 
       passwordRecoveryView: signal<PasswordRecoveryView>(
-        options.view === 'password-recovery' ? 'update-form' : 'request-form'
+        options.view?.kind === 'password-recovery'
+          ? { kind: 'update-form', isSubmitting: false }
+          : { kind: 'request-form', isSubmitting: false }
       ),
 
       isSigningIn: signal(false),
 
-      isSigningUp: signal(false),
-
-      isResendingConfirmationEmail: signal(false),
-
-      isRequestingPasswordReset: signal(false),
-
-      isUpdatingPassword: signal(false),
-
-      isSigningOut: signal(false),
-
-      session: signal(options.session ?? null),
+      signUpView: signal({ kind: 'form', isSubmitting: false } as const),
 
       error: signal(null),
-
-      requiresEmailConfirmation: signal(false),
-
-      confirmationEmail: signal(null),
-
-      wasConfirmationEmailResent: signal(false),
 
       initialize: vi.fn().mockResolvedValue(undefined),
 
@@ -125,7 +111,7 @@ describe('AuthenticationShellComponent', () => {
 
   it('initializes authentication once when created', async () => {
     const { store } = await configureComponent({
-      view: 'initializing',
+      view: { kind: 'initializing' },
     });
 
     expect(store.initialize).toHaveBeenCalledOnce();
@@ -133,12 +119,13 @@ describe('AuthenticationShellComponent', () => {
 
   it('renders the restored session email', async () => {
     const { fixture } = await configureComponent({
-      view: 'authenticated',
-
-      session: {
-        userId: '00000000-0000-4000-8000-000000000001',
-
-        email: 'owner@omoikane.local',
+      view: {
+        kind: 'authenticated',
+        isSigningOut: false,
+        session: {
+          userId: '00000000-0000-4000-8000-000000000001',
+          email: 'owner@omoikane.local',
+        },
       },
     });
 
@@ -147,7 +134,7 @@ describe('AuthenticationShellComponent', () => {
 
   it('renders sign-in content for an anonymous user', async () => {
     const { fixture } = await configureComponent({
-      view: 'anonymous',
+      view: { kind: 'anonymous' },
     });
 
     expect(fixture.nativeElement.textContent).toContain('Omoikane');
@@ -177,13 +164,12 @@ describe('AuthenticationShellComponent', () => {
 
   it('switches anonymous users to password recovery', async () => {
     const { fixture, store } = await configureComponent();
+    const element = fixture.nativeElement as HTMLElement;
     const forgotPasswordButton = Array.from(
-      fixture.nativeElement.querySelectorAll('button')
-    ).find((button: Element) =>
-      button.textContent?.includes('Forgot password')
-    );
+      element.querySelectorAll('button')
+    ).find((button) => button.textContent?.includes('Forgot password'));
 
-    (forgotPasswordButton as HTMLButtonElement | undefined)?.click();
+    forgotPasswordButton?.click();
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('Reset your password');
@@ -192,11 +178,7 @@ describe('AuthenticationShellComponent', () => {
 
   it('gives an active recovery session precedence over authenticated content', async () => {
     const { fixture } = await configureComponent({
-      view: 'password-recovery',
-      session: {
-        userId: '00000000-0000-4000-8000-000000000001',
-        email: 'owner@omoikane.local',
-      },
+      view: { kind: 'password-recovery' },
     });
 
     expect(fixture.nativeElement.textContent).toContain(

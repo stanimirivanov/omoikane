@@ -15,10 +15,14 @@ export type AuthenticationStatus =
  * session once initialization has completed.
  */
 export type AuthenticationShellView =
-  | 'initializing'
-  | 'password-recovery'
-  | 'authenticated'
-  | 'anonymous';
+  | { readonly kind: 'initializing' }
+  | { readonly kind: 'password-recovery' }
+  | {
+      readonly kind: 'authenticated';
+      readonly session: AuthenticationSession;
+      readonly isSigningOut: boolean;
+    }
+  | { readonly kind: 'anonymous' };
 
 /**
  * State of one user-triggered authentication operation.
@@ -48,10 +52,25 @@ export type PasswordRecoveryStatus =
 
 /** Mutually exclusive step rendered by the password-recovery component. */
 export type PasswordRecoveryView =
-  | 'update-complete'
-  | 'update-form'
-  | 'email-sent'
-  | 'request-form';
+  | { readonly kind: 'update-complete' }
+  | { readonly kind: 'update-form'; readonly isSubmitting: boolean }
+  | { readonly kind: 'email-sent' }
+  | { readonly kind: 'request-form'; readonly isSubmitting: boolean };
+
+/**
+ * Registration presentation with correlated confirmation data.
+ *
+ * A confirmation email is available only in the confirmation-required view,
+ * preventing its nullable storage representation from leaking to templates.
+ */
+export type SignUpView =
+  | { readonly kind: 'form'; readonly isSubmitting: boolean }
+  | {
+      readonly kind: 'confirmation-required';
+      readonly email: string;
+      readonly isResending: boolean;
+      readonly wasResent: boolean;
+    };
 
 /**
  * Safe error representation rendered by Angular.
@@ -62,6 +81,10 @@ export interface AuthenticationPresentationError {
 
 /**
  * State owned by the root authentication store.
+ *
+ * NgRx exposes each state property as an independently writable signal, so
+ * cross-property correlation is enforced by store transitions and projected
+ * into discriminated presentation models for readers.
  */
 export interface AuthenticationState {
   readonly status: AuthenticationStatus;

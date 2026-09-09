@@ -38,10 +38,7 @@ import { AuthenticationStore } from '../store/authentication.store';
 export class SignUpComponent {
   protected readonly store = inject(AuthenticationStore);
 
-  protected async submit(
-    emailInput: HTMLInputElement,
-    passwordInput: HTMLInputElement
-  ): Promise<void> {
-    await this.store.signUp(emailInput.value, passwordInput.value);
+  protected async submit(email: string, password: string): Promise<void> {
+    await this.store.signUp(email, password);
   }
 }

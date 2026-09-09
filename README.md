@@ -56,6 +56,9 @@ The project is developed as small vertical slices. New abstractions are
 introduced only after concrete duplication or coupling appears in implemented
 features.
 
+Contributor workflow and Angular presentation conventions are documented in
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
 The presentation-only modernization track is specified in the
 [UI/UX Redesign Plan](docs/product/ui-ux-redesign-plan.md). It applies a dense,
 Omoikane-specific collaboration workspace without changing the architecture or
