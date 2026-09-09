@@ -6,7 +6,11 @@
     <p>Continue to your workspaces, conversations, and analysis.</p>
   </div>
 
-  <form (submit)="$event.preventDefault(); submit(emailInput, passwordInput)">
+  <form
+    (submit)="
+      $event.preventDefault(); submit(emailInput.value, passwordInput.value)
+    "
+  >
     <mat-form-field appearance="outline" subscriptSizing="dynamic">
       <mat-label>Email</mat-label>
       <svg matPrefix lucideMail [size]="18"></svg>

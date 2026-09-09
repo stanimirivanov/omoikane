@@ -13,10 +13,8 @@ describe('PasswordRecoveryComponent', () => {
   ) => {
     const store = {
       passwordRecoveryView: signal<PasswordRecoveryView>(
-        options.view ?? 'request-form'
+        options.view ?? { kind: 'request-form', isSubmitting: false }
       ),
-      isRequestingPasswordReset: signal(false),
-      isUpdatingPassword: signal(false),
       error: signal(null),
       requestPasswordReset: vi.fn().mockResolvedValue(true),
       updatePassword: vi.fn().mockResolvedValue(true),
@@ -61,7 +59,7 @@ describe('PasswordRecoveryComponent', () => {
 
   it('renders the same completion notice regardless of account existence', async () => {
     const { fixture, store } = await configureComponent({
-      view: 'email-sent',
+      view: { kind: 'email-sent' },
     });
 
     expect(fixture.nativeElement.querySelector('form')).toBeNull();
@@ -78,7 +76,7 @@ describe('PasswordRecoveryComponent', () => {
 
   it('submits matching fields through the recovery session boundary', async () => {
     const { fixture, store } = await configureComponent({
-      view: 'update-form',
+      view: { kind: 'update-form', isSubmitting: false },
     });
     const passwordInput = fixture.nativeElement.querySelector(
       '#recovery-password'
@@ -101,15 +99,14 @@ describe('PasswordRecoveryComponent', () => {
 
   it('cancels recovery through the existing sign-out workflow', async () => {
     const { fixture, store } = await configureComponent({
-      view: 'update-form',
+      view: { kind: 'update-form', isSubmitting: false },
     });
-    const cancelButton = Array.from(
-      fixture.nativeElement.querySelectorAll('button')
-    ).find((button: Element) =>
-      button.textContent?.includes('Cancel recovery')
+    const element = fixture.nativeElement as HTMLElement;
+    const cancelButton = Array.from(element.querySelectorAll('button')).find(
+      (button) => button.textContent?.includes('Cancel recovery')
     );
 
-    (cancelButton as HTMLButtonElement | undefined)?.click();
+    cancelButton?.click();
     await fixture.whenStable();
 
     expect(store.signOut).toHaveBeenCalledOnce();
@@ -117,7 +114,7 @@ describe('PasswordRecoveryComponent', () => {
 
   it('leaves a completed recovery screen only on explicit continuation', async () => {
     const { fixture, store } = await configureComponent({
-      view: 'update-complete',
+      view: { kind: 'update-complete' },
     });
 
     expect(fixture.nativeElement.querySelector('form')).toBeNull();

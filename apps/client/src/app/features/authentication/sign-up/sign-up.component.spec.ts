@@ -2,18 +2,22 @@ import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { describe, expect, it, vi } from 'vitest';
 import { AuthenticationStore } from '../store/authentication.store';
+import type { SignUpView } from '../store/authentication.state';
 import { SignUpComponent } from './sign-up.component';
 
 describe('SignUpComponent', () => {
   const configureComponent = async (confirmationRequired = false) => {
     const store = {
-      isSigningUp: signal(false),
-      requiresEmailConfirmation: signal(confirmationRequired),
-      confirmationEmail: signal(
-        confirmationRequired ? 'new-user@example.com' : null
+      signUpView: signal<SignUpView>(
+        confirmationRequired
+          ? {
+              kind: 'confirmation-required',
+              email: 'new-user@example.com',
+              isResending: false,
+              wasResent: false,
+            }
+          : { kind: 'form', isSubmitting: false }
       ),
-      isResendingConfirmationEmail: signal(false),
-      wasConfirmationEmailResent: signal(false),
       error: signal(null),
       signUp: vi.fn().mockResolvedValue(true),
       resendConfirmationEmail: vi.fn().mockResolvedValue(true),

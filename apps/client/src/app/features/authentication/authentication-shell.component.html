@@ -1,8 +1,6 @@
 @let shellView = store.shellView();
 
-@if (shellView === 'authenticated') {
-  @let isSigningOut = store.isSigningOut();
-
+@if (shellView.kind === 'authenticated') {
   <header class="application-header">
     <div class="product-identity">
       <span class="product-mark" aria-hidden="true">O</span>
@@ -14,20 +12,18 @@
     </div>
 
     <div class="account-actions">
-      @if (store.session(); as session) {
-        <app-current-profile
-          [userId]="session.userId"
-          [fallbackEmail]="session.email"
-        />
-      }
+      <app-current-profile
+        [userId]="shellView.session.userId"
+        [fallbackEmail]="shellView.session.email"
+      />
 
       <button
         mat-stroked-button
         type="button"
-        [disabled]="isSigningOut"
+        [disabled]="shellView.isSigningOut"
         (click)="store.signOut()"
       >
-        @if (isSigningOut) {
+        @if (shellView.isSigningOut) {
           Signing out…
         } @else {
           Sign out
@@ -77,7 +73,7 @@
       </div>
 
       <div class="account-card">
-        @switch (shellView) {
+        @switch (shellView.kind) {
           @case ('initializing') {
             <section class="session-loading" aria-labelledby="session-heading">
               <mat-spinner diameter="34" />

@@ -40,17 +40,14 @@ import { AuthenticationStore } from '../store/authentication.store';
 export class PasswordRecoveryComponent {
   protected readonly store = inject(AuthenticationStore);
 
-  protected async requestReset(emailInput: HTMLInputElement): Promise<void> {
-    await this.store.requestPasswordReset(emailInput.value);
+  protected async requestReset(email: string): Promise<void> {
+    await this.store.requestPasswordReset(email);
   }
 
   protected async updatePassword(
-    passwordInput: HTMLInputElement,
-    passwordConfirmationInput: HTMLInputElement
+    password: string,
+    passwordConfirmation: string
   ): Promise<void> {
-    await this.store.updatePassword(
-      passwordInput.value,
-      passwordConfirmationInput.value
-    );
+    await this.store.updatePassword(password, passwordConfirmation);
   }
 }

@@ -140,9 +140,7 @@ describe('AuthenticationStore', () => {
 
     expect(store.session()).toBeNull();
 
-    expect(store.isInitializing()).toBe(true);
-
-    expect(store.shellView()).toBe('initializing');
+    expect(store.shellView()).toEqual({ kind: 'initializing' });
 
     expect(store.currentUserId()).toBeNull();
   });
@@ -156,7 +154,7 @@ describe('AuthenticationStore', () => {
 
     expect(store.session()).toBeNull();
 
-    expect(store.shellView()).toBe('anonymous');
+    expect(store.shellView()).toEqual({ kind: 'anonymous' });
   });
 
   it('restores an authenticated session', async () => {
@@ -170,7 +168,11 @@ describe('AuthenticationStore', () => {
 
     expect(store.session()).toEqual(session);
 
-    expect(store.shellView()).toBe('authenticated');
+    expect(store.shellView()).toEqual({
+      kind: 'authenticated',
+      session,
+      isSigningOut: false,
+    });
 
     expect(store.currentUserId()).toBe(session.userId);
   });
@@ -196,10 +198,12 @@ describe('AuthenticationStore', () => {
 
     expect(store.status()).toBe('authenticated');
     expect(store.session()).toEqual(session);
-    expect(store.isPasswordRecoveryActive()).toBe(true);
     expect(store.passwordRecoveryStatus()).toBe('ready');
-    expect(store.shellView()).toBe('password-recovery');
-    expect(store.passwordRecoveryView()).toBe('update-form');
+    expect(store.shellView()).toEqual({ kind: 'password-recovery' });
+    expect(store.passwordRecoveryView()).toEqual({
+      kind: 'update-form',
+      isSubmitting: false,
+    });
   });
 
   it('exposes a restoration failure and remains anonymous', async () => {
@@ -462,8 +466,13 @@ describe('AuthenticationStore', () => {
     expect(store.status()).toBe('anonymous');
     expect(store.session()).toBeNull();
     expect(store.signUpStatus()).toBe('confirmation-required');
-    expect(store.requiresEmailConfirmation()).toBe(true);
     expect(store.confirmationEmail()).toBe('new-user@example.com');
+    expect(store.signUpView()).toEqual({
+      kind: 'confirmation-required',
+      email: 'new-user@example.com',
+      isResending: false,
+      wasResent: false,
+    });
 
     store.resetSignUp();
 
@@ -492,8 +501,12 @@ describe('AuthenticationStore', () => {
     expect(resendConfirmationEmail).toHaveBeenCalledExactlyOnceWith(
       'new-user@example.com'
     );
-    expect(store.wasConfirmationEmailResent()).toBe(true);
-    expect(store.requiresEmailConfirmation()).toBe(true);
+    expect(store.signUpView()).toEqual({
+      kind: 'confirmation-required',
+      email: 'new-user@example.com',
+      isResending: false,
+      wasResent: true,
+    });
   });
 
   it('presents confirmation resend rate limits without losing its email', async () => {
@@ -541,14 +554,19 @@ describe('AuthenticationStore', () => {
 
     const resendResult = store.resendConfirmationEmail();
 
-    expect(store.isResendingConfirmationEmail()).toBe(true);
+    expect(store.signUpView()).toEqual({
+      kind: 'confirmation-required',
+      email: 'new-user@example.com',
+      isResending: true,
+      wasResent: false,
+    });
     await expect(
       store.signIn('new-user@example.com', 'Password123!')
     ).resolves.toBe(false);
     expect(signIn).not.toHaveBeenCalled();
 
     store.resetSignUp();
-    expect(store.requiresEmailConfirmation()).toBe(true);
+    expect(store.signUpView().kind).toBe('confirmation-required');
 
     resend.resolve(Either.right(undefined));
     await expect(resendResult).resolves.toBe(true);
@@ -610,7 +628,10 @@ describe('AuthenticationStore', () => {
 
     const registration = store.signUp('new-user@example.com', 'Password123!');
 
-    expect(store.isSigningUp()).toBe(true);
+    expect(store.signUpView()).toEqual({
+      kind: 'form',
+      isSubmitting: true,
+    });
     await expect(
       store.signIn('owner@omoikane.local', 'Password123!')
     ).resolves.toBe(false);
@@ -668,14 +689,16 @@ describe('AuthenticationStore', () => {
     expect(requestPasswordReset).toHaveBeenCalledExactlyOnceWith(
       'owner@omoikane.local'
     );
-    expect(store.isPasswordResetEmailSent()).toBe(true);
-    expect(store.passwordRecoveryView()).toBe('email-sent');
+    expect(store.passwordRecoveryView()).toEqual({ kind: 'email-sent' });
     expect(store.error()).toBeNull();
 
     store.resetPasswordResetRequest();
 
     expect(store.passwordResetRequestStatus()).toBe('idle');
-    expect(store.passwordRecoveryView()).toBe('request-form');
+    expect(store.passwordRecoveryView()).toEqual({
+      kind: 'request-form',
+      isSubmitting: false,
+    });
   });
 
   it('presents password-reset rate limits without provider details', async () => {
@@ -708,7 +731,10 @@ describe('AuthenticationStore', () => {
 
     const recoveryRequest = store.requestPasswordReset('owner@omoikane.local');
 
-    expect(store.isRequestingPasswordReset()).toBe(true);
+    expect(store.passwordRecoveryView()).toEqual({
+      kind: 'request-form',
+      isSubmitting: true,
+    });
     await expect(
       store.signIn('owner@omoikane.local', 'Password123!')
     ).resolves.toBe(false);
@@ -736,16 +762,24 @@ describe('AuthenticationStore', () => {
       password: 'Replacement123!',
       passwordConfirmation: 'Replacement123!',
     });
-    expect(store.isPasswordUpdateComplete()).toBe(true);
-    expect(store.passwordRecoveryView()).toBe('update-complete');
+    expect(store.passwordRecoveryView()).toEqual({
+      kind: 'update-complete',
+    });
 
     store.finishPasswordRecovery();
 
-    expect(store.isPasswordRecoveryActive()).toBe(false);
+    expect(store.passwordRecoveryStatus()).toBe('idle');
     expect(store.status()).toBe('authenticated');
     expect(store.session()).toEqual(session);
-    expect(store.shellView()).toBe('authenticated');
-    expect(store.passwordRecoveryView()).toBe('request-form');
+    expect(store.shellView()).toEqual({
+      kind: 'authenticated',
+      session,
+      isSigningOut: false,
+    });
+    expect(store.passwordRecoveryView()).toEqual({
+      kind: 'request-form',
+      isSubmitting: false,
+    });
   });
 
   it('presents invalid replacement-password input inside recovery', async () => {
@@ -766,7 +800,10 @@ describe('AuthenticationStore', () => {
 
     await expect(store.updatePassword('one', 'two')).resolves.toBe(false);
     expect(store.passwordRecoveryStatus()).toBe('failed');
-    expect(store.passwordRecoveryView()).toBe('update-form');
+    expect(store.passwordRecoveryView()).toEqual({
+      kind: 'update-form',
+      isSubmitting: false,
+    });
     expect(store.error()).toEqual({
       message: 'The password confirmation must match.',
     });
@@ -785,7 +822,10 @@ describe('AuthenticationStore', () => {
 
     const result = store.updatePassword('Replacement123!', 'Replacement123!');
     expect(store.passwordRecoveryStatus()).toBe('pending');
-    expect(store.passwordRecoveryView()).toBe('update-form');
+    expect(store.passwordRecoveryView()).toEqual({
+      kind: 'update-form',
+      isSubmitting: true,
+    });
     observer.emitSession(session);
     update.resolve(Either.right(undefined));
 
@@ -880,6 +920,13 @@ describe('AuthenticationStore', () => {
 
     const result = store.signOut();
 
+    expect(store.isAuthenticationCommandPending()).toBe(true);
+    expect(store.shellView()).toEqual({
+      kind: 'authenticated',
+      session,
+      isSigningOut: true,
+    });
+
     observer.emitSession(newerSession);
 
     signOut.resolve(Either.right(undefined));
@@ -889,6 +936,7 @@ describe('AuthenticationStore', () => {
     expect(store.session()).toEqual(newerSession);
 
     expect(store.signOutStatus()).toBe('idle');
+    expect(store.isAuthenticationCommandPending()).toBe(false);
   });
 
   it('unsubscribes when its injection context is destroyed', async () => {

@@ -1,114 +1,116 @@
 <section class="auth-form" aria-labelledby="sign-up-heading">
-  @let requiresEmailConfirmation = store.requiresEmailConfirmation();
+  @let signUpView = store.signUpView();
 
-  @if (requiresEmailConfirmation) {
-    @let isResendingConfirmationEmail = store.isResendingConfirmationEmail();
+  @switch (signUpView.kind) {
+    @case ('confirmation-required') {
+      <span class="auth-completion-icon" aria-hidden="true">
+        <svg lucideMailCheck [size]="24"></svg>
+      </span>
 
-    <span class="auth-completion-icon" aria-hidden="true">
-      <svg lucideMailCheck [size]="24"></svg>
-    </span>
+      <div class="auth-form__heading">
+        <h1 id="sign-up-heading">Check your email</h1>
+        <p role="status">
+          Confirm your email address before signing in to Omoikane.
+        </p>
+      </div>
 
-    <div class="auth-form__heading">
-      <h1 id="sign-up-heading">Check your email</h1>
-      <p role="status">
-        Confirm your email address before signing in to Omoikane.
-      </p>
-    </div>
-
-    @if (store.confirmationEmail(); as email) {
       <p class="auth-supporting-text">
-        Confirmation was requested for <strong>{{ email }}</strong
+        Confirmation was requested for <strong>{{ signUpView.email }}</strong
         >.
       </p>
-    }
 
-    @if (store.wasConfirmationEmailResent()) {
-      <div class="auth-feedback auth-feedback--success" role="status">
-        <p>
-          If the address still requires confirmation, another email has been
-          sent.
-        </p>
+      @if (signUpView.wasResent) {
+        <div class="auth-feedback auth-feedback--success" role="status">
+          <p>
+            If the address still requires confirmation, another email has been
+            sent.
+          </p>
+        </div>
+      }
+
+      <div class="auth-secondary-actions">
+        <button
+          mat-flat-button
+          type="button"
+          [disabled]="signUpView.isResending"
+          (click)="store.resendConfirmationEmail()"
+        >
+          @if (signUpView.isResending) {
+            <mat-spinner diameter="18" />
+            Sending confirmation...
+          } @else {
+            Resend confirmation email
+          }
+        </button>
+
+        <button
+          mat-stroked-button
+          type="button"
+          [disabled]="signUpView.isResending"
+          (click)="store.resetSignUp()"
+        >
+          Register another email
+        </button>
       </div>
     }
 
-    <div class="auth-secondary-actions">
-      <button
-        mat-flat-button
-        type="button"
-        [disabled]="isResendingConfirmationEmail"
-        (click)="store.resendConfirmationEmail()"
+    @case ('form') {
+      <div class="auth-form__heading">
+        <h1 id="sign-up-heading">Create your Omoikane account</h1>
+        <p>Start with a secure account. Your workspace can grow from there.</p>
+      </div>
+
+      <form
+        (submit)="
+          $event.preventDefault(); submit(emailInput.value, passwordInput.value)
+        "
       >
-        @if (isResendingConfirmationEmail) {
-          <mat-spinner diameter="18" />
-          Sending confirmation...
-        } @else {
-          Resend confirmation email
-        }
-      </button>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Email</mat-label>
+          <svg matPrefix lucideMail [size]="18"></svg>
+          <input
+            matInput
+            #emailInput
+            id="sign-up-email"
+            name="email"
+            type="email"
+            autocomplete="email"
+            required
+            [disabled]="signUpView.isSubmitting"
+          />
+        </mat-form-field>
 
-      <button
-        mat-stroked-button
-        type="button"
-        [disabled]="isResendingConfirmationEmail"
-        (click)="store.resetSignUp()"
-      >
-        Register another email
-      </button>
-    </div>
-  } @else {
-    @let isSigningUp = store.isSigningUp();
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
+          <mat-label>Password</mat-label>
+          <svg matPrefix lucideLockKeyhole [size]="18"></svg>
+          <input
+            matInput
+            #passwordInput
+            id="sign-up-password"
+            name="password"
+            type="password"
+            autocomplete="new-password"
+            required
+            [disabled]="signUpView.isSubmitting"
+          />
+        </mat-form-field>
 
-    <div class="auth-form__heading">
-      <h1 id="sign-up-heading">Create your Omoikane account</h1>
-      <p>Start with a secure account. Your workspace can grow from there.</p>
-    </div>
-
-    <form (submit)="$event.preventDefault(); submit(emailInput, passwordInput)">
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Email</mat-label>
-        <svg matPrefix lucideMail [size]="18"></svg>
-        <input
-          matInput
-          #emailInput
-          id="sign-up-email"
-          name="email"
-          type="email"
-          autocomplete="email"
-          required
-          [disabled]="isSigningUp"
-        />
-      </mat-form-field>
-
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-label>Password</mat-label>
-        <svg matPrefix lucideLockKeyhole [size]="18"></svg>
-        <input
-          matInput
-          #passwordInput
-          id="sign-up-password"
-          name="password"
-          type="password"
-          autocomplete="new-password"
-          required
-          [disabled]="isSigningUp"
-        />
-      </mat-form-field>
-
-      <button
-        mat-flat-button
-        class="auth-primary-action"
-        type="submit"
-        [disabled]="isSigningUp"
-      >
-        @if (isSigningUp) {
-          <mat-spinner diameter="18" />
-          Creating account...
-        } @else {
-          Create account
-          <svg lucideArrowRight [size]="17"></svg>
-        }
-      </button>
-    </form>
+        <button
+          mat-flat-button
+          class="auth-primary-action"
+          type="submit"
+          [disabled]="signUpView.isSubmitting"
+        >
+          @if (signUpView.isSubmitting) {
+            <mat-spinner diameter="18" />
+            Creating account...
+          } @else {
+            Create account
+            <svg lucideArrowRight [size]="17"></svg>
+          }
+        </button>
+      </form>
+    }
   }
 
   @if (store.error(); as error) {
