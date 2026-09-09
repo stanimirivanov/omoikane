@@ -634,7 +634,7 @@ describe('ChannelNavigationStore', () => {
 
     const archive = store.archiveSelectedChannel();
 
-    expect(store.isArchiving()).toBe(true);
+    expect(store.view().operations.isArchiving).toBe(true);
     expect(store.archivingChannelId()).toBe(channelId);
     await expect(archive).resolves.toBe(channelId);
     expect(archiveChannel).toHaveBeenCalledExactlyOnceWith({ channelId });

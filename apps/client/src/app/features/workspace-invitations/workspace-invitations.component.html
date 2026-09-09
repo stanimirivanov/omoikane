@@ -1,18 +1,19 @@
+@let view = store.view();
+
 <section
   aria-labelledby="workspace-invitations-heading"
-  [attr.aria-busy]="
-    store.isLoading() ||
-    store.isCreating() ||
-    store.isResponding() ||
-    store.isOwnerLoading() ||
-    store.isCancelling()
-  "
+  [attr.aria-busy]="view.isBusy"
 >
   <h2 id="workspace-invitations-heading">Workspace invitations</h2>
 
   @if (canInvite()) {
     @if (workspaceId(); as selectedWorkspaceId) {
-      <form (submit)="invite($event, selectedWorkspaceId, usernameInput)">
+      <form
+        (submit)="
+          $event.preventDefault();
+          invite(selectedWorkspaceId, invitationUsername())
+        "
+      >
         <label for="workspace-invitation-username">
           Invite an existing user by exact username
         </label>
@@ -23,149 +24,181 @@
           type="text"
           autocomplete="off"
           required
-          [disabled]="store.isMutatingOwnerInvitations()"
+          [value]="invitationUsername()"
+          [disabled]="view.owner.kind !== 'ready' || view.owner.isMutating"
+          (input)="invitationUsername.set(usernameInput.value)"
         />
-        <button type="submit" [disabled]="store.isMutatingOwnerInvitations()">
-          {{ store.isCreating() ? 'Inviting…' : 'Send invitation' }}
+        <button
+          type="submit"
+          [disabled]="view.owner.kind !== 'ready' || view.owner.isMutating"
+        >
+          {{
+            view.owner.kind === 'ready' && view.owner.isCreating
+              ? 'Inviting…'
+              : 'Send invitation'
+          }}
         </button>
       </form>
 
       <h3>Pending invitations for this workspace</h3>
 
-      @if (store.isOwnerLoading()) {
-        <p>Loading pending invitations&hellip;</p>
-      } @else if (store.ownerError(); as error) {
-        <p role="alert">{{ error.message }}</p>
-        <button
-          type="button"
-          (click)="store.loadManagedInvitations(selectedWorkspaceId, true)"
-        >
-          Try again
-        </button>
-      } @else if (store.hasManagedInvitations()) {
-        <ul aria-label="Pending invitations for selected workspace">
-          @for (
-            entry of store.managedInvitations();
-            track entry.invitation.id
-          ) {
-            <li>
-              <strong>{{ entry.username ?? 'Username unavailable' }}</strong>
+      @switch (view.owner.kind) {
+        @case ('loading') {
+          <p>Loading pending invitations&hellip;</p>
+        }
+        @case ('error') {
+          <p role="alert">{{ view.owner.error.message }}</p>
+          <button
+            type="button"
+            (click)="store.loadManagedInvitations(selectedWorkspaceId, true)"
+          >
+            Try again
+          </button>
+        }
+        @case ('ready') {
+          @if (view.owner.invitations.length > 0) {
+            <ul aria-label="Pending invitations for selected workspace">
+              @for (
+                entry of view.owner.invitations;
+                track entry.invitation.id
+              ) {
+                <li>
+                  <strong>{{
+                    entry.username ?? 'Username unavailable'
+                  }}</strong>
 
-              @if (pendingCancellationInvitationId() === entry.invitation.id) {
-                <p>
-                  Cancel the invitation for
-                  {{ entry.username ?? 'this user' }}?
-                </p>
-                <button
-                  type="button"
-                  [disabled]="store.isMutatingOwnerInvitations()"
-                  [attr.aria-label]="
-                    'Confirm cancellation for ' +
-                    (entry.username ?? 'this user')
-                  "
-                  (click)="confirmCancellation(entry.invitation.id)"
-                >
-                  Confirm cancellation
-                </button>
-                <button
-                  type="button"
-                  [disabled]="store.isMutatingOwnerInvitations()"
-                  (click)="cancelCancellation()"
-                >
-                  Keep invitation
-                </button>
-              } @else {
-                <button
-                  type="button"
-                  [disabled]="store.isMutatingOwnerInvitations()"
-                  [attr.aria-label]="
-                    'Cancel invitation for ' + (entry.username ?? 'this user')
-                  "
-                  (click)="requestCancellation(entry.invitation.id)"
-                >
-                  Cancel invitation
-                </button>
+                  @if (
+                    pendingCancellationInvitationId() === entry.invitation.id
+                  ) {
+                    <p>
+                      Cancel the invitation for
+                      {{ entry.username ?? 'this user' }}?
+                    </p>
+                    <button
+                      type="button"
+                      [disabled]="view.owner.isMutating"
+                      [attr.aria-label]="
+                        'Confirm cancellation for ' +
+                        (entry.username ?? 'this user')
+                      "
+                      (click)="confirmCancellation(entry.invitation.id)"
+                    >
+                      Confirm cancellation
+                    </button>
+                    <button
+                      type="button"
+                      [disabled]="view.owner.isMutating"
+                      (click)="cancelCancellation()"
+                    >
+                      Keep invitation
+                    </button>
+                  } @else {
+                    <button
+                      type="button"
+                      [disabled]="view.owner.isMutating"
+                      [attr.aria-label]="
+                        'Cancel invitation for ' +
+                        (entry.username ?? 'this user')
+                      "
+                      (click)="requestCancellation(entry.invitation.id)"
+                    >
+                      Cancel invitation
+                    </button>
+                  }
+                </li>
               }
-            </li>
+            </ul>
+          } @else {
+            <p>This workspace has no pending invitations.</p>
           }
-        </ul>
-      } @else {
-        <p>This workspace has no pending invitations.</p>
-      }
 
-      @if (store.cancellationError(); as error) {
-        <p role="alert">{{ error.message }}</p>
-        <button type="button" (click)="store.clearCancellationError()">
-          Dismiss
-        </button>
+          @if (view.owner.cancellationError; as error) {
+            <p role="alert">{{ error.message }}</p>
+            <button type="button" (click)="store.clearCancellationError()">
+              Dismiss
+            </button>
+          }
+        }
       }
     }
   }
 
-  @if (store.creationStatus() === 'succeeded') {
-    <p role="status">Invitation sent. Access begins only after acceptance.</p>
-    <button type="button" (click)="store.clearCreationFeedback()">
-      Dismiss
-    </button>
-  } @else if (store.creationError(); as error) {
-    <p role="alert">{{ error.message }}</p>
-    <button type="button" (click)="store.clearCreationFeedback()">
-      Dismiss
-    </button>
+  @switch (view.creationFeedback.kind) {
+    @case ('succeeded') {
+      <p role="status">Invitation sent. Access begins only after acceptance.</p>
+      <button type="button" (click)="store.clearCreationFeedback()">
+        Dismiss
+      </button>
+    }
+    @case ('error') {
+      <p role="alert">{{ view.creationFeedback.error.message }}</p>
+      <button type="button" (click)="store.clearCreationFeedback()">
+        Dismiss
+      </button>
+    }
   }
 
-  @if (store.isLoading()) {
-    <p>Loading invitations&hellip;</p>
-  } @else if (store.error(); as error) {
-    <p role="alert">{{ error.message }}</p>
-    <button type="button" (click)="store.load()">Try again</button>
-  } @else if (store.hasInvitations()) {
-    <ul aria-label="Pending workspace invitations">
-      @for (entry of store.invitations(); track entry.invitation.id) {
-        <li>
-          <strong>{{ entry.workspace.name }}</strong>
-          @if (entry.workspace.description) {
-            <span> &mdash; {{ entry.workspace.description }}</span>
-          }
-          <button
-            type="button"
-            [disabled]="store.isResponding()"
-            [attr.aria-label]="'Accept invitation to ' + entry.workspace.name"
-            (click)="accept(entry.invitation.id)"
-          >
-            @if (
-              store.responseKind() === 'accept' &&
-              store.respondingInvitationId() === entry.invitation.id
-            ) {
-              Accepting&hellip;
-            } @else {
-              Accept
+  @switch (view.recipient.kind) {
+    @case ('loading') {
+      <p>Loading invitations&hellip;</p>
+    }
+    @case ('error') {
+      <p role="alert">{{ view.recipient.error.message }}</p>
+      <button type="button" (click)="store.load()">Try again</button>
+    }
+    @case ('invitations') {
+      <ul aria-label="Pending workspace invitations">
+        @for (entry of view.recipient.invitations; track entry.invitation.id) {
+          <li>
+            <strong>{{ entry.workspace.name }}</strong>
+            @if (entry.workspace.description) {
+              <span> &mdash; {{ entry.workspace.description }}</span>
             }
-          </button>
-          <button
-            type="button"
-            [disabled]="store.isResponding()"
-            [attr.aria-label]="'Decline invitation to ' + entry.workspace.name"
-            (click)="decline(entry.invitation.id)"
-          >
-            @if (
-              store.responseKind() === 'decline' &&
-              store.respondingInvitationId() === entry.invitation.id
-            ) {
-              Declining&hellip;
-            } @else {
-              Decline
-            }
-          </button>
-        </li>
+            <button
+              type="button"
+              [disabled]="view.recipient.response.kind !== 'idle'"
+              [attr.aria-label]="'Accept invitation to ' + entry.workspace.name"
+              (click)="accept(entry.invitation.id)"
+            >
+              @if (
+                view.recipient.response.kind === 'accept' &&
+                view.recipient.response.invitationId === entry.invitation.id
+              ) {
+                Accepting&hellip;
+              } @else {
+                Accept
+              }
+            </button>
+            <button
+              type="button"
+              [disabled]="view.recipient.response.kind !== 'idle'"
+              [attr.aria-label]="
+                'Decline invitation to ' + entry.workspace.name
+              "
+              (click)="decline(entry.invitation.id)"
+            >
+              @if (
+                view.recipient.response.kind === 'decline' &&
+                view.recipient.response.invitationId === entry.invitation.id
+              ) {
+                Declining&hellip;
+              } @else {
+                Decline
+              }
+            </button>
+          </li>
+        }
+      </ul>
+
+      @if (view.recipient.responseError; as error) {
+        <p role="alert">{{ error.message }}</p>
+        <button type="button" (click)="store.clearResponseError()">
+          Dismiss
+        </button>
       }
-    </ul>
-  } @else {
-    <p>You have no pending workspace invitations.</p>
-  }
-
-  @if (store.responseError(); as error) {
-    <p role="alert">{{ error.message }}</p>
-    <button type="button" (click)="store.clearResponseError()">Dismiss</button>
+    }
+    @case ('empty') {
+      <p>You have no pending workspace invitations.</p>
+    }
   }
 </section>

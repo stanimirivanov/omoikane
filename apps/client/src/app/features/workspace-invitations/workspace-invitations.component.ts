@@ -29,6 +29,7 @@ export class WorkspaceInvitationsComponent {
   protected readonly store = inject(WorkspaceInvitationsStore);
   protected readonly pendingCancellationInvitationId =
     signal<WorkspaceInvitationId | null>(null);
+  protected readonly invitationUsername = signal('');
 
   constructor() {
     void this.store.load();
@@ -41,14 +42,11 @@ export class WorkspaceInvitationsComponent {
   }
 
   protected async invite(
-    event: SubmitEvent,
     workspaceId: WorkspaceId,
-    usernameInput: HTMLInputElement
+    username: string
   ): Promise<void> {
-    event.preventDefault();
-
-    if (await this.store.invite(workspaceId, usernameInput.value)) {
-      usernameInput.value = '';
+    if (await this.store.invite(workspaceId, username)) {
+      this.invitationUsername.set('');
     }
   }
 

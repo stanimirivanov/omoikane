@@ -1,7 +1,12 @@
 <section aria-labelledby="workspace-message-search-heading">
+  @let view = store.view();
+
   <h3 id="workspace-message-search-heading">Search messages</h3>
 
-  <form role="search" (submit)="$event.preventDefault(); submit(queryInput)">
+  <form
+    role="search"
+    (submit)="$event.preventDefault(); submit(queryInput.value)"
+  >
     <label for="workspace-message-search-query">Search this workspace</label>
     <input
       #queryInput
@@ -10,11 +15,11 @@
       minlength="2"
       maxlength="200"
       required
-      [value]="store.query()"
-      [disabled]="store.isSearching()"
+      [value]="view.query"
+      [disabled]="view.kind === 'searching'"
     />
-    <button type="submit" [disabled]="store.isSearching()">
-      @if (store.isSearching()) {
+    <button type="submit" [disabled]="view.kind === 'searching'">
+      @if (view.kind === 'searching') {
         Searching&hellip;
       } @else {
         Search
@@ -22,14 +27,16 @@
     </button>
   </form>
 
-  @if (store.error(); as error) {
-    <p role="alert">{{ error }}</p>
-  } @else if (store.hasSearched()) {
-    @if (store.results().length === 0) {
+  @switch (view.kind) {
+    @case ('error') {
+      <p role="alert">{{ view.message }}</p>
+    }
+    @case ('empty') {
       <p>No matching messages were found.</p>
-    } @else {
+    }
+    @case ('results') {
       <ol aria-label="Message search results">
-        @for (result of store.results(); track result.message.id) {
+        @for (result of view.results; track result.message.id) {
           <li>
             <button type="button" (click)="resultSelected.emit(result)">
               <strong>#{{ result.channel.name }}</strong>

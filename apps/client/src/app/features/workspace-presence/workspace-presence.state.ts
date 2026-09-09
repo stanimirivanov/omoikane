@@ -13,6 +13,12 @@ export interface WorkspacePresenceError {
   readonly message: string;
 }
 
+/** Complete rendering state for the selected workspace's presence channel. */
+export type WorkspacePresenceView =
+  | { readonly kind: 'connecting' }
+  | { readonly kind: 'error'; readonly error: WorkspacePresenceError }
+  | { readonly kind: 'online'; readonly count: number };
+
 /** Presentation state for ephemeral workspace presence. */
 export interface WorkspacePresenceState {
   readonly workspaceId: WorkspaceId | null;

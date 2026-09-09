@@ -154,7 +154,10 @@ describe('WorkspaceMemberDirectoryStore', () => {
     await store.load(workspaceId);
 
     const loading = store.loadMore();
-    expect(store.isLoadingMore()).toBe(true);
+    expect(store.view().content).toMatchObject({
+      kind: 'members',
+      pagination: { isLoading: true },
+    });
     await loading;
 
     expect(listWorkspaceMembers).toHaveBeenNthCalledWith(
@@ -164,7 +167,10 @@ describe('WorkspaceMemberDirectoryStore', () => {
     );
     expect(store.members()).toEqual([owner, member]);
     expect(store.profiles()).toEqual([profiles[1], profiles[0]]);
-    expect(store.hasMoreMembers()).toBe(false);
+    expect(store.view().content).toMatchObject({
+      kind: 'members',
+      pagination: { hasMore: false },
+    });
     expect(store.paginationError()).toBeNull();
   });
 
@@ -326,7 +332,10 @@ describe('WorkspaceMemberDirectoryStore', () => {
 
     const change = store.changeMemberRole(memberId, 'owner');
 
-    expect(store.isChangingRole()).toBe(true);
+    expect(store.view().content).toMatchObject({
+      kind: 'members',
+      mutation: { kind: 'role-change', profileId: memberId },
+    });
     expect(store.mutatingProfileId()).toBe(memberId);
     await expect(change).resolves.toBe(true);
     expect(changeWorkspaceMemberRole).toHaveBeenCalledExactlyOnceWith({
@@ -418,7 +427,10 @@ describe('WorkspaceMemberDirectoryStore', () => {
 
     const removal = store.removeMember(memberId, 'No longer participating');
 
-    expect(store.isRemovingMember()).toBe(true);
+    expect(store.view().content).toMatchObject({
+      kind: 'members',
+      mutation: { kind: 'removal', profileId: memberId },
+    });
     expect(store.mutatingProfileId()).toBe(memberId);
     await expect(removal).resolves.toBe(true);
     expect(removeWorkspaceMember).toHaveBeenCalledExactlyOnceWith({
@@ -470,7 +482,10 @@ describe('WorkspaceMemberDirectoryStore', () => {
 
     const suspension = store.suspendMember(memberId, 'Temporary access hold');
 
-    expect(store.isSuspendingMember()).toBe(true);
+    expect(store.view().content).toMatchObject({
+      kind: 'members',
+      mutation: { kind: 'suspension', profileId: memberId },
+    });
     expect(store.mutatingProfileId()).toBe(memberId);
     await expect(suspension).resolves.toBe(true);
     expect(suspendWorkspaceMember).toHaveBeenCalledExactlyOnceWith({

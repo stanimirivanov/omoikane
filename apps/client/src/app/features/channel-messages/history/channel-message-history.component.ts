@@ -13,6 +13,11 @@ import { AuthenticationStore } from '@client/features/authentication/store/authe
 import { ProfileAvatarComponent } from '@client/shared/profile-avatar/profile-avatar.component';
 import { ChannelMessagesStore } from '../channel-messages.store';
 
+type MessageInteraction =
+  | { readonly kind: 'idle' }
+  | { readonly kind: 'editing'; readonly messageId: MessageId }
+  | { readonly kind: 'confirming-delete'; readonly messageId: MessageId };
+
 /**
  * Renders channel history, lifecycle metadata, and mutation affordances.
  *
@@ -44,9 +49,7 @@ export class ChannelMessageHistoryComponent {
       )
   );
 
-  protected readonly editingMessageId = signal<MessageId | null>(null);
-
-  protected readonly deletingMessageId = signal<MessageId | null>(null);
+  protected readonly interaction = signal<MessageInteraction>({ kind: 'idle' });
 
   protected isAuthoredByCurrentUser(message: Message): boolean {
     return message.authorId === this.authenticationStore.currentUserId();
@@ -105,43 +108,41 @@ export class ChannelMessageHistoryComponent {
 
   protected beginEdit(messageId: MessageId): void {
     this.store.clearEditError();
-    this.deletingMessageId.set(null);
     this.store.closeRevisionHistory();
-    this.editingMessageId.set(messageId);
+    this.interaction.set({ kind: 'editing', messageId });
   }
 
   protected cancelEdit(): void {
     this.store.clearEditError();
-    this.editingMessageId.set(null);
+    this.interaction.set({ kind: 'idle' });
   }
 
   protected async saveEdit(
     messageId: MessageId,
-    inputElement: HTMLInputElement
+    content: string
   ): Promise<void> {
-    const edited = await this.store.edit(messageId, inputElement.value);
+    const edited = await this.store.edit(messageId, content);
 
     if (edited) {
-      this.editingMessageId.set(null);
+      this.interaction.set({ kind: 'idle' });
     }
   }
 
   protected beginDelete(messageId: MessageId): void {
     this.store.clearDeleteError();
-    this.editingMessageId.set(null);
-    this.deletingMessageId.set(messageId);
+    this.interaction.set({ kind: 'confirming-delete', messageId });
   }
 
   protected cancelDelete(): void {
     this.store.clearDeleteError();
-    this.deletingMessageId.set(null);
+    this.interaction.set({ kind: 'idle' });
   }
 
   protected async confirmDelete(messageId: MessageId): Promise<void> {
     const deleted = await this.store.delete(messageId);
 
     if (deleted) {
-      this.deletingMessageId.set(null);
+      this.interaction.set({ kind: 'idle' });
     }
   }
 }

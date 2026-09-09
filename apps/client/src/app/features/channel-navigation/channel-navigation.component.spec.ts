@@ -1,4 +1,4 @@
-import { Component, input, output, signal } from '@angular/core';
+import { Component, computed, input, output, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import {
@@ -107,24 +107,42 @@ const configureComponent = async ({
   const router = {
     navigate: vi.fn().mockResolvedValue(true),
   };
+  const channelCollection = signal(channels);
+  const selectedChannelSignal = signal(selectedChannel);
+  const unreadCountByChannel = signal(
+    new Map(unreadCount > 0 ? [[channelId, unreadCount]] : [])
+  );
   const store = {
     workspaceId: signal(workspaceId),
-    channels: signal(channels),
+    channels: channelCollection,
     selectedChannelId: signal(selectedChannel?.id ?? null),
-    selectedChannel: signal(selectedChannel),
-    isLoading: signal(false),
-    isCreating: signal(false),
-    isUpdating: signal(false),
-    isArchiving: signal(false),
-    hasChannels: signal(channels.length > 0),
+    selectedChannel: selectedChannelSignal,
+    view: computed(() => ({
+      content: {
+        kind: 'ready' as const,
+        channels: channelCollection(),
+        selectedChannel: selectedChannelSignal(),
+        unreadCountByChannel: unreadCountByChannel(),
+      },
+      operations: {
+        isBusy: false,
+        isCreating: false,
+        isUpdating: false,
+        isArchiving: false,
+      },
+      realtimeError: null,
+      unreadError: null,
+      unreadRealtimeError: null,
+      creationError: null,
+      updateError: null,
+      archiveError: null,
+    })),
     loadStatus: signal('loaded'),
     error: signal(null),
     realtimeError: signal(null),
     unreadError: signal(null),
     unreadRealtimeError: signal(null),
-    unreadCountByChannel: signal(
-      new Map(unreadCount > 0 ? [[channelId, unreadCount]] : [])
-    ),
+    unreadCountByChannel,
     creationError: signal(null),
     updateError: signal(null),
     archiveError: signal(null),

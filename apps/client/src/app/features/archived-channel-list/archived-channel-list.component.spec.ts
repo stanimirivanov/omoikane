@@ -36,11 +36,11 @@ describe('ArchivedChannelListComponent', () => {
     const store = {
       workspaceId: signal<typeof workspaceId | null>(null),
       channels: signal([archivedChannel]),
-      isLoading: signal(false),
-      isRestoring: signal(false),
-      hasChannels: signal(true),
-      error: signal(null),
-      restorationError: signal(null),
+      view: signal({
+        content: { kind: 'channels', channels: [archivedChannel] } as const,
+        isRestoring: false,
+        restorationError: null,
+      }),
       load: vi.fn().mockResolvedValue(undefined),
       clearRestorationError: vi.fn(),
       restore: vi.fn().mockResolvedValue({

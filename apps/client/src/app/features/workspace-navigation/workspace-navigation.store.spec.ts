@@ -290,7 +290,7 @@ describe('WorkspaceNavigationStore', () => {
       description: ' Updated collaboration space ',
     });
 
-    expect(store.isUpdating()).toBe(true);
+    expect(store.view().operations.isUpdating).toBe(true);
     await expect(update).resolves.toBe(updatedWorkspace);
     expect(service.updateWorkspace).toHaveBeenCalledExactlyOnceWith({
       workspaceId: workspace.id,
@@ -378,7 +378,7 @@ describe('WorkspaceNavigationStore', () => {
 
     const archive = store.archiveSelectedWorkspace();
 
-    expect(store.isArchiving()).toBe(true);
+    expect(store.view().operations.isArchiving).toBe(true);
     expect(store.archivingWorkspaceId()).toBe(workspace.id);
     await expect(archive).resolves.toBe(workspace.id);
     expect(service.archiveWorkspace).toHaveBeenCalledExactlyOnceWith({
@@ -485,7 +485,7 @@ describe('WorkspaceNavigationStore', () => {
 
     const departure = store.leaveSelectedWorkspace();
 
-    expect(store.isLeaving()).toBe(true);
+    expect(store.view().operations.isLeaving).toBe(true);
     expect(store.departingWorkspaceId()).toBe(workspace.id);
     await expect(departure).resolves.toBe(workspace.id);
     expect(service.leaveWorkspace).toHaveBeenCalledExactlyOnceWith({

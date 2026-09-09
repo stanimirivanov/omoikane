@@ -1,290 +1,313 @@
+@let view = store.view();
+@let operations = view.operations;
+
 <section
   aria-labelledby="channel-navigation-heading"
-  [attr.aria-busy]="
-    store.isLoading() ||
-    store.isCreating() ||
-    store.isUpdating() ||
-    store.isArchiving()
-  "
+  [attr.aria-busy]="operations.isBusy"
 >
   <h3 id="channel-navigation-heading">Channels</h3>
 
-  @if (store.realtimeError(); as error) {
+  @if (view.realtimeError; as error) {
     <p role="alert">{{ error.message }}</p>
     <button type="button" (click)="store.retryRealtime()">
       Retry live updates
     </button>
   }
 
-  @if (store.unreadError(); as error) {
+  @if (view.unreadError; as error) {
     <p role="alert">{{ error.message }}</p>
     <button type="button" (click)="store.retryUnreadCounts()">
       Retry unread state
     </button>
   }
 
-  @if (store.unreadRealtimeError(); as error) {
+  @if (view.unreadRealtimeError; as error) {
     <p role="alert">{{ error.message }}</p>
     <button type="button" (click)="store.retryUnreadRealtime()">
       Retry live unread updates
     </button>
   }
 
-  @if (store.isLoading()) {
-    <p>Loading channels&hellip;</p>
-  } @else if (store.error(); as error) {
-    <p role="alert">{{ error.message }}</p>
-    <button type="button" (click)="store.load(workspaceId())">Try again</button>
-  } @else {
-    @if (isCreatingChannel()) {
-      <form
-        (submit)="
-          $event.preventDefault();
-          saveChannel(nameInput, slugInput, descriptionInput)
-        "
-      >
-        <label for="channel-name">Channel name</label>
-        <input
-          #nameInput
-          id="channel-name"
-          name="channel-name"
-          type="text"
-          required
-          [disabled]="
-            store.isCreating() || store.isUpdating() || store.isArchiving()
-          "
-        />
-
-        <label for="channel-slug">Channel URL</label>
-        <input
-          #slugInput
-          id="channel-slug"
-          name="channel-slug"
-          type="text"
-          required
-          aria-describedby="channel-slug-help"
-          [disabled]="
-            store.isCreating() || store.isUpdating() || store.isArchiving()
-          "
-        />
-        <small id="channel-slug-help">
-          Lowercase letters, numbers, and single hyphens.
-        </small>
-
-        <label for="channel-description">Description</label>
-        <textarea
-          #descriptionInput
-          id="channel-description"
-          name="channel-description"
-          [disabled]="
-            store.isCreating() || store.isUpdating() || store.isArchiving()
-          "
-        ></textarea>
-
-        <button
-          type="submit"
-          [disabled]="
-            store.isCreating() || store.isUpdating() || store.isArchiving()
-          "
-        >
-          @if (store.isCreating()) {
-            Creating&hellip;
-          } @else {
-            Create channel
-          }
-        </button>
-
-        <button
-          type="button"
-          [disabled]="
-            store.isCreating() || store.isUpdating() || store.isArchiving()
-          "
-          (click)="cancelChannelCreation()"
-        >
-          Cancel
-        </button>
-      </form>
-    } @else {
-      <button
-        type="button"
-        [disabled]="store.isUpdating() || store.isArchiving()"
-        (click)="beginChannelCreation()"
-      >
-        Create channel
+  @switch (view.content.kind) {
+    @case ('loading') {
+      <p>Loading channels&hellip;</p>
+    }
+    @case ('error') {
+      <p role="alert">{{ view.content.error.message }}</p>
+      <button type="button" (click)="store.load(workspaceId())">
+        Try again
       </button>
     }
-
-    @if (store.creationError(); as error) {
-      <p role="alert">{{ error.message }}</p>
-      <button type="button" (click)="store.clearCreationError()">
-        Dismiss
-      </button>
-    }
-
-    @if (!store.hasChannels()) {
-      <p>This workspace has no active channels.</p>
-    } @else {
-      <nav aria-label="Workspace channels">
-        <ul>
-          @for (channel of store.channels(); track channel.id) {
-            <li>
-              <button
-                type="button"
-                [attr.aria-current]="
-                  store.selectedChannelId() === channel.id ? 'page' : null
-                "
-                (click)="navigateToChannel(channel.slug)"
-              >
-                {{ channel.name }}
-                @if (
-                  store.unreadCountByChannel().get(channel.id) ?? 0;
-                  as unreadCount
-                ) {
-                  @if (unreadCount > 0) {
-                    <span [attr.aria-label]="unreadCount + ' unread messages'">
-                      ({{ unreadCount }})
-                    </span>
-                  }
-                }
-              </button>
-            </li>
-          }
-        </ul>
-      </nav>
-
-      @if (store.selectedChannel(); as channel) {
-        <section [attr.aria-label]="channel.name + ' messages'">
-          @if (channel.description) {
-            <p>{{ channel.description }}</p>
-          }
-
-          <app-analysis-runs
-            [workspaceId]="workspaceId()"
-            [channelId]="channel.id"
+    @case ('ready') {
+      @if (interaction() === 'creating') {
+        <form
+          (submit)="
+            $event.preventDefault();
+            saveChannel(
+              nameInput.value,
+              slugInput.value,
+              descriptionInput.value
+            )
+          "
+        >
+          <label for="channel-name">Channel name</label>
+          <input
+            #nameInput
+            id="channel-name"
+            name="channel-name"
+            type="text"
+            required
+            [disabled]="
+              operations.isCreating ||
+              operations.isUpdating ||
+              operations.isArchiving
+            "
           />
 
-          @if (canManageChannels()) {
-            @if (isEditingChannel()) {
-              <form
-                (submit)="
-                  $event.preventDefault();
-                  saveChannelChanges(editNameInput, editDescriptionInput)
-                "
-              >
-                <label for="channel-edit-name">Channel name</label>
-                <input
-                  #editNameInput
-                  id="channel-edit-name"
-                  name="channel-edit-name"
-                  type="text"
-                  required
-                  [value]="channel.name"
-                  [disabled]="store.isUpdating() || store.isArchiving()"
-                />
+          <label for="channel-slug">Channel URL</label>
+          <input
+            #slugInput
+            id="channel-slug"
+            name="channel-slug"
+            type="text"
+            required
+            aria-describedby="channel-slug-help"
+            [disabled]="
+              operations.isCreating ||
+              operations.isUpdating ||
+              operations.isArchiving
+            "
+          />
+          <small id="channel-slug-help">
+            Lowercase letters, numbers, and single hyphens.
+          </small>
 
-                <label for="channel-edit-description">Description</label>
-                <textarea
-                  #editDescriptionInput
-                  id="channel-edit-description"
-                  name="channel-edit-description"
-                  [value]="channel.description ?? ''"
-                  [disabled]="store.isUpdating() || store.isArchiving()"
-                ></textarea>
+          <label for="channel-description">Description</label>
+          <textarea
+            #descriptionInput
+            id="channel-description"
+            name="channel-description"
+            [disabled]="
+              operations.isCreating ||
+              operations.isUpdating ||
+              operations.isArchiving
+            "
+          ></textarea>
 
+          <button
+            type="submit"
+            [disabled]="
+              operations.isCreating ||
+              operations.isUpdating ||
+              operations.isArchiving
+            "
+          >
+            @if (operations.isCreating) {
+              Creating&hellip;
+            } @else {
+              Create channel
+            }
+          </button>
+
+          <button
+            type="button"
+            [disabled]="
+              operations.isCreating ||
+              operations.isUpdating ||
+              operations.isArchiving
+            "
+            (click)="cancelChannelCreation()"
+          >
+            Cancel
+          </button>
+        </form>
+      } @else {
+        <button
+          type="button"
+          [disabled]="operations.isUpdating || operations.isArchiving"
+          (click)="beginChannelCreation()"
+        >
+          Create channel
+        </button>
+      }
+
+      @if (view.creationError; as error) {
+        <p role="alert">{{ error.message }}</p>
+        <button type="button" (click)="store.clearCreationError()">
+          Dismiss
+        </button>
+      }
+
+      @if (view.content.channels.length === 0) {
+        <p>This workspace has no active channels.</p>
+      } @else {
+        <nav aria-label="Workspace channels">
+          <ul>
+            @for (channel of view.content.channels; track channel.id) {
+              <li>
                 <button
-                  type="submit"
-                  [disabled]="store.isUpdating() || store.isArchiving()"
+                  type="button"
+                  [attr.aria-current]="
+                    store.selectedChannelId() === channel.id ? 'page' : null
+                  "
+                  (click)="navigateToChannel(channel.slug)"
                 >
-                  @if (store.isUpdating()) {
-                    Saving&hellip;
+                  {{ channel.name }}
+                  @if (
+                    view.content.unreadCountByChannel.get(channel.id) ?? 0;
+                    as unreadCount
+                  ) {
+                    @if (unreadCount > 0) {
+                      <span
+                        [attr.aria-label]="unreadCount + ' unread messages'"
+                      >
+                        ({{ unreadCount }})
+                      </span>
+                    }
+                  }
+                </button>
+              </li>
+            }
+          </ul>
+        </nav>
+
+        @if (view.content.selectedChannel; as channel) {
+          <section [attr.aria-label]="channel.name + ' messages'">
+            @if (channel.description) {
+              <p>{{ channel.description }}</p>
+            }
+
+            <app-analysis-runs
+              [workspaceId]="workspaceId()"
+              [channelId]="channel.id"
+            />
+
+            @if (canManageChannels()) {
+              @if (interaction() === 'editing') {
+                <form
+                  (submit)="
+                    $event.preventDefault();
+                    saveChannelChanges(
+                      editNameInput.value,
+                      editDescriptionInput.value
+                    )
+                  "
+                >
+                  <label for="channel-edit-name">Channel name</label>
+                  <input
+                    #editNameInput
+                    id="channel-edit-name"
+                    name="channel-edit-name"
+                    type="text"
+                    required
+                    [value]="channel.name"
+                    [disabled]="operations.isUpdating || operations.isArchiving"
+                  />
+
+                  <label for="channel-edit-description">Description</label>
+                  <textarea
+                    #editDescriptionInput
+                    id="channel-edit-description"
+                    name="channel-edit-description"
+                    [value]="channel.description ?? ''"
+                    [disabled]="operations.isUpdating || operations.isArchiving"
+                  ></textarea>
+
+                  <button
+                    type="submit"
+                    [disabled]="operations.isUpdating || operations.isArchiving"
+                  >
+                    @if (operations.isUpdating) {
+                      Saving&hellip;
+                    } @else {
+                      Save changes
+                    }
+                  </button>
+                  <button
+                    type="button"
+                    [disabled]="operations.isUpdating || operations.isArchiving"
+                    (click)="cancelChannelEditing()"
+                  >
+                    Cancel
+                  </button>
+                </form>
+              } @else if (interaction() === 'confirming-archive') {
+                <p>
+                  Archive {{ channel.name }}? It will be removed from active
+                  navigation, while its message history is preserved.
+                </p>
+                <button
+                  type="button"
+                  [disabled]="operations.isArchiving"
+                  (click)="confirmChannelArchive(channel)"
+                >
+                  @if (operations.isArchiving) {
+                    Archiving&hellip;
                   } @else {
-                    Save changes
+                    Confirm archive
                   }
                 </button>
                 <button
                   type="button"
-                  [disabled]="store.isUpdating() || store.isArchiving()"
-                  (click)="cancelChannelEditing()"
+                  [disabled]="operations.isArchiving"
+                  (click)="cancelChannelArchive()"
                 >
                   Cancel
                 </button>
-              </form>
-            } @else if (isConfirmingChannelArchive()) {
-              <p>
-                Archive {{ channel.name }}? It will be removed from active
-                navigation, while its message history is preserved.
-              </p>
-              <button
-                type="button"
-                [disabled]="store.isArchiving()"
-                (click)="confirmChannelArchive(channel)"
-              >
-                @if (store.isArchiving()) {
-                  Archiving&hellip;
-                } @else {
-                  Confirm archive
-                }
-              </button>
-              <button
-                type="button"
-                [disabled]="store.isArchiving()"
-                (click)="cancelChannelArchive()"
-              >
-                Cancel
-              </button>
-            } @else {
-              <button
-                type="button"
-                [disabled]="store.isCreating() || store.isArchiving()"
-                (click)="beginChannelEditing()"
-              >
-                Edit channel
-              </button>
-              <button
-                type="button"
-                [disabled]="
-                  store.isCreating() ||
-                  store.isUpdating() ||
-                  store.isArchiving()
-                "
-                (click)="beginChannelArchive()"
-              >
-                Archive channel
+              } @else {
+                <button
+                  type="button"
+                  [disabled]="operations.isCreating || operations.isArchiving"
+                  (click)="beginChannelEditing()"
+                >
+                  Edit channel
+                </button>
+                <button
+                  type="button"
+                  [disabled]="
+                    operations.isCreating ||
+                    operations.isUpdating ||
+                    operations.isArchiving
+                  "
+                  (click)="beginChannelArchive()"
+                >
+                  Archive channel
+                </button>
+              }
+            }
+
+            @if (view.updateError; as error) {
+              <p role="alert">{{ error.message }}</p>
+              <button type="button" (click)="store.clearUpdateError()">
+                Dismiss
               </button>
             }
-          }
 
-          @if (store.updateError(); as error) {
-            <p role="alert">{{ error.message }}</p>
-            <button type="button" (click)="store.clearUpdateError()">
-              Dismiss
-            </button>
-          }
+            @if (view.archiveError; as error) {
+              <p role="alert">{{ error.message }}</p>
+              <button type="button" (click)="store.clearArchiveError()">
+                Dismiss
+              </button>
+            }
 
-          @if (store.archiveError(); as error) {
-            <p role="alert">{{ error.message }}</p>
-            <button type="button" (click)="store.clearArchiveError()">
-              Dismiss
-            </button>
-          }
-
-          <app-channel-messages
-            [channelId]="channel.id"
-            [focusedMessageId]="focusedMessageId()"
-            [canModerateMessages]="canModerateMessages()"
-            (readThrough)="store.markChannelRead($event)"
-          />
-        </section>
-      } @else {
-        <p>Select a channel to view its messages.</p>
+            <app-channel-messages
+              [channelId]="channel.id"
+              [focusedMessageId]="focusedMessageId()"
+              [canModerateMessages]="canModerateMessages()"
+              (readThrough)="store.markChannelRead($event)"
+            />
+          </section>
+        } @else {
+          <p>Select a channel to view its messages.</p>
+        }
       }
-    }
-    @if (canManageChannels()) {
-      <app-archived-channel-list
-        [workspaceId]="workspaceId()"
-        [activeChannels]="store.channels()"
-        (channelRestored)="onChannelRestored($event)"
-      />
+      @if (canManageChannels()) {
+        <app-archived-channel-list
+          [workspaceId]="workspaceId()"
+          [activeChannels]="view.content.channels"
+          (channelRestored)="onChannelRestored($event)"
+        />
+      }
     }
   }
 </section>

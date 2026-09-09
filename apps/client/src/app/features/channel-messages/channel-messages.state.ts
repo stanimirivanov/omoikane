@@ -60,6 +60,51 @@ export interface ChannelMessagesError {
   readonly message: string;
 }
 
+export type FocusedChannelMessageView =
+  | { readonly kind: 'idle' }
+  | { readonly kind: 'loading' }
+  | { readonly kind: 'error' }
+  | { readonly kind: 'message'; readonly message: Message };
+
+export type ChannelMessageHistoryContent =
+  | { readonly kind: 'loading' }
+  | { readonly kind: 'error'; readonly error: ChannelMessagesError }
+  | { readonly kind: 'empty' }
+  | { readonly kind: 'messages'; readonly messages: readonly Message[] };
+
+export interface ChannelMessageHistoryView {
+  readonly content: ChannelMessageHistoryContent;
+  readonly isEditing: boolean;
+  readonly isDeleting: boolean;
+  readonly canLoadOlder: boolean;
+  readonly isLoadingOlder: boolean;
+  readonly editError: ChannelMessagesError | null;
+  readonly deleteError: ChannelMessagesError | null;
+  readonly realtimeError: ChannelMessagesError | null;
+}
+
+export type MessageRevisionHistoryView =
+  | { readonly kind: 'closed' }
+  | { readonly kind: 'loading'; readonly messageId: MessageId }
+  | {
+      readonly kind: 'error';
+      readonly messageId: MessageId;
+      readonly error: ChannelMessagesError;
+    }
+  | { readonly kind: 'empty'; readonly messageId: MessageId }
+  | {
+      readonly kind: 'revisions';
+      readonly messageId: MessageId;
+      readonly revisions: MessageRevisionPage['revisions'];
+      readonly canLoadOlder: boolean;
+      readonly isLoadingOlder: boolean;
+    };
+
+export interface ChannelMessageComposerView {
+  readonly isSending: boolean;
+  readonly error: ChannelMessagesError | null;
+}
+
 /**
  * State for the currently selected channel's message history.
  */

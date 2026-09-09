@@ -56,6 +56,12 @@ describe('CurrentProfileStore', () => {
 
     expect(store.profile()).toEqual(profile);
     expect(store.loadStatus()).toBe('loaded');
+    expect(store.view()).toEqual({
+      kind: 'profile',
+      profile,
+      isUpdating: false,
+      updateError: null,
+    });
 
     await store.load(userId);
     expect(getCurrentProfile).toHaveBeenCalledOnce();

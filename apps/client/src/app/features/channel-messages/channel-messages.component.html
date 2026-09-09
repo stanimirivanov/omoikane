@@ -1,17 +1,23 @@
 <section>
+  @let typingView = typingStore.view();
+
   <app-channel-message-history [canModerateMessages]="canModerateMessages()" />
 
-  @if (typingStore.isConnecting()) {
-    <p>Connecting typing indicators&hellip;</p>
-  } @else if (typingStore.error(); as error) {
-    <p role="alert">{{ error.message }}</p>
-    <button type="button" (click)="typingStore.retry()">Retry typing</button>
-  } @else if (typingStore.typingCount() > 0) {
-    <p aria-live="polite">
-      {{ typingStore.typingCount() }}
-      {{ typingStore.typingCount() === 1 ? 'member is' : 'members are' }}
-      typing&hellip;
-    </p>
+  @switch (typingView.kind) {
+    @case ('connecting') {
+      <p>Connecting typing indicators&hellip;</p>
+    }
+    @case ('error') {
+      <p role="alert">{{ typingView.error.message }}</p>
+      <button type="button" (click)="typingStore.retry()">Retry typing</button>
+    }
+    @case ('typing') {
+      <p aria-live="polite">
+        {{ typingView.count }}
+        {{ typingView.count === 1 ? 'member is' : 'members are' }}
+        typing&hellip;
+      </p>
+    }
   }
 
   <app-channel-message-composer

@@ -23,7 +23,10 @@ import { ProfileApplicationService } from '@client/core/profile/profile-applicat
 import { WorkspaceApplicationService } from '@client/core/workspace/workspace-application.service';
 import {
   initialWorkspaceMemberDirectoryState,
+  type WorkspaceMemberDirectoryContent,
   type WorkspaceMemberDirectoryEntry,
+  type WorkspaceMemberDirectoryView,
+  type WorkspaceMemberMutationView,
 } from './workspace-member-directory.state';
 
 /**
@@ -34,29 +37,50 @@ export const WorkspaceMemberDirectoryStore = signalStore(
   withState(initialWorkspaceMemberDirectoryState),
 
   withComputed((store) => ({
-    isLoading: computed(() => store.loadStatus() === 'loading'),
-    isLoadingMore: computed(() => store.paginationStatus() === 'loading'),
-    hasMoreMembers: computed(() => store.nextCursor() !== null),
-    isMutatingMember: computed(() => store.mutationStatus() === 'pending'),
-    isChangingRole: computed(
-      () =>
-        store.mutationStatus() === 'pending' &&
-        store.mutationKind() === 'role-change'
-    ),
-    isRemovingMember: computed(
-      () =>
-        store.mutationStatus() === 'pending' &&
-        store.mutationKind() === 'removal'
-    ),
-    isSuspendingMember: computed(
-      () =>
-        store.mutationStatus() === 'pending' &&
-        store.mutationKind() === 'suspension'
-    ),
-    hasMembers: computed(() => store.members().length > 0),
     entries: computed(() =>
       toDirectoryEntries(store.members(), store.profiles())
     ),
+    view: computed<WorkspaceMemberDirectoryView>(() => {
+      const mutationKind = store.mutationKind();
+      const mutatingProfileId = store.mutatingProfileId();
+      const mutation: WorkspaceMemberMutationView =
+        store.mutationStatus() === 'pending' &&
+        mutationKind !== null &&
+        mutatingProfileId !== null
+          ? { kind: mutationKind, profileId: mutatingProfileId }
+          : { kind: 'idle' };
+
+      const entries = toDirectoryEntries(store.members(), store.profiles());
+      const content: WorkspaceMemberDirectoryContent = (() => {
+        if (store.loadStatus() === 'loading') return { kind: 'loading' };
+        const error = store.error();
+        if (store.loadStatus() === 'failed' && error !== null) {
+          return { kind: 'error', error };
+        }
+        return entries.length === 0
+          ? { kind: 'empty' }
+          : {
+              kind: 'members',
+              entries,
+              pagination: {
+                hasMore: store.nextCursor() !== null,
+                isLoading: store.paginationStatus() === 'loading',
+                error: store.paginationError(),
+              },
+              mutation,
+            };
+      })();
+
+      return {
+        isBusy:
+          store.loadStatus() === 'loading' ||
+          store.paginationStatus() === 'loading' ||
+          store.mutationStatus() === 'pending',
+        canRefresh: store.loadStatus() === 'loaded',
+        mutationError: store.mutationError(),
+        content,
+      };
+    }),
   })),
 
   withMethods(

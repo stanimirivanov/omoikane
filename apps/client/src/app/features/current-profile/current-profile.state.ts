@@ -7,6 +7,20 @@ export interface CurrentProfilePresentationError {
   readonly message: string;
 }
 
+/** Coherent rendering state for current-profile loading and editing. */
+export type CurrentProfileView =
+  | { readonly kind: 'loading' }
+  | {
+      readonly kind: 'error';
+      readonly error: CurrentProfilePresentationError;
+    }
+  | {
+      readonly kind: 'profile';
+      readonly profile: Profile;
+      readonly isUpdating: boolean;
+      readonly updateError: CurrentProfilePresentationError | null;
+    };
+
 /**
  * Presentation state for the profile associated with the current session.
  */

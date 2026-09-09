@@ -1,65 +1,72 @@
+@let view = store.view();
+
 <section
   aria-labelledby="archived-workspaces-heading"
-  [attr.aria-busy]="store.isLoading() || store.isRestoring()"
+  [attr.aria-busy]="view.content.kind === 'loading' || view.isRestoring"
 >
   <h2 id="archived-workspaces-heading">Archived workspaces</h2>
 
-  @if (store.isLoading()) {
-    <p>Loading archived workspaces&hellip;</p>
-  } @else if (store.error(); as error) {
-    <p role="alert">{{ error.message }}</p>
-    <button type="button" (click)="store.load()">Try again</button>
-  } @else if (store.hasWorkspaces()) {
-    <ul aria-label="Archived workspaces">
-      @for (workspace of store.workspaces(); track workspace.id) {
-        <li>
-          <strong>{{ workspace.name }}</strong>
-          @if (workspace.description) {
-            <span> &mdash; {{ workspace.description }}</span>
-          }
-          <p>
-            Archived
-            <time [attr.datetime]="workspace.archivedAt.toISOString()">
-              {{ workspace.archivedAt | date: 'mediumDate' }}
-            </time>
-          </p>
-          @if (pendingRestorationWorkspaceId() === workspace.id) {
+  @switch (view.content.kind) {
+    @case ('loading') {
+      <p>Loading archived workspaces&hellip;</p>
+    }
+    @case ('error') {
+      <p role="alert">{{ view.content.error.message }}</p>
+      <button type="button" (click)="store.load()">Try again</button>
+    }
+    @case ('workspaces') {
+      <ul aria-label="Archived workspaces">
+        @for (workspace of view.content.workspaces; track workspace.id) {
+          <li>
+            <strong>{{ workspace.name }}</strong>
+            @if (workspace.description) {
+              <span> &mdash; {{ workspace.description }}</span>
+            }
             <p>
-              Restore {{ workspace.name }} to active workspace navigation? Only
-              an active workspace owner can complete this action.
+              Archived
+              <time [attr.datetime]="workspace.archivedAt.toISOString()">
+                {{ workspace.archivedAt | date: 'mediumDate' }}
+              </time>
             </p>
-            <button
-              type="button"
-              [disabled]="store.isRestoring()"
-              (click)="confirmRestoration(workspace.id)"
-            >
-              Confirm restoration
-            </button>
-            <button
-              type="button"
-              [disabled]="store.isRestoring()"
-              (click)="cancelRestoration()"
-            >
-              Cancel
-            </button>
-          } @else {
-            <button
-              type="button"
-              [disabled]="store.isRestoring()"
-              [attr.aria-label]="'Restore ' + workspace.name"
-              (click)="requestRestoration(workspace.id)"
-            >
-              Restore workspace
-            </button>
-          }
-        </li>
-      }
-    </ul>
-  } @else {
-    <p>No archived workspaces are visible to you.</p>
+            @if (pendingRestorationWorkspaceId() === workspace.id) {
+              <p>
+                Restore {{ workspace.name }} to active workspace navigation?
+                Only an active workspace owner can complete this action.
+              </p>
+              <button
+                type="button"
+                [disabled]="view.isRestoring"
+                (click)="confirmRestoration(workspace.id)"
+              >
+                Confirm restoration
+              </button>
+              <button
+                type="button"
+                [disabled]="view.isRestoring"
+                (click)="cancelRestoration()"
+              >
+                Cancel
+              </button>
+            } @else {
+              <button
+                type="button"
+                [disabled]="view.isRestoring"
+                [attr.aria-label]="'Restore ' + workspace.name"
+                (click)="requestRestoration(workspace.id)"
+              >
+                Restore workspace
+              </button>
+            }
+          </li>
+        }
+      </ul>
+    }
+    @case ('empty') {
+      <p>No archived workspaces are visible to you.</p>
+    }
   }
 
-  @if (store.restorationError(); as error) {
+  @if (view.restorationError; as error) {
     <p role="alert">{{ error.message }}</p>
     <button type="button" (click)="store.clearRestorationError()">
       Dismiss

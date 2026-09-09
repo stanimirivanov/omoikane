@@ -20,11 +20,11 @@ describe('ArchivedWorkspaceListComponent', () => {
     });
     const store = {
       workspaces: signal([workspace]),
-      isLoading: signal(false),
-      hasWorkspaces: signal(true),
-      error: signal(null),
-      isRestoring: signal(false),
-      restorationError: signal(null),
+      view: signal({
+        content: { kind: 'workspaces', workspaces: [workspace] } as const,
+        isRestoring: false,
+        restorationError: null,
+      }),
       load: vi.fn().mockResolvedValue(undefined),
       clearRestorationError: vi.fn(),
       restore: vi.fn().mockResolvedValue({

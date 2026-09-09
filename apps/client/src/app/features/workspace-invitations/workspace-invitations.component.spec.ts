@@ -25,50 +25,39 @@ const invitationId = Schema.decodeUnknownSync(WorkspaceInvitationIdSchema)(
 );
 
 const renderComponent = async () => {
+  const recipientInvitation = {
+    invitation: {
+      id: invitationId,
+      workspaceId: workspace.id,
+      invitedProfileId: Schema.decodeUnknownSync(ProfileIdSchema)(
+        '00000000-0000-4000-8000-000000000003'
+      ),
+      status: 'pending' as const,
+    },
+    workspace,
+  };
+  const managedInvitation = {
+    invitation: recipientInvitation.invitation,
+    username: 'candidate',
+  };
   const store = {
-    invitations: signal([
-      {
-        invitation: {
-          id: invitationId,
-          workspaceId: workspace.id,
-          invitedProfileId: Schema.decodeUnknownSync(ProfileIdSchema)(
-            '00000000-0000-4000-8000-000000000003'
-          ),
-          status: 'pending' as const,
-        },
-        workspace,
-      },
-    ]),
-    loadStatus: signal('loaded'),
-    creationStatus: signal('idle'),
-    responseKind: signal(null),
-    respondingInvitationId: signal(null),
-    error: signal(null),
-    creationError: signal(null),
-    responseError: signal(null),
-    isLoading: signal(false),
-    isCreating: signal(false),
-    isResponding: signal(false),
-    hasInvitations: signal(true),
-    ownerError: signal(null),
-    cancellationError: signal(null),
-    managedInvitations: signal([
-      {
-        invitation: {
-          id: invitationId,
-          workspaceId: workspace.id,
-          invitedProfileId: Schema.decodeUnknownSync(ProfileIdSchema)(
-            '00000000-0000-4000-8000-000000000003'
-          ),
-          status: 'pending' as const,
-        },
-        username: 'candidate',
-      },
-    ]),
-    isOwnerLoading: signal(false),
-    isCancelling: signal(false),
-    isMutatingOwnerInvitations: signal(false),
-    hasManagedInvitations: signal(true),
+    view: signal({
+      isBusy: false,
+      recipient: {
+        kind: 'invitations',
+        invitations: [recipientInvitation],
+        response: { kind: 'idle' },
+        responseError: null,
+      } as const,
+      owner: {
+        kind: 'ready',
+        invitations: [managedInvitation],
+        isMutating: false,
+        isCreating: false,
+        cancellationError: null,
+      } as const,
+      creationFeedback: { kind: 'none' } as const,
+    }),
     load: vi.fn().mockResolvedValue(undefined),
     loadManagedInvitations: vi.fn().mockResolvedValue(undefined),
     invite: vi.fn().mockResolvedValue(true),
@@ -105,6 +94,8 @@ describe('WorkspaceInvitationsComponent', () => {
       'input[name="username"]'
     ) as HTMLInputElement;
     input.value = 'candidate';
+    input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
     input
       .closest('form')
       ?.dispatchEvent(

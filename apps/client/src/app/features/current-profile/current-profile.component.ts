@@ -47,14 +47,14 @@ export class CurrentProfileComponent {
   }
 
   protected async saveProfile(
-    displayNameInput: HTMLInputElement,
-    usernameInput: HTMLInputElement,
-    avatarUrlInput: HTMLInputElement
+    displayName: string,
+    username: string,
+    avatarUrl: string
   ): Promise<void> {
     const updated = await this.store.update({
-      displayName: displayNameInput.value,
-      username: usernameInput.value,
-      avatarUrl: avatarUrlInput.value,
+      displayName,
+      username,
+      avatarUrl,
     });
 
     if (updated) {

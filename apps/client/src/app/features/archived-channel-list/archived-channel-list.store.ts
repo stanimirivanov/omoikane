@@ -14,15 +14,39 @@ import type {
 import type { Channel, ChannelId } from '@omoikane/domain/channel';
 import type { WorkspaceId } from '@omoikane/domain/workspace';
 import { ChannelApplicationService } from '@client/core/channel/channel-application.service';
-import { initialArchivedChannelListState } from './archived-channel-list.state';
+import {
+  initialArchivedChannelListState,
+  type ArchivedChannelListContent,
+  type ArchivedChannelListView,
+} from './archived-channel-list.state';
 
 /** Owns workspace-keyed archived-channel discovery independently of navigation. */
 export const ArchivedChannelListStore = signalStore(
   withState(initialArchivedChannelListState),
   withComputed((store) => ({
-    isLoading: computed(() => store.loadStatus() === 'loading'),
-    hasChannels: computed(() => store.channels().length > 0),
-    isRestoring: computed(() => store.restorationStatus() === 'restoring'),
+    view: computed<ArchivedChannelListView>(() => {
+      const content: ArchivedChannelListContent = (() => {
+        if (store.loadStatus() === 'loading') {
+          return { kind: 'loading' };
+        }
+
+        const error = store.error();
+        if (store.loadStatus() === 'failed' && error !== null) {
+          return { kind: 'error', error };
+        }
+
+        const channels = store.channels();
+        return channels.length === 0
+          ? { kind: 'empty' }
+          : { kind: 'channels', channels };
+      })();
+
+      return {
+        content,
+        isRestoring: store.restorationStatus() === 'restoring',
+        restorationError: store.restorationError(),
+      };
+    }),
   })),
   withMethods(
     (store, channelApplication = inject(ChannelApplicationService)) => {

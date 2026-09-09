@@ -18,6 +18,13 @@ import { WorkspaceMessageSearchComponent } from '@client/features/workspace-mess
 import { WorkspaceNavigationStore } from './workspace-navigation.store';
 import type { WorkspaceLoadStatus } from './workspace-navigation.state';
 
+type WorkspaceInteraction =
+  | 'idle'
+  | 'creating'
+  | 'editing'
+  | 'confirming-archive'
+  | 'confirming-departure';
+
 /**
  * Lists accessible workspaces and owns one feature-scoped selection store.
  */
@@ -38,10 +45,7 @@ import type { WorkspaceLoadStatus } from './workspace-navigation.state';
 })
 export class WorkspaceNavigationComponent {
   protected readonly store = inject(WorkspaceNavigationStore);
-  protected readonly isCreatingWorkspace = signal(false);
-  protected readonly isEditingWorkspace = signal(false);
-  protected readonly isConfirmingWorkspaceArchive = signal(false);
-  protected readonly isConfirmingWorkspaceDeparture = signal(false);
+  protected readonly interaction = signal<WorkspaceInteraction>('idle');
   protected readonly archivedWorkspaceRefreshVersion = signal(0);
   protected readonly canManageSelectedWorkspace = signal(false);
   private readonly route = inject(ActivatedRoute);
@@ -108,30 +112,27 @@ export class WorkspaceNavigationComponent {
     this.store.clearUpdateError();
     this.store.clearArchiveError();
     this.store.clearDepartureError();
-    this.isEditingWorkspace.set(false);
-    this.isConfirmingWorkspaceArchive.set(false);
-    this.isConfirmingWorkspaceDeparture.set(false);
-    this.isCreatingWorkspace.set(true);
+    this.interaction.set('creating');
   }
 
   protected cancelWorkspaceCreation(): void {
     this.store.clearCreationError();
-    this.isCreatingWorkspace.set(false);
+    this.interaction.set('idle');
   }
 
   protected async saveWorkspace(
-    nameInput: HTMLInputElement,
-    slugInput: HTMLInputElement,
-    descriptionInput: HTMLTextAreaElement
+    name: string,
+    slug: string,
+    description: string
   ): Promise<void> {
     const workspace = await this.store.createWorkspace({
-      name: nameInput.value,
-      slug: slugInput.value,
-      description: descriptionInput.value,
+      name,
+      slug,
+      description,
     });
 
     if (workspace !== null) {
-      this.isCreatingWorkspace.set(false);
+      this.interaction.set('idle');
       this.navigateToWorkspace(workspace.slug);
     }
   }
@@ -141,34 +142,31 @@ export class WorkspaceNavigationComponent {
     this.store.clearUpdateError();
     this.store.clearArchiveError();
     this.store.clearDepartureError();
-    this.isCreatingWorkspace.set(false);
-    this.isConfirmingWorkspaceArchive.set(false);
-    this.isConfirmingWorkspaceDeparture.set(false);
-    this.isEditingWorkspace.set(true);
+    this.interaction.set('editing');
   }
 
   protected cancelWorkspaceEditing(): void {
     this.store.clearUpdateError();
-    this.isEditingWorkspace.set(false);
+    this.interaction.set('idle');
   }
 
   protected async saveWorkspaceChanges(
     workspace: Workspace,
-    nameInput: HTMLInputElement,
-    slugInput: HTMLInputElement,
-    descriptionInput: HTMLTextAreaElement
+    name: string,
+    slug: string,
+    description: string
   ): Promise<void> {
     const updatedWorkspace = await this.store.updateSelectedWorkspace({
-      name: nameInput.value,
-      slug: slugInput.value,
-      description: descriptionInput.value,
+      name,
+      slug,
+      description,
     });
 
     if (updatedWorkspace === null) {
       return;
     }
 
-    this.isEditingWorkspace.set(false);
+    this.interaction.set('idle');
 
     if (updatedWorkspace.slug !== workspace.slug) {
       void this.router.navigate([], {
@@ -183,14 +181,12 @@ export class WorkspaceNavigationComponent {
   protected beginWorkspaceArchive(): void {
     this.store.clearArchiveError();
     this.store.clearDepartureError();
-    this.isEditingWorkspace.set(false);
-    this.isConfirmingWorkspaceDeparture.set(false);
-    this.isConfirmingWorkspaceArchive.set(true);
+    this.interaction.set('confirming-archive');
   }
 
   protected cancelWorkspaceArchive(): void {
     this.store.clearArchiveError();
-    this.isConfirmingWorkspaceArchive.set(false);
+    this.interaction.set('idle');
   }
 
   /**
@@ -201,7 +197,7 @@ export class WorkspaceNavigationComponent {
    * cannot replace navigation that moved elsewhere while the request ran.
    */
   protected async confirmWorkspaceArchive(workspace: Workspace): Promise<void> {
-    this.isConfirmingWorkspaceArchive.set(false);
+    this.interaction.set('idle');
 
     const archivedWorkspaceId = await this.store.archiveSelectedWorkspace();
 
@@ -213,15 +209,12 @@ export class WorkspaceNavigationComponent {
     this.store.clearCreationError();
     this.store.clearUpdateError();
     this.store.clearArchiveError();
-    this.isCreatingWorkspace.set(false);
-    this.isEditingWorkspace.set(false);
-    this.isConfirmingWorkspaceArchive.set(false);
-    this.isConfirmingWorkspaceDeparture.set(true);
+    this.interaction.set('confirming-departure');
   }
 
   protected cancelWorkspaceDeparture(): void {
     this.store.clearDepartureError();
-    this.isConfirmingWorkspaceDeparture.set(false);
+    this.interaction.set('idle');
   }
 
   /**
@@ -230,7 +223,7 @@ export class WorkspaceNavigationComponent {
   protected async confirmWorkspaceDeparture(
     workspace: Workspace
   ): Promise<void> {
-    this.isConfirmingWorkspaceDeparture.set(false);
+    this.interaction.set('idle');
 
     const departedWorkspaceId = await this.store.leaveSelectedWorkspace();
 
@@ -241,8 +234,12 @@ export class WorkspaceNavigationComponent {
     this.canManageSelectedWorkspace.set(canManage);
 
     if (!canManage) {
-      this.isEditingWorkspace.set(false);
-      this.isConfirmingWorkspaceArchive.set(false);
+      if (
+        this.interaction() === 'editing' ||
+        this.interaction() === 'confirming-archive'
+      ) {
+        this.interaction.set('idle');
+      }
     }
   }
 
@@ -283,9 +280,7 @@ export class WorkspaceNavigationComponent {
 
     if (this.store.selectedWorkspace()?.slug !== workspaceSlug) {
       this.canManageSelectedWorkspace.set(false);
-      this.isEditingWorkspace.set(false);
-      this.isConfirmingWorkspaceArchive.set(false);
-      this.isConfirmingWorkspaceDeparture.set(false);
+      this.interaction.set('idle');
     }
 
     if (workspaceSlug === null) {

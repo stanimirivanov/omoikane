@@ -17,6 +17,10 @@ import { AuthenticationStore } from '@client/features/authentication/store/authe
 import { ProfileAvatarComponent } from '@client/shared/profile-avatar/profile-avatar.component';
 import { WorkspaceMemberDirectoryStore } from './workspace-member-directory.store';
 
+type MemberConfirmation =
+  | { readonly kind: 'none' }
+  | { readonly kind: 'removal' | 'suspension'; readonly profileId: ProfileId };
+
 /**
  * Displays active workspace members and their current roles.
  */
@@ -53,17 +57,15 @@ export class WorkspaceMemberDirectoryComponent {
           entry.profileId === currentProfileId && entry.role === 'owner'
       );
   });
-  protected readonly pendingRemovalProfileId = signal<ProfileId | null>(null);
-  protected readonly pendingSuspensionProfileId = signal<ProfileId | null>(
-    null
-  );
+  protected readonly confirmation = signal<MemberConfirmation>({
+    kind: 'none',
+  });
 
   constructor() {
     effect(() => {
       const workspaceId = this.workspaceId();
       const currentProfileId = this.authenticationStore.currentUserId();
-      this.pendingRemovalProfileId.set(null);
-      this.pendingSuspensionProfileId.set(null);
+      this.confirmation.set({ kind: 'none' });
       void this.store.load(workspaceId, currentProfileId);
     });
 
@@ -102,30 +104,28 @@ export class WorkspaceMemberDirectoryComponent {
   }
 
   protected requestRemoval(profileId: ProfileId): void {
-    this.pendingSuspensionProfileId.set(null);
-    this.pendingRemovalProfileId.set(profileId);
+    this.confirmation.set({ kind: 'removal', profileId });
   }
 
   protected cancelRemoval(): void {
-    this.pendingRemovalProfileId.set(null);
+    this.confirmation.set({ kind: 'none' });
   }
 
   protected confirmRemoval(profileId: ProfileId): void {
-    this.pendingRemovalProfileId.set(null);
+    this.confirmation.set({ kind: 'none' });
     void this.store.removeMember(profileId);
   }
 
   protected requestSuspension(profileId: ProfileId): void {
-    this.pendingRemovalProfileId.set(null);
-    this.pendingSuspensionProfileId.set(profileId);
+    this.confirmation.set({ kind: 'suspension', profileId });
   }
 
   protected cancelSuspension(): void {
-    this.pendingSuspensionProfileId.set(null);
+    this.confirmation.set({ kind: 'none' });
   }
 
   protected confirmSuspension(profileId: ProfileId): void {
-    this.pendingSuspensionProfileId.set(null);
+    this.confirmation.set({ kind: 'none' });
     void this.store.suspendMember(profileId);
   }
 }

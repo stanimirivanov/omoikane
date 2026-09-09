@@ -72,6 +72,11 @@ describe('WorkspaceMessageSearchStore', () => {
     });
     expect(store.status()).toBe('completed');
     expect(store.results()).toEqual([result]);
+    expect(store.view()).toEqual({
+      kind: 'results',
+      query: 'decision',
+      results: [result],
+    });
   });
 
   it('maps validation and provider failures to safe messages', async () => {

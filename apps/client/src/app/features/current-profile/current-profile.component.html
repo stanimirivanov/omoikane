@@ -1,88 +1,104 @@
+@let view = store.view();
+
 <section
   aria-label="Current profile"
-  [attr.aria-busy]="store.isLoading() || store.isUpdating()"
+  [attr.aria-busy]="
+    view.kind === 'loading' || (view.kind === 'profile' && view.isUpdating)
+  "
 >
-  @if (store.profile(); as profile) {
-    <app-profile-avatar
-      [avatarUrl]="profile.avatarUrl"
-      [displayName]="profile.displayName"
-    />
+  @switch (view.kind) {
+    @case ('profile') {
+      @let profile = view.profile;
 
-    @if (isEditing()) {
-      <form
-        (submit)="
-          $event.preventDefault();
-          saveProfile(displayNameInput, usernameInput, avatarUrlInput)
-        "
-      >
-        <label for="profile-display-name">Display name</label>
-        <input
-          #displayNameInput
-          id="profile-display-name"
-          name="profile-display-name"
-          type="text"
-          required
-          [value]="profile.displayName"
-          [disabled]="store.isUpdating()"
-        />
+      <app-profile-avatar
+        [avatarUrl]="profile.avatarUrl"
+        [displayName]="profile.displayName"
+      />
 
-        <label for="profile-username">Username</label>
-        <input
-          #usernameInput
-          id="profile-username"
-          name="profile-username"
-          type="text"
-          [value]="profile.username ?? ''"
-          [disabled]="store.isUpdating()"
-        />
-
-        <label for="profile-avatar-url">Avatar HTTPS URL</label>
-        <input
-          #avatarUrlInput
-          id="profile-avatar-url"
-          name="profile-avatar-url"
-          type="url"
-          inputmode="url"
-          [value]="profile.avatarUrl ?? ''"
-          [disabled]="store.isUpdating()"
-        />
-
-        <button type="submit" [disabled]="store.isUpdating()">
-          @if (store.isUpdating()) {
-            Saving&hellip;
-          } @else {
-            Save profile
-          }
-        </button>
-
-        <button
-          type="button"
-          [disabled]="store.isUpdating()"
-          (click)="cancelEdit()"
+      @if (isEditing()) {
+        <form
+          (submit)="
+            $event.preventDefault();
+            saveProfile(
+              displayNameInput.value,
+              usernameInput.value,
+              avatarUrlInput.value
+            )
+          "
         >
-          Cancel
-        </button>
-      </form>
-    } @else {
-      <strong>{{ profile.displayName }}</strong>
+          <label for="profile-display-name">Display name</label>
+          <input
+            #displayNameInput
+            id="profile-display-name"
+            name="profile-display-name"
+            type="text"
+            required
+            [value]="profile.displayName"
+            [disabled]="view.isUpdating"
+          />
 
-      @if (profile.username; as username) {
-        <span>{{ '@' + username }}</span>
+          <label for="profile-username">Username</label>
+          <input
+            #usernameInput
+            id="profile-username"
+            name="profile-username"
+            type="text"
+            [value]="profile.username ?? ''"
+            [disabled]="view.isUpdating"
+          />
+
+          <label for="profile-avatar-url">Avatar HTTPS URL</label>
+          <input
+            #avatarUrlInput
+            id="profile-avatar-url"
+            name="profile-avatar-url"
+            type="url"
+            inputmode="url"
+            [value]="profile.avatarUrl ?? ''"
+            [disabled]="view.isUpdating"
+          />
+
+          <button type="submit" [disabled]="view.isUpdating">
+            @if (view.isUpdating) {
+              Saving&hellip;
+            } @else {
+              Save profile
+            }
+          </button>
+
+          <button
+            type="button"
+            [disabled]="view.isUpdating"
+            (click)="cancelEdit()"
+          >
+            Cancel
+          </button>
+        </form>
+      } @else {
+        <strong>{{ profile.displayName }}</strong>
+
+        @if (profile.username; as username) {
+          <span>{{ '@' + username }}</span>
+        }
+
+        <button type="button" (click)="beginEdit()">Edit profile</button>
       }
 
-      <button type="button" (click)="beginEdit()">Edit profile</button>
+      @if (view.updateError; as error) {
+        <span role="alert">{{ error.message }}</span>
+        <button type="button" (click)="store.clearUpdateError()">
+          Dismiss
+        </button>
+      }
+    }
+
+    @case ('error') {
+      <span role="alert">{{ view.error.message }}</span>
+      <button type="button" (click)="store.load(userId())">
+        Retry profile
+      </button>
     }
   }
 
   <span>{{ fallbackEmail() }}</span>
-
-  @if (store.error(); as error) {
-    <span role="alert">{{ error.message }}</span>
-    <button type="button" (click)="store.load(userId())">Retry profile</button>
-  }
-
-  @if (store.updateError(); as error) {
-    <span role="alert">{{ error.message }}</span>
-    <button type="button" (click)="store.clearUpdateError()">Dismiss</button>
-  }
 </section>

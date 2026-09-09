@@ -31,6 +31,35 @@ export interface ChannelNavigationError {
   readonly message: string;
 }
 
+export interface ChannelNavigationOperationsView {
+  readonly isBusy: boolean;
+  readonly isCreating: boolean;
+  readonly isUpdating: boolean;
+  readonly isArchiving: boolean;
+}
+
+export type ChannelNavigationContent =
+  | { readonly kind: 'loading' }
+  | { readonly kind: 'error'; readonly error: ChannelNavigationError }
+  | {
+      readonly kind: 'ready';
+      readonly channels: readonly Channel[];
+      readonly selectedChannel: Channel | null;
+      readonly unreadCountByChannel: ReadonlyMap<ChannelId, number>;
+    };
+
+/** Complete rendering state for channel navigation. */
+export interface ChannelNavigationView {
+  readonly content: ChannelNavigationContent;
+  readonly operations: ChannelNavigationOperationsView;
+  readonly realtimeError: ChannelNavigationError | null;
+  readonly unreadError: ChannelNavigationError | null;
+  readonly unreadRealtimeError: ChannelNavigationError | null;
+  readonly creationError: ChannelNavigationError | null;
+  readonly updateError: ChannelNavigationError | null;
+  readonly archiveError: ChannelNavigationError | null;
+}
+
 /**
  * Presentation state for channel discovery inside one selected workspace.
  */

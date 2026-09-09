@@ -146,6 +146,8 @@ describe('ChannelMessagesStore', () => {
     expect(store.nextCursor()).toBeNull();
 
     expect(store.error()).toBeNull();
+
+    expect(store.historyView().content).toEqual({ kind: 'empty' });
   });
 
   it('records an initial loading failure', async () => {
@@ -500,6 +502,13 @@ describe('ChannelMessagesStore', () => {
     expect(store.sendError()).toEqual({
       tag: 'InvalidMessageContentError',
       message: 'The message content is invalid.',
+    });
+    expect(store.composerView()).toEqual({
+      isSending: false,
+      error: {
+        tag: 'InvalidMessageContentError',
+        message: 'The message content is invalid.',
+      },
     });
   });
 

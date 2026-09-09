@@ -1,277 +1,312 @@
-@if (store.focusedMessageStatus() === 'loading') {
-  <p aria-live="polite">Loading the selected search result&hellip;</p>
-} @else if (store.focusedMessageError()) {
-  <p role="alert">The selected search result is no longer available.</p>
-  <button type="button" (click)="retryFocusedMessage()">Retry result</button>
-} @else if (store.focusedMessage(); as focusedMessage) {
-  <section
-    [id]="'focused-message-' + focusedMessage.id"
-    aria-labelledby="focused-message-heading"
-    tabindex="-1"
-  >
-    <h4 id="focused-message-heading">Selected search result</h4>
-    <app-profile-avatar
-      [avatarUrl]="authorAvatarUrl(focusedMessage)"
-      [displayName]="authorAvatarName(focusedMessage)"
-    />
-    <strong>{{ authorLabel(focusedMessage) }}</strong>
-    <time [attr.datetime]="focusedMessage.createdAt.toISOString()">
-      {{ focusedMessage.createdAt | date: 'medium' }}
-    </time>
-    @if (focusedMessage.status === 'active') {
-      <p>{{ focusedMessage.content }}</p>
-    } @else {
-      <p><em>Message deleted</em></p>
-    }
-  </section>
-}
+@let focusedView = store.focusedMessageView();
+@let historyView = store.historyView();
+@let revisionView = store.revisionHistoryView();
+@let messageInteraction = interaction();
 
-@if (store.isLoading()) {
-  <p>Loading messages&hellip;</p>
-} @else if (store.error(); as error) {
-  <p role="alert">{{ error.message }}</p>
-  <button type="button" (click)="store.refresh()">Retry</button>
-} @else if (!store.hasMessages()) {
-  <p>No messages yet.</p>
-} @else {
-  <ul>
-    @for (message of store.messages(); track message.id) {
-      <li
-        [id]="'message-' + message.id"
-        [attr.aria-current]="
-          store.focusedMessageId() === message.id ? 'true' : null
-        "
-      >
-        <app-profile-avatar
-          [avatarUrl]="authorAvatarUrl(message)"
-          [displayName]="authorAvatarName(message)"
-        />
-        <strong>
-          {{ authorLabel(message) }}
-        </strong>
+@switch (focusedView.kind) {
+  @case ('loading') {
+    <p aria-live="polite">Loading the selected search result&hellip;</p>
+  }
+  @case ('error') {
+    <p role="alert">The selected search result is no longer available.</p>
+    <button type="button" (click)="retryFocusedMessage()">Retry result</button>
+  }
+  @case ('message') {
+    @let focusedMessage = focusedView.message;
 
-        <span>
-          Sent
-          <time
-            [attr.datetime]="message.createdAt.toISOString()"
-            [attr.aria-label]="'Sent ' + (message.createdAt | date: 'long')"
-          >
-            {{ message.createdAt | date: 'medium' }}
-          </time>
-        </span>
-
-        @if (message.editedAt; as editedAt) {
-          <span>
-            Edited
-            <time
-              [attr.datetime]="editedAt.toISOString()"
-              [attr.aria-label]="'Edited ' + (editedAt | date: 'long')"
-            >
-              {{ editedAt | date: 'medium' }}
-            </time>
-          </span>
-
-          @if (canViewRevisionHistory(message)) {
-            <button
-              type="button"
-              [attr.aria-expanded]="
-                store.revisionHistoryMessageId() === message.id
-              "
-              [attr.aria-controls]="'message-revisions-' + message.id"
-              (click)="toggleRevisionHistory(message.id)"
-            >
-              @if (store.revisionHistoryMessageId() === message.id) {
-                Hide edit history
-              } @else {
-                View edit history
-              }
-            </button>
-          }
-        }
-
-        @if (store.revisionHistoryMessageId() === message.id) {
-          <section
-            [id]="'message-revisions-' + message.id"
-            aria-label="Message edit history"
-          >
-            @if (store.isLoadingMessageRevisions()) {
-              <p>Loading edit history&hellip;</p>
-            } @else if (store.messageRevisionsError(); as revisionError) {
-              <p role="alert">{{ revisionError.message }}</p>
-              <button
-                type="button"
-                (click)="store.openRevisionHistory(message.id)"
-              >
-                Retry edit history
-              </button>
-            } @else if (store.messageRevisions().length === 0) {
-              <p>No revision history is available.</p>
-            } @else {
-              <ol reversed>
-                @for (revision of store.messageRevisions(); track revision.id) {
-                  <li>
-                    <strong>Version {{ revision.versionNumber }}</strong>
-                    <span>{{ revision.content }}</span>
-                    <time
-                      [attr.datetime]="revision.createdAt.toISOString()"
-                      [attr.aria-label]="
-                        'Version ' +
-                        revision.versionNumber +
-                        ' created ' +
-                        (revision.createdAt | date: 'long')
-                      "
-                    >
-                      {{ revision.createdAt | date: 'medium' }}
-                    </time>
-                  </li>
-                }
-              </ol>
-
-              @if (store.canLoadOlderMessageRevisions()) {
-                <button
-                  type="button"
-                  [disabled]="store.isLoadingOlderMessageRevisions()"
-                  (click)="store.loadOlderMessageRevisions()"
-                >
-                  @if (store.isLoadingOlderMessageRevisions()) {
-                    Loading&hellip;
-                  } @else {
-                    Load older revisions
-                  }
-                </button>
-              }
-            }
-          </section>
-        }
-
-        @if (message.status === 'active') {
-          @if (
-            isAuthoredByCurrentUser(message) &&
-            editingMessageId() === message.id
-          ) {
-            <form
-              (submit)="
-                $event.preventDefault(); saveEdit(message.id, editInput)
-              "
-            >
-              <label [for]="'edit-message-' + message.id">Edit message</label>
-
-              <input
-                #editInput
-                [id]="'edit-message-' + message.id"
-                type="text"
-                maxlength="4000"
-                [value]="message.content"
-                [disabled]="store.isEditing()"
-              />
-
-              <button type="submit" [disabled]="store.isEditing()">
-                @if (store.isEditing()) {
-                  Saving&hellip;
-                } @else {
-                  Save
-                }
-              </button>
-
-              <button
-                type="button"
-                [disabled]="store.isEditing()"
-                (click)="cancelEdit()"
-              >
-                Cancel
-              </button>
-            </form>
-          } @else {
-            <span>{{ message.content }}</span>
-
-            @if (canDeleteMessage(message)) {
-              @if (deletingMessageId() === message.id) {
-                <span>Delete this message?</span>
-
-                <button
-                  type="button"
-                  [disabled]="store.isDeleting()"
-                  (click)="confirmDelete(message.id)"
-                >
-                  @if (store.isDeleting()) {
-                    Deleting&hellip;
-                  } @else {
-                    Confirm
-                  }
-                </button>
-
-                <button
-                  type="button"
-                  [disabled]="store.isDeleting()"
-                  (click)="cancelDelete()"
-                >
-                  Cancel
-                </button>
-              } @else {
-                @if (isAuthoredByCurrentUser(message)) {
-                  <button
-                    type="button"
-                    [disabled]="store.isDeleting()"
-                    (click)="beginEdit(message.id)"
-                  >
-                    Edit
-                  </button>
-                }
-
-                <button
-                  type="button"
-                  [disabled]="store.isEditing() || store.isDeleting()"
-                  (click)="beginDelete(message.id)"
-                >
-                  Delete
-                </button>
-              }
-            }
-          }
-        } @else {
-          <em>Message deleted</em>
-          <span>
-            Deleted
-            <time
-              [attr.datetime]="message.deletedAt.toISOString()"
-              [attr.aria-label]="
-                'Deleted ' + (message.deletedAt | date: 'long')
-              "
-            >
-              {{ message.deletedAt | date: 'medium' }}
-            </time>
-          </span>
-        }
-      </li>
-    }
-  </ul>
-
-  @if (store.canLoadOlder()) {
-    <button
-      type="button"
-      [disabled]="store.isLoadingOlder()"
-      (click)="store.loadOlder()"
+    <section
+      [id]="'focused-message-' + focusedMessage.id"
+      aria-labelledby="focused-message-heading"
+      tabindex="-1"
     >
-      @if (store.isLoadingOlder()) {
-        Loading&hellip;
+      <h4 id="focused-message-heading">Selected search result</h4>
+      <app-profile-avatar
+        [avatarUrl]="authorAvatarUrl(focusedMessage)"
+        [displayName]="authorAvatarName(focusedMessage)"
+      />
+      <strong>{{ authorLabel(focusedMessage) }}</strong>
+      <time [attr.datetime]="focusedMessage.createdAt.toISOString()">
+        {{ focusedMessage.createdAt | date: 'medium' }}
+      </time>
+      @if (focusedMessage.status === 'active') {
+        <p>{{ focusedMessage.content }}</p>
       } @else {
-        Load older messages
+        <p><em>Message deleted</em></p>
       }
-    </button>
+    </section>
   }
 }
 
-@if (store.editError(); as error) {
+@switch (historyView.content.kind) {
+  @case ('loading') {
+    <p>Loading messages&hellip;</p>
+  }
+  @case ('error') {
+    <p role="alert">{{ historyView.content.error.message }}</p>
+    <button type="button" (click)="store.refresh()">Retry</button>
+  }
+  @case ('empty') {
+    <p>No messages yet.</p>
+  }
+  @case ('messages') {
+    <ul>
+      @for (message of historyView.content.messages; track message.id) {
+        <li
+          [id]="'message-' + message.id"
+          [attr.aria-current]="
+            store.focusedMessageId() === message.id ? 'true' : null
+          "
+        >
+          <app-profile-avatar
+            [avatarUrl]="authorAvatarUrl(message)"
+            [displayName]="authorAvatarName(message)"
+          />
+          <strong>
+            {{ authorLabel(message) }}
+          </strong>
+
+          <span>
+            Sent
+            <time
+              [attr.datetime]="message.createdAt.toISOString()"
+              [attr.aria-label]="'Sent ' + (message.createdAt | date: 'long')"
+            >
+              {{ message.createdAt | date: 'medium' }}
+            </time>
+          </span>
+
+          @if (message.editedAt; as editedAt) {
+            <span>
+              Edited
+              <time
+                [attr.datetime]="editedAt.toISOString()"
+                [attr.aria-label]="'Edited ' + (editedAt | date: 'long')"
+              >
+                {{ editedAt | date: 'medium' }}
+              </time>
+            </span>
+
+            @if (canViewRevisionHistory(message)) {
+              <button
+                type="button"
+                [attr.aria-expanded]="
+                  revisionView.kind !== 'closed' &&
+                  revisionView.messageId === message.id
+                "
+                [attr.aria-controls]="'message-revisions-' + message.id"
+                (click)="toggleRevisionHistory(message.id)"
+              >
+                @if (
+                  revisionView.kind !== 'closed' &&
+                  revisionView.messageId === message.id
+                ) {
+                  Hide edit history
+                } @else {
+                  View edit history
+                }
+              </button>
+            }
+          }
+
+          @if (
+            revisionView.kind !== 'closed' &&
+            revisionView.messageId === message.id
+          ) {
+            <section
+              [id]="'message-revisions-' + message.id"
+              aria-label="Message edit history"
+            >
+              @switch (revisionView.kind) {
+                @case ('loading') {
+                  <p>Loading edit history&hellip;</p>
+                }
+                @case ('error') {
+                  <p role="alert">{{ revisionView.error.message }}</p>
+                  <button
+                    type="button"
+                    (click)="store.openRevisionHistory(message.id)"
+                  >
+                    Retry edit history
+                  </button>
+                }
+                @case ('empty') {
+                  <p>No revision history is available.</p>
+                }
+                @case ('revisions') {
+                  <ol reversed>
+                    @for (
+                      revision of revisionView.revisions;
+                      track revision.id
+                    ) {
+                      <li>
+                        <strong>Version {{ revision.versionNumber }}</strong>
+                        <span>{{ revision.content }}</span>
+                        <time
+                          [attr.datetime]="revision.createdAt.toISOString()"
+                          [attr.aria-label]="
+                            'Version ' +
+                            revision.versionNumber +
+                            ' created ' +
+                            (revision.createdAt | date: 'long')
+                          "
+                        >
+                          {{ revision.createdAt | date: 'medium' }}
+                        </time>
+                      </li>
+                    }
+                  </ol>
+
+                  @if (revisionView.canLoadOlder) {
+                    <button
+                      type="button"
+                      [disabled]="revisionView.isLoadingOlder"
+                      (click)="store.loadOlderMessageRevisions()"
+                    >
+                      @if (revisionView.isLoadingOlder) {
+                        Loading&hellip;
+                      } @else {
+                        Load older revisions
+                      }
+                    </button>
+                  }
+                }
+              }
+            </section>
+          }
+
+          @if (message.status === 'active') {
+            @if (
+              isAuthoredByCurrentUser(message) &&
+              messageInteraction.kind === 'editing' &&
+              messageInteraction.messageId === message.id
+            ) {
+              <form
+                (submit)="
+                  $event.preventDefault(); saveEdit(message.id, editInput.value)
+                "
+              >
+                <label [for]="'edit-message-' + message.id">Edit message</label>
+
+                <input
+                  #editInput
+                  [id]="'edit-message-' + message.id"
+                  type="text"
+                  maxlength="4000"
+                  [value]="message.content"
+                  [disabled]="historyView.isEditing"
+                />
+
+                <button type="submit" [disabled]="historyView.isEditing">
+                  @if (historyView.isEditing) {
+                    Saving&hellip;
+                  } @else {
+                    Save
+                  }
+                </button>
+
+                <button
+                  type="button"
+                  [disabled]="historyView.isEditing"
+                  (click)="cancelEdit()"
+                >
+                  Cancel
+                </button>
+              </form>
+            } @else {
+              <span>{{ message.content }}</span>
+
+              @if (canDeleteMessage(message)) {
+                @if (
+                  messageInteraction.kind === 'confirming-delete' &&
+                  messageInteraction.messageId === message.id
+                ) {
+                  <span>Delete this message?</span>
+
+                  <button
+                    type="button"
+                    [disabled]="historyView.isDeleting"
+                    (click)="confirmDelete(message.id)"
+                  >
+                    @if (historyView.isDeleting) {
+                      Deleting&hellip;
+                    } @else {
+                      Confirm
+                    }
+                  </button>
+
+                  <button
+                    type="button"
+                    [disabled]="historyView.isDeleting"
+                    (click)="cancelDelete()"
+                  >
+                    Cancel
+                  </button>
+                } @else {
+                  @if (isAuthoredByCurrentUser(message)) {
+                    <button
+                      type="button"
+                      [disabled]="historyView.isDeleting"
+                      (click)="beginEdit(message.id)"
+                    >
+                      Edit
+                    </button>
+                  }
+
+                  <button
+                    type="button"
+                    [disabled]="historyView.isEditing || historyView.isDeleting"
+                    (click)="beginDelete(message.id)"
+                  >
+                    Delete
+                  </button>
+                }
+              }
+            }
+          } @else {
+            <em>Message deleted</em>
+            <span>
+              Deleted
+              <time
+                [attr.datetime]="message.deletedAt.toISOString()"
+                [attr.aria-label]="
+                  'Deleted ' + (message.deletedAt | date: 'long')
+                "
+              >
+                {{ message.deletedAt | date: 'medium' }}
+              </time>
+            </span>
+          }
+        </li>
+      }
+    </ul>
+
+    @if (historyView.canLoadOlder) {
+      <button
+        type="button"
+        [disabled]="historyView.isLoadingOlder"
+        (click)="store.loadOlder()"
+      >
+        @if (historyView.isLoadingOlder) {
+          Loading&hellip;
+        } @else {
+          Load older messages
+        }
+      </button>
+    }
+  }
+}
+
+@if (historyView.editError; as error) {
   <p role="alert">{{ error.message }}</p>
   <button type="button" (click)="store.clearEditError()">Dismiss</button>
 }
 
-@if (store.deleteError(); as error) {
+@if (historyView.deleteError; as error) {
   <p role="alert">{{ error.message }}</p>
   <button type="button" (click)="store.clearDeleteError()">Dismiss</button>
 }
 
-@if (store.realtimeError(); as error) {
+@if (historyView.realtimeError; as error) {
   <p role="alert">{{ error.message }}</p>
   <button type="button" (click)="store.retryRealtime()">
     Retry live updates

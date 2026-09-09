@@ -35,6 +35,38 @@ export interface WorkspaceMemberDirectoryEntry {
   readonly role: WorkspaceMemberRole;
 }
 
+export type WorkspaceMemberMutationView =
+  | { readonly kind: 'idle' }
+  | {
+      readonly kind: WorkspaceMemberMutationKind;
+      readonly profileId: ProfileId;
+    };
+
+export interface WorkspaceMemberPaginationView {
+  readonly hasMore: boolean;
+  readonly isLoading: boolean;
+  readonly error: WorkspaceMemberDirectoryError | null;
+}
+
+export type WorkspaceMemberDirectoryContent =
+  | { readonly kind: 'loading' }
+  | { readonly kind: 'error'; readonly error: WorkspaceMemberDirectoryError }
+  | { readonly kind: 'empty' }
+  | {
+      readonly kind: 'members';
+      readonly entries: readonly WorkspaceMemberDirectoryEntry[];
+      readonly pagination: WorkspaceMemberPaginationView;
+      readonly mutation: WorkspaceMemberMutationView;
+    };
+
+/** Coherent rendering state for the member collection and its operations. */
+export interface WorkspaceMemberDirectoryView {
+  readonly isBusy: boolean;
+  readonly canRefresh: boolean;
+  readonly mutationError: WorkspaceMemberDirectoryError | null;
+  readonly content: WorkspaceMemberDirectoryContent;
+}
+
 /**
  * Presentation state for the active-member directory of one workspace.
  */

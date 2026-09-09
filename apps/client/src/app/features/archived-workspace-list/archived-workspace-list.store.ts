@@ -13,15 +13,39 @@ import type {
 } from '@omoikane/application/workspace';
 import type { Workspace, WorkspaceId } from '@omoikane/domain/workspace';
 import { WorkspaceApplicationService } from '@client/core/workspace/workspace-application.service';
-import { initialArchivedWorkspaceListState } from './archived-workspace-list.state';
+import {
+  initialArchivedWorkspaceListState,
+  type ArchivedWorkspaceListContent,
+  type ArchivedWorkspaceListView,
+} from './archived-workspace-list.state';
 
 /** Owns independent archived-workspace discovery and restoration lifecycles. */
 export const ArchivedWorkspaceListStore = signalStore(
   withState(initialArchivedWorkspaceListState),
   withComputed((store) => ({
-    isLoading: computed(() => store.loadStatus() === 'loading'),
-    hasWorkspaces: computed(() => store.workspaces().length > 0),
-    isRestoring: computed(() => store.restorationStatus() === 'restoring'),
+    view: computed<ArchivedWorkspaceListView>(() => {
+      const content: ArchivedWorkspaceListContent = (() => {
+        if (store.loadStatus() === 'loading') {
+          return { kind: 'loading' };
+        }
+
+        const error = store.error();
+        if (store.loadStatus() === 'failed' && error !== null) {
+          return { kind: 'error', error };
+        }
+
+        const workspaces = store.workspaces();
+        return workspaces.length === 0
+          ? { kind: 'empty' }
+          : { kind: 'workspaces', workspaces };
+      })();
+
+      return {
+        content,
+        isRestoring: store.restorationStatus() === 'restoring',
+        restorationError: store.restorationError(),
+      };
+    }),
   })),
   withMethods(
     (store, workspaceApplication = inject(WorkspaceApplicationService)) => {

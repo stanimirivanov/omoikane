@@ -18,6 +18,12 @@ import { ArchivedChannelListComponent } from '@client/features/archived-channel-
 import { ChannelMessagesComponent } from '@client/features/channel-messages/channel-messages.component';
 import { ChannelNavigationStore } from './channel-navigation.store';
 
+type ChannelInteraction =
+  | 'idle'
+  | 'creating'
+  | 'editing'
+  | 'confirming-archive';
+
 /**
  * Lists selectable channels for the workspace supplied by its parent.
  *
@@ -42,9 +48,7 @@ export class ChannelNavigationComponent {
   readonly canManageChannels = input(false);
   readonly canModerateMessages = input(false);
   protected readonly store = inject(ChannelNavigationStore);
-  protected readonly isCreatingChannel = signal(false);
-  protected readonly isEditingChannel = signal(false);
-  protected readonly isConfirmingChannelArchive = signal(false);
+  protected readonly interaction = signal<ChannelInteraction>('idle');
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly queryParamMap = toSignal(this.route.queryParamMap, {
@@ -72,9 +76,7 @@ export class ChannelNavigationComponent {
 
     effect(() => {
       const workspaceId = this.workspaceId();
-      this.isCreatingChannel.set(false);
-      this.isEditingChannel.set(false);
-      this.isConfirmingChannelArchive.set(false);
+      this.interaction.set('idle');
       void this.store.load(workspaceId);
     });
 
@@ -94,8 +96,7 @@ export class ChannelNavigationComponent {
 
     effect(() => {
       if (!this.canManageChannels()) {
-        this.isEditingChannel.set(false);
-        this.isConfirmingChannelArchive.set(false);
+        this.interaction.set('idle');
       }
     });
   }
@@ -118,29 +119,27 @@ export class ChannelNavigationComponent {
     this.store.clearCreationError();
     this.store.clearUpdateError();
     this.store.clearArchiveError();
-    this.isEditingChannel.set(false);
-    this.isConfirmingChannelArchive.set(false);
-    this.isCreatingChannel.set(true);
+    this.interaction.set('creating');
   }
 
   protected cancelChannelCreation(): void {
     this.store.clearCreationError();
-    this.isCreatingChannel.set(false);
+    this.interaction.set('idle');
   }
 
   protected async saveChannel(
-    nameInput: HTMLInputElement,
-    slugInput: HTMLInputElement,
-    descriptionInput: HTMLTextAreaElement
+    name: string,
+    slug: string,
+    description: string
   ): Promise<void> {
     const channel = await this.store.createChannel({
-      name: nameInput.value,
-      slug: slugInput.value,
-      description: descriptionInput.value,
+      name,
+      slug,
+      description,
     });
 
     if (channel !== null) {
-      this.isCreatingChannel.set(false);
+      this.interaction.set('idle');
       this.navigateToChannel(channel.slug);
     }
   }
@@ -149,39 +148,36 @@ export class ChannelNavigationComponent {
     this.store.clearCreationError();
     this.store.clearUpdateError();
     this.store.clearArchiveError();
-    this.isCreatingChannel.set(false);
-    this.isConfirmingChannelArchive.set(false);
-    this.isEditingChannel.set(true);
+    this.interaction.set('editing');
   }
 
   protected cancelChannelEditing(): void {
     this.store.clearUpdateError();
-    this.isEditingChannel.set(false);
+    this.interaction.set('idle');
   }
 
   protected async saveChannelChanges(
-    nameInput: HTMLInputElement,
-    descriptionInput: HTMLTextAreaElement
+    name: string,
+    description: string
   ): Promise<void> {
     const updatedChannel = await this.store.updateSelectedChannel({
-      name: nameInput.value,
-      description: descriptionInput.value,
+      name,
+      description,
     });
 
     if (updatedChannel !== null) {
-      this.isEditingChannel.set(false);
+      this.interaction.set('idle');
     }
   }
 
   protected beginChannelArchive(): void {
     this.store.clearArchiveError();
-    this.isEditingChannel.set(false);
-    this.isConfirmingChannelArchive.set(true);
+    this.interaction.set('confirming-archive');
   }
 
   protected cancelChannelArchive(): void {
     this.store.clearArchiveError();
-    this.isConfirmingChannelArchive.set(false);
+    this.interaction.set('idle');
   }
 
   /**
@@ -192,7 +188,7 @@ export class ChannelNavigationComponent {
    */
   protected async confirmChannelArchive(channel: Channel): Promise<void> {
     const archivedChannelId = await this.store.archiveSelectedChannel();
-    this.isConfirmingChannelArchive.set(false);
+    this.interaction.set('idle');
 
     if (
       archivedChannelId !== channel.id ||
@@ -224,8 +220,7 @@ export class ChannelNavigationComponent {
     channels: readonly Channel[]
   ): void {
     if (this.store.selectedChannel()?.slug !== channelSlug) {
-      this.isEditingChannel.set(false);
-      this.isConfirmingChannelArchive.set(false);
+      this.interaction.set('idle');
     }
 
     if (channelSlug === null) {

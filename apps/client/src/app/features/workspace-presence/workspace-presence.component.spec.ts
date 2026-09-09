@@ -1,4 +1,4 @@
-import { signal } from '@angular/core';
+import { computed, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { Schema } from 'effect';
 import { describe, expect, it, vi } from 'vitest';
@@ -11,10 +11,14 @@ describe('WorkspacePresenceComponent', () => {
     const workspaceId = Schema.decodeUnknownSync(WorkspaceIdSchema)(
       '00000000-0000-4000-8000-000000000001'
     );
+    const error = signal<{ readonly message: string } | null>(null);
     const store = {
-      isConnecting: signal(false),
-      onlineCount: signal(2),
-      error: signal<{ readonly message: string } | null>(null),
+      view: computed(() => {
+        const currentError = error();
+        return currentError === null
+          ? ({ kind: 'online', count: 2 } as const)
+          : ({ kind: 'error', error: currentError } as const);
+      }),
       observe: vi.fn(),
       retry: vi.fn(),
     };
@@ -35,7 +39,7 @@ describe('WorkspacePresenceComponent', () => {
     expect(store.observe).toHaveBeenCalledExactlyOnceWith(workspaceId);
     expect(fixture.nativeElement.textContent).toContain('2 members online');
 
-    store.error.set({ message: 'Online presence is unavailable.' });
+    error.set({ message: 'Online presence is unavailable.' });
     fixture.detectChanges();
     const retry = fixture.nativeElement.querySelector(
       'button'
