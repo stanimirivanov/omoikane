@@ -38,6 +38,14 @@ history, focused search results, typing state, and retry paths stay within
 their original feature boundaries. Analysis Runs remain available through a
 compact disclosure until their dedicated UI-6 redesign.
 
+UI-4 treats collaboration management as a contextual workflow rather than a
+second application shell. Workspace and channel lifecycle controls, member
+roles, invitations, and archive restoration share a compact visual language
+while retaining their independent feature stores and command boundaries.
+Potentially disruptive operations keep explicit inline confirmation and
+descriptive status text; Material controls improve interaction consistency but
+do not replace database authorization or application validation.
+
 ## Layer responsibilities
 
 - `core/`: application-wide runtime composition and thin Angular boundary

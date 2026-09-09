@@ -7,6 +7,8 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { LucideMailPlus } from '@lucide/angular';
 import type {
   Workspace,
   WorkspaceId,
@@ -18,8 +20,10 @@ import { WorkspaceInvitationsStore } from './workspace-invitations.store';
 @Component({
   selector: 'app-workspace-invitations',
   standalone: true,
+  imports: [MatButtonModule, LucideMailPlus],
   providers: [WorkspaceInvitationsStore],
   templateUrl: './workspace-invitations.component.html',
+  styleUrl: './workspace-invitations.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WorkspaceInvitationsComponent {

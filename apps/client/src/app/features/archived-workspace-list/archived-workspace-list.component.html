@@ -1,75 +1,110 @@
 @let view = store.view();
 
 <section
+  class="archive-section"
   aria-labelledby="archived-workspaces-heading"
   [attr.aria-busy]="view.content.kind === 'loading' || view.isRestoring"
 >
-  <h2 id="archived-workspaces-heading">Archived workspaces</h2>
+  <header class="section-title">
+    <svg lucideArchiveRestore [size]="18" aria-hidden="true"></svg>
+    <div>
+      <h3 id="archived-workspaces-heading">Archived workspaces</h3>
+      <p>Preserved workspaces that can be restored by an active owner</p>
+    </div>
+  </header>
 
   @switch (view.content.kind) {
     @case ('loading') {
-      <p>Loading archived workspaces&hellip;</p>
+      <p class="section-state" role="status">
+        Loading archived workspaces&hellip;
+      </p>
     }
     @case ('error') {
-      <p role="alert">{{ view.content.error.message }}</p>
-      <button type="button" (click)="store.load()">Try again</button>
+      <div class="section-alert" role="alert">
+        <span>{{ view.content.error.message }}</span>
+        <button mat-button type="button" (click)="store.load()">
+          Try again
+        </button>
+      </div>
     }
     @case ('workspaces') {
-      <ul aria-label="Archived workspaces">
+      <ul class="archive-list" aria-label="Archived workspaces">
         @for (workspace of view.content.workspaces; track workspace.id) {
-          <li>
-            <strong>{{ workspace.name }}</strong>
+          <li class="archive-card">
+            <div class="archive-heading">
+              <div>
+                <strong>{{ workspace.name }}</strong>
+                <p>
+                  Archived
+                  <time [attr.datetime]="workspace.archivedAt.toISOString()">
+                    {{ workspace.archivedAt | date: 'mediumDate' }}
+                  </time>
+                </p>
+              </div>
+            </div>
+
             @if (workspace.description) {
-              <span> &mdash; {{ workspace.description }}</span>
+              <p>{{ workspace.description }}</p>
             }
-            <p>
-              Archived
-              <time [attr.datetime]="workspace.archivedAt.toISOString()">
-                {{ workspace.archivedAt | date: 'mediumDate' }}
-              </time>
-            </p>
+
             @if (pendingRestorationWorkspaceId() === workspace.id) {
-              <p>
-                Restore {{ workspace.name }} to active workspace navigation?
-                Only an active workspace owner can complete this action.
-              </p>
-              <button
-                type="button"
-                [disabled]="view.isRestoring"
-                (click)="confirmRestoration(workspace.id)"
-              >
-                Confirm restoration
-              </button>
-              <button
-                type="button"
-                [disabled]="view.isRestoring"
-                (click)="cancelRestoration()"
-              >
-                Cancel
-              </button>
+              <div class="confirmation">
+                <p>
+                  Restore {{ workspace.name }} to active workspace navigation?
+                  Only an active workspace owner can complete this action.
+                </p>
+                <div class="archive-actions">
+                  <button
+                    mat-flat-button
+                    type="button"
+                    [disabled]="view.isRestoring"
+                    (click)="confirmRestoration(workspace.id)"
+                  >
+                    Confirm restoration
+                  </button>
+                  <button
+                    mat-button
+                    type="button"
+                    [disabled]="view.isRestoring"
+                    (click)="cancelRestoration()"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
             } @else {
-              <button
-                type="button"
-                [disabled]="view.isRestoring"
-                [attr.aria-label]="'Restore ' + workspace.name"
-                (click)="requestRestoration(workspace.id)"
-              >
-                Restore workspace
-              </button>
+              <div class="archive-actions">
+                <button
+                  mat-button
+                  type="button"
+                  [disabled]="view.isRestoring"
+                  [attr.aria-label]="'Restore ' + workspace.name"
+                  (click)="requestRestoration(workspace.id)"
+                >
+                  <svg
+                    lucideArchiveRestore
+                    [size]="15"
+                    aria-hidden="true"
+                  ></svg>
+                  Restore workspace
+                </button>
+              </div>
             }
           </li>
         }
       </ul>
     }
     @case ('empty') {
-      <p>No archived workspaces are visible to you.</p>
+      <p class="section-state">No archived workspaces are visible to you.</p>
     }
   }
 
   @if (view.restorationError; as error) {
-    <p role="alert">{{ error.message }}</p>
-    <button type="button" (click)="store.clearRestorationError()">
-      Dismiss
-    </button>
+    <div class="section-alert" role="alert">
+      <span>{{ error.message }}</span>
+      <button mat-button type="button" (click)="store.clearRestorationError()">
+        Dismiss
+      </button>
+    </div>
   }
 </section>

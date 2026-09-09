@@ -25,6 +25,9 @@ const ownerAvatarUrl = Schema.decodeUnknownSync(AvatarUrlSchema)(
   'https://example.com/owner.png'
 );
 
+const normalizedText = (element: HTMLElement): string =>
+  element.textContent?.replace(/\s+/gu, ' ').trim() ?? '';
+
 const renderComponent = async (currentProfileId: ProfileId) => {
   const entries = [
     {
@@ -110,7 +113,7 @@ describe('WorkspaceMemberDirectoryComponent', () => {
         ) as HTMLImageElement
       ).src
     ).toBe(ownerAvatarUrl);
-    expect(fixture.nativeElement.textContent).toContain(
+    expect(normalizedText(fixture.nativeElement)).toContain(
       'Workspace Owner (you) — Owner'
     );
 
@@ -144,7 +147,7 @@ describe('WorkspaceMemberDirectoryComponent', () => {
   it('does not offer role controls to a non-owner member', async () => {
     const { fixture, managementChanges } = await renderComponent(memberId);
 
-    expect(fixture.nativeElement.textContent).toContain(
+    expect(normalizedText(fixture.nativeElement)).toContain(
       'Workspace Member (you) — Member'
     );
     expect(managementChanges).toContain(false);

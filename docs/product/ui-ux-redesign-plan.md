@@ -233,7 +233,7 @@ Playwright screenshots and traces from failed CI runs remain build artifacts.
    preserving URL and store ownership.
 4. **UI-3 — Conversation. Completed.** Redesign the channel header, continuous message
    timeline, metadata/actions, pagination, typing state, and composer.
-5. **UI-4 — Collaboration management.** Redesign workspace/channel lifecycle,
+5. **UI-4 — Collaboration management. Completed.** Redesign workspace/channel lifecycle,
    member directory, invitations, archive history, and confirmations using
    context surfaces.
 6. **UI-5 — Discovery and identity.** Integrate search, unread navigation,

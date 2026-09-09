@@ -2,154 +2,215 @@
 @let confirmationView = confirmation();
 
 <section
+  class="management-section"
   aria-labelledby="workspace-member-directory-heading"
   [attr.aria-busy]="view.isBusy"
 >
-  <h3 id="workspace-member-directory-heading">Members</h3>
+  <header class="section-header">
+    <div class="section-title">
+      <svg lucideUsers [size]="18" aria-hidden="true"></svg>
+      <div>
+        <h3 id="workspace-member-directory-heading">Members</h3>
+        <p>People with active workspace access</p>
+      </div>
+    </div>
 
-  @if (view.canRefresh) {
-    <button type="button" [disabled]="view.isBusy" (click)="refreshMembers()">
-      Refresh members
-    </button>
-  }
+    @if (view.canRefresh) {
+      <button
+        mat-button
+        type="button"
+        [disabled]="view.isBusy"
+        (click)="refreshMembers()"
+      >
+        <svg lucideRefreshCw [size]="15" aria-hidden="true"></svg>
+        Refresh members
+      </button>
+    }
+  </header>
 
   @if (view.mutationError; as error) {
-    <p role="alert">{{ error.message }}</p>
-    <button type="button" (click)="store.clearMemberMutationError()">
-      Dismiss
-    </button>
+    <div class="section-alert" role="alert">
+      <span>{{ error.message }}</span>
+      <button
+        mat-button
+        type="button"
+        (click)="store.clearMemberMutationError()"
+      >
+        Dismiss
+      </button>
+    </div>
   }
 
   @switch (view.content.kind) {
     @case ('loading') {
-      <p>Loading workspace members&hellip;</p>
+      <p class="section-state" role="status">
+        Loading workspace members&hellip;
+      </p>
     }
     @case ('error') {
-      <p role="alert">{{ view.content.error.message }}</p>
-      <button type="button" (click)="retryLoad()">Try again</button>
+      <div class="section-state">
+        <p role="alert">{{ view.content.error.message }}</p>
+        <button mat-button type="button" (click)="retryLoad()">
+          Try again
+        </button>
+      </div>
     }
     @case ('empty') {
-      <p>No active workspace members are visible.</p>
+      <p class="section-state">No active workspace members are visible.</p>
     }
     @case ('members') {
-      <ul aria-label="Active workspace members">
+      <ul class="member-list" aria-label="Active workspace members">
         @for (entry of view.content.entries; track entry.profileId) {
-          <li>
-            <app-profile-avatar
-              [avatarUrl]="entry.avatarUrl"
-              [displayName]="entry.displayName"
-            />
-            <span>{{ entry.displayName }}</span>
-            @if (isCurrentUser(entry.profileId)) {
-              <span> (you)</span>
-            }
-            <span>
-              &mdash; {{ entry.role === 'owner' ? 'Owner' : 'Member' }}</span
-            >
-            @if (canManageMembers()) {
-              <button
-                type="button"
-                [disabled]="view.isBusy"
-                [attr.aria-label]="
-                  (entry.role === 'owner' ? 'Make member: ' : 'Make owner: ') +
-                  entry.displayName
-                "
-                (click)="changeRole(entry.profileId, entry.role)"
-              >
-                @if (
-                  view.content.mutation.kind === 'role-change' &&
-                  view.content.mutation.profileId === entry.profileId
-                ) {
-                  Changing&hellip;
-                } @else {
-                  {{ entry.role === 'owner' ? 'Make member' : 'Make owner' }}
-                }
-              </button>
+          <li class="member-row">
+            <div class="member-summary">
+              <app-profile-avatar
+                [avatarUrl]="entry.avatarUrl"
+                [displayName]="entry.displayName"
+              />
+              <div class="member-identity">
+                <strong>
+                  {{ entry.displayName }}
+                  @if (isCurrentUser(entry.profileId)) {
+                    <span> (you)</span>
+                  }
+                </strong>
+                <span class="role-badge">
+                  &mdash; {{ entry.role === 'owner' ? 'Owner' : 'Member' }}
+                </span>
+              </div>
+            </div>
 
-              @if (!isCurrentUser(entry.profileId)) {
-                @if (
-                  confirmationView.kind === 'suspension' &&
-                  confirmationView.profileId === entry.profileId
-                ) {
-                  <span>
-                    Suspend {{ entry.displayName }}? They will lose workspace
-                    access until an owner reactivates them.
-                  </span>
-                  <button
-                    type="button"
-                    [disabled]="view.isBusy"
-                    [attr.aria-label]="
-                      'Confirm suspension: ' + entry.displayName
-                    "
-                    (click)="confirmSuspension(entry.profileId)"
-                  >
-                    Confirm suspend
-                  </button>
-                  <button type="button" (click)="cancelSuspension()">
-                    Cancel
-                  </button>
-                } @else if (
-                  confirmationView.kind === 'removal' &&
-                  confirmationView.profileId === entry.profileId
-                ) {
-                  <span
-                    >Remove {{ entry.displayName }} from this workspace?</span
-                  >
-                  <button
-                    type="button"
-                    [disabled]="view.isBusy"
-                    [attr.aria-label]="'Confirm removal: ' + entry.displayName"
-                    (click)="confirmRemoval(entry.profileId)"
-                  >
-                    Confirm remove
-                  </button>
-                  <button type="button" (click)="cancelRemoval()">
-                    Cancel
-                  </button>
-                } @else {
-                  <button
-                    type="button"
-                    [disabled]="view.isBusy"
-                    [attr.aria-label]="'Suspend: ' + entry.displayName"
-                    (click)="requestSuspension(entry.profileId)"
-                  >
-                    @if (
-                      view.content.mutation.kind === 'suspension' &&
-                      view.content.mutation.profileId === entry.profileId
-                    ) {
-                      Suspending&hellip;
-                    } @else {
-                      Suspend
-                    }
-                  </button>
-                  <button
-                    type="button"
-                    [disabled]="view.isBusy"
-                    [attr.aria-label]="'Remove: ' + entry.displayName"
-                    (click)="requestRemoval(entry.profileId)"
-                  >
-                    @if (
-                      view.content.mutation.kind === 'removal' &&
-                      view.content.mutation.profileId === entry.profileId
-                    ) {
-                      Removing&hellip;
-                    } @else {
-                      Remove
-                    }
-                  </button>
+            @if (canManageMembers()) {
+              <div class="member-actions">
+                <button
+                  mat-button
+                  type="button"
+                  [disabled]="view.isBusy"
+                  [attr.aria-label]="
+                    (entry.role === 'owner'
+                      ? 'Make member: '
+                      : 'Make owner: ') + entry.displayName
+                  "
+                  (click)="changeRole(entry.profileId, entry.role)"
+                >
+                  @if (
+                    view.content.mutation.kind === 'role-change' &&
+                    view.content.mutation.profileId === entry.profileId
+                  ) {
+                    Changing&hellip;
+                  } @else {
+                    {{ entry.role === 'owner' ? 'Make member' : 'Make owner' }}
+                  }
+                </button>
+
+                @if (!isCurrentUser(entry.profileId)) {
+                  @if (
+                    confirmationView.kind === 'suspension' &&
+                    confirmationView.profileId === entry.profileId
+                  ) {
+                    <div class="confirmation-panel">
+                      <p>
+                        Suspend {{ entry.displayName }}? They will lose
+                        workspace access until an owner reactivates them.
+                      </p>
+                      <div>
+                        <button
+                          mat-flat-button
+                          type="button"
+                          [disabled]="view.isBusy"
+                          [attr.aria-label]="
+                            'Confirm suspension: ' + entry.displayName
+                          "
+                          (click)="confirmSuspension(entry.profileId)"
+                        >
+                          Confirm suspend
+                        </button>
+                        <button
+                          mat-button
+                          type="button"
+                          (click)="cancelSuspension()"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  } @else if (
+                    confirmationView.kind === 'removal' &&
+                    confirmationView.profileId === entry.profileId
+                  ) {
+                    <div class="confirmation-panel confirmation-panel--danger">
+                      <p>Remove {{ entry.displayName }} from this workspace?</p>
+                      <div>
+                        <button
+                          mat-flat-button
+                          type="button"
+                          [disabled]="view.isBusy"
+                          [attr.aria-label]="
+                            'Confirm removal: ' + entry.displayName
+                          "
+                          (click)="confirmRemoval(entry.profileId)"
+                        >
+                          Confirm remove
+                        </button>
+                        <button
+                          mat-button
+                          type="button"
+                          (click)="cancelRemoval()"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  } @else {
+                    <button
+                      mat-button
+                      type="button"
+                      [disabled]="view.isBusy"
+                      [attr.aria-label]="'Suspend: ' + entry.displayName"
+                      (click)="requestSuspension(entry.profileId)"
+                    >
+                      @if (
+                        view.content.mutation.kind === 'suspension' &&
+                        view.content.mutation.profileId === entry.profileId
+                      ) {
+                        Suspending&hellip;
+                      } @else {
+                        Suspend
+                      }
+                    </button>
+                    <button
+                      mat-button
+                      class="danger-action"
+                      type="button"
+                      [disabled]="view.isBusy"
+                      [attr.aria-label]="'Remove: ' + entry.displayName"
+                      (click)="requestRemoval(entry.profileId)"
+                    >
+                      @if (
+                        view.content.mutation.kind === 'removal' &&
+                        view.content.mutation.profileId === entry.profileId
+                      ) {
+                        Removing&hellip;
+                      } @else {
+                        Remove
+                      }
+                    </button>
+                  }
                 }
-              }
+              </div>
             }
           </li>
         }
       </ul>
 
       @if (view.content.pagination.error; as error) {
-        <p role="alert">{{ error.message }}</p>
+        <p class="pagination-error" role="alert">{{ error.message }}</p>
       }
 
       @if (view.content.pagination.hasMore) {
         <button
+          mat-button
+          class="load-more"
           type="button"
           [disabled]="view.isBusy"
           (click)="store.loadMore()"

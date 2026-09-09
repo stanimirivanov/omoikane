@@ -1,0 +1,96 @@
+:host {
+  display: block;
+  padding: 0.75rem 0.5rem 0;
+  margin-top: 0.75rem;
+  border-top: 1px solid rgb(255 255 255 / 12%);
+}
+
+.archive-section {
+  display: grid;
+  gap: 0.625rem;
+}
+
+.section-title,
+.archive-actions,
+.section-alert {
+  display: flex;
+  align-items: center;
+}
+
+.section-title {
+  gap: 0.5rem;
+  color: var(--omo-nav-muted);
+}
+
+.section-title h4,
+.archive-card strong,
+.archive-card p,
+.section-state {
+  margin: 0;
+}
+
+.section-title h4 {
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.archive-list {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.archive-card {
+  display: grid;
+  gap: 0.375rem;
+  padding: 0.625rem;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 0.375rem;
+  background: rgb(0 0 0 / 12%);
+}
+
+.archive-card strong {
+  color: var(--omo-nav-text);
+  font-size: 0.8125rem;
+}
+
+.archive-card p,
+.section-state {
+  color: var(--omo-nav-muted);
+  font-size: 0.75rem;
+}
+
+.confirmation {
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  background: rgb(255 255 255 / 8%);
+}
+
+.archive-actions {
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.archive-actions button,
+.archive-card > button,
+.section-alert button {
+  min-width: 0;
+  padding-inline: 0.5rem;
+  color: var(--omo-nav-text);
+  font-size: 0.75rem;
+}
+
+.section-state {
+  padding: 0.5rem 0;
+}
+
+.section-alert {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: #ffd9d5;
+  font-size: 0.75rem;
+}

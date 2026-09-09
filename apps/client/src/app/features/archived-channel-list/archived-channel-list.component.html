@@ -1,28 +1,40 @@
 @let view = store.view();
 
 <section
+  class="archive-section"
   aria-labelledby="archived-channels-heading"
   [attr.aria-busy]="view.content.kind === 'loading' || view.isRestoring"
 >
-  <h4 id="archived-channels-heading">Archived channels</h4>
+  <header class="section-title">
+    <svg lucideArchiveRestore [size]="15" aria-hidden="true"></svg>
+    <h4 id="archived-channels-heading">Archived channels</h4>
+  </header>
 
   @switch (view.content.kind) {
     @case ('loading') {
-      <p>Loading archived channels&hellip;</p>
+      <p class="section-state" role="status">
+        Loading archived channels&hellip;
+      </p>
     }
     @case ('error') {
-      <p role="alert">{{ view.content.error.message }}</p>
-      <button type="button" (click)="store.load(workspaceId(), true)">
-        Try again
-      </button>
+      <div class="section-alert" role="alert">
+        <span>{{ view.content.error.message }}</span>
+        <button
+          mat-button
+          type="button"
+          (click)="store.load(workspaceId(), true)"
+        >
+          Try again
+        </button>
+      </div>
     }
     @case ('channels') {
-      <ul aria-label="Archived channels">
+      <ul class="archive-list" aria-label="Archived channels">
         @for (channel of view.content.channels; track channel.id) {
-          <li>
+          <li class="archive-card">
             <strong>{{ channel.name }}</strong>
             @if (channel.description) {
-              <span> &mdash; {{ channel.description }}</span>
+              <p>{{ channel.description }}</p>
             }
             <p>
               Archived
@@ -30,32 +42,41 @@
                 {{ channel.archivedAt | date: 'mediumDate' }}
               </time>
             </p>
+
             @if (pendingRestorationChannelId() === channel.id) {
-              <p>
-                Restore {{ channel.name }} to active channel navigation? Only an
-                active workspace owner can complete this action.
-              </p>
-              <button
-                type="button"
-                [disabled]="view.isRestoring"
-                (click)="confirmRestoration(channel.id)"
-              >
-                Confirm restoration
-              </button>
-              <button
-                type="button"
-                [disabled]="view.isRestoring"
-                (click)="cancelRestoration()"
-              >
-                Cancel
-              </button>
+              <div class="confirmation">
+                <p>
+                  Restore {{ channel.name }} to active channel navigation? Only
+                  an active workspace owner can complete this action.
+                </p>
+                <div class="archive-actions">
+                  <button
+                    mat-flat-button
+                    type="button"
+                    [disabled]="view.isRestoring"
+                    (click)="confirmRestoration(channel.id)"
+                  >
+                    Confirm restoration
+                  </button>
+                  <button
+                    mat-button
+                    type="button"
+                    [disabled]="view.isRestoring"
+                    (click)="cancelRestoration()"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
             } @else {
               <button
+                mat-button
                 type="button"
                 [disabled]="view.isRestoring"
                 [attr.aria-label]="'Restore ' + channel.name"
                 (click)="requestRestoration(channel.id)"
               >
+                <svg lucideArchiveRestore [size]="14" aria-hidden="true"></svg>
                 Restore channel
               </button>
             }
@@ -64,14 +85,16 @@
       </ul>
     }
     @case ('empty') {
-      <p>This workspace has no archived channels.</p>
+      <p class="section-state">This workspace has no archived channels.</p>
     }
   }
 
   @if (view.restorationError; as error) {
-    <p role="alert">{{ error.message }}</p>
-    <button type="button" (click)="store.clearRestorationError()">
-      Dismiss
-    </button>
+    <div class="section-alert" role="alert">
+      <span>{{ error.message }}</span>
+      <button mat-button type="button" (click)="store.clearRestorationError()">
+        Dismiss
+      </button>
+    </div>
   }
 </section>
