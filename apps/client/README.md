@@ -29,6 +29,15 @@ explicit end context drawer until their contents are redesigned in later UI
 slices. Drawer state is local presentation state, while the existing stores
 and query parameters remain the authoritative selection owners.
 
+UI-3 gives the selected channel a continuous, chronological conversation
+surface. The channel-message store still retains its newest-first collection
+for pagination and realtime reconciliation; its presentation view supplies a
+reversed copy to the timeline. The history pane owns scrolling so the channel
+header and composer remain stable, and existing message mutations, revision
+history, focused search results, typing state, and retry paths stay within
+their original feature boundaries. Analysis Runs remain available through a
+compact disclosure until their dedicated UI-6 redesign.
+
 ## Layer responsibilities
 
 - `core/`: application-wide runtime composition and thin Angular boundary

@@ -5,12 +5,16 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { LucideSendHorizontal } from '@lucide/angular';
 import { ChannelMessagesStore } from '../channel-messages.store';
 
 @Component({
   selector: 'app-channel-message-composer',
   standalone: true,
+  imports: [MatButtonModule, LucideSendHorizontal],
   templateUrl: './channel-message-composer.component.html',
+  styleUrl: './channel-message-composer.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChannelMessageComposerComponent {

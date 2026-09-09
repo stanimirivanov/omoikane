@@ -208,6 +208,10 @@ describe('ChannelMessagesStore', () => {
     expect(listCurrentProfiles).toHaveBeenCalledExactlyOnceWith([authorId]);
     expect(store.authorProfiles()).toEqual([authorProfile]);
     expect(store.loadStatus()).toBe('loaded');
+    expect(store.historyView().content).toEqual({
+      kind: 'messages',
+      messages: [secondMessage, firstMessage],
+    });
   });
 
   it('keeps loaded messages when optional author enrichment fails', async () => {

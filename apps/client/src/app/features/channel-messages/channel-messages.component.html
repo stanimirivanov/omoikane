@@ -1,24 +1,36 @@
-<section>
-  @let typingView = typingStore.view();
+@let typingView = typingStore.view();
 
-  <app-channel-message-history [canModerateMessages]="canModerateMessages()" />
+<section class="conversation" aria-label="Channel conversation">
+  <div class="conversation-timeline">
+    <app-channel-message-history
+      [canModerateMessages]="canModerateMessages()"
+    />
+  </div>
 
-  @switch (typingView.kind) {
-    @case ('connecting') {
-      <p>Connecting typing indicators&hellip;</p>
+  <div class="typing-status" aria-live="polite" aria-atomic="true">
+    @switch (typingView.kind) {
+      @case ('connecting') {
+        <p>Connecting typing indicators&hellip;</p>
+      }
+      @case ('error') {
+        <p role="alert">{{ typingView.error.message }}</p>
+        <button mat-button type="button" (click)="typingStore.retry()">
+          <svg lucideRefreshCw [size]="14"></svg>
+          Retry typing
+        </button>
+      }
+      @case ('typing') {
+        <p>
+          <span class="typing-dots" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </span>
+          {{ typingView.count }}
+          {{ typingView.count === 1 ? 'member is' : 'members are' }}
+          typing&hellip;
+        </p>
+      }
     }
-    @case ('error') {
-      <p role="alert">{{ typingView.error.message }}</p>
-      <button type="button" (click)="typingStore.retry()">Retry typing</button>
-    }
-    @case ('typing') {
-      <p aria-live="polite">
-        {{ typingView.count }}
-        {{ typingView.count === 1 ? 'member is' : 'members are' }}
-        typing&hellip;
-      </p>
-    }
-  }
+  </div>
 
   <app-channel-message-composer
     (typingActivity)="typingStore.recordActivity()"

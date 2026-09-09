@@ -406,10 +406,13 @@
               }
 
               <div class="channel-primary-content">
-                <app-analysis-runs
-                  [workspaceId]="workspaceId()"
-                  [channelId]="channel.id"
-                />
+                <details class="analysis-disclosure">
+                  <summary>Analysis tools</summary>
+                  <app-analysis-runs
+                    [workspaceId]="workspaceId()"
+                    [channelId]="channel.id"
+                  />
+                </details>
 
                 <app-channel-messages
                   [channelId]="channel.id"

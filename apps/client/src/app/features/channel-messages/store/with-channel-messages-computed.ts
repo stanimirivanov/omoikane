@@ -40,7 +40,7 @@ export const withChannelMessagesComputed = () =>
               ? { kind: 'error', error }
               : messages.length === 0
                 ? { kind: 'empty' }
-                : { kind: 'messages', messages };
+                : { kind: 'messages', messages: [...messages].reverse() };
 
         return {
           content,
