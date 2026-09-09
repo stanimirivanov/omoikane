@@ -46,8 +46,8 @@ and true application-wide rules. Feature styles remain colocated with their
 components. Code must not couple to undocumented Material DOM structure, use
 `::ng-deep`, or override internal selectors globally.
 
-UI-0 records this decision and the design contract without installing runtime
-packages. UI-1 will install the dependencies, establish the theme, and prove
+UI-0 recorded this decision and the design contract without installing runtime
+packages. UI-1 installed the dependencies, established the theme, and proved
 the foundation through the anonymous authentication surface.
 
 A reusable presentation component or wrapper is introduced only when multiple
@@ -94,8 +94,8 @@ in OMO-UX-001 and linked from OMO-RMP-001.
 
 ## Implementation and verification implications
 
-- UI-1 installs Angular Material, Angular CDK, and Lucide with compatible,
-  locked versions and verifies the production bundle.
+- UI-1 installed Angular Material, Angular CDK, and Lucide with compatible,
+  locked versions and verified the production bundle.
 - Each UI slice retains or extends component interaction tests; changing only
   appearance is not a reason to weaken role- and name-based assertions.
 - The authenticated Playwright path remains the behavior regression gate.

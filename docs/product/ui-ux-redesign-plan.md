@@ -222,10 +222,10 @@ Playwright screenshots and traces from failed CI runs remain build artifacts.
 
 ## 11. Reviewable implementation sequence
 
-1. **UI-0 — Design contract.** Record the framework decision, tokens, layout,
+1. **UI-0 — Design contract. Completed.** Record the framework decision, tokens, layout,
    existing-state inventory, responsive/accessibility criteria, and capture
    matrix. No runtime or behavior change.
-2. **UI-1 — Foundation and authentication.** Install the selected packages,
+2. **UI-1 — Foundation and authentication. Completed.** Install the selected packages,
    configure the Material theme and tokens, establish document-level styles,
    capture the anonymous baseline, and redesign all anonymous/recovery states.
 3. **UI-2 — Authenticated shell.** Add the desktop shell, workspace rail,

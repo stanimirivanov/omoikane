@@ -1,0 +1,122 @@
+@use '@angular/material' as mat;
+
+:root {
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$orange-palette,
+        tertiary: mat.$violet-palette,
+        theme-type: light,
+      ),
+      typography: (
+        plain-family: (
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif,
+        ),
+        brand-family: (
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif,
+        ),
+        bold-weight: 600,
+        medium-weight: 500,
+        regular-weight: 400,
+      ),
+      density: -1,
+    )
+  );
+
+  color-scheme: light;
+
+  --omo-nav-rail: #211625;
+  --omo-nav-sidebar: #302033;
+  --omo-nav-text: #f8f5f9;
+  --omo-nav-muted: #c9bdcc;
+  --omo-canvas: #f6f5f3;
+  --omo-surface: #ffffff;
+  --omo-surface-subtle: #fbfaf9;
+  --omo-text: #211f22;
+  --omo-text-muted: #666166;
+  --omo-border: #ded9df;
+  --omo-accent: #b45309;
+  --omo-accent-strong: #92400e;
+  --omo-accent-soft: #fff4e8;
+  --omo-focus: #2563eb;
+  --omo-danger: #b42318;
+  --omo-danger-soft: #fff1f0;
+  --omo-success: #257a4b;
+  --omo-success-soft: #edf8f1;
+  --omo-shadow-overlay: 0 16px 48px rgb(33 22 37 / 14%);
+  --omo-shadow-dialog: 0 24px 72px rgb(33 22 37 / 20%);
+
+  // Material components consume public system tokens while product-specific
+  // CSS consumes the Omoikane names above.
+  --mat-sys-primary: var(--omo-accent);
+  --mat-sys-on-primary: #ffffff;
+  --mat-sys-primary-container: var(--omo-accent-soft);
+  --mat-sys-on-primary-container: #512000;
+  --mat-sys-surface: var(--omo-surface);
+  --mat-sys-on-surface: var(--omo-text);
+  --mat-sys-outline: #766f76;
+  --mat-sys-outline-variant: var(--omo-border);
+  --mat-sys-error: var(--omo-danger);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-width: 20rem;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--omo-canvas);
+  color: var(--omo-text);
+  font-family: var(--mat-sys-body-medium-font);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 3px solid var(--omo-focus);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--omo-accent-soft);
+  color: var(--omo-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

@@ -11,10 +11,14 @@ composes the Effect/Supabase runtime through Angular dependency injection.
 The approved presentation redesign is defined by
 [OMO-UX-001](../../../docs/product/ui-ux-redesign-plan.md) and
 [ADR-0003](../../../docs/architecture/adr/0003-angular-material-and-lucide-presentation-foundation.md).
-UI-0 records the design contract only. Angular Material, the Angular CDK, and
-Lucide are intentionally not runtime dependencies until UI-1 introduces the
-theme and the first redesigned consumer. Presentation work must preserve this
-README's feature-state ownership and Angular execution boundaries.
+UI-1 installed Angular Material and the Angular CDK at the Angular 22 runtime
+version and pinned `@lucide/angular` under the workspace's dependency-age
+policy. The global SCSS entry owns Material system theming, Omoikane tokens, the
+document reset, focus visibility, and reduced-motion behavior. The anonymous
+authentication feature is the first concrete consumer; its three existing
+forms share one local stylesheet rather than a speculative component library.
+Presentation work must preserve this README's feature-state ownership and
+Angular execution boundaries.
 
 ## Layer responsibilities
 
