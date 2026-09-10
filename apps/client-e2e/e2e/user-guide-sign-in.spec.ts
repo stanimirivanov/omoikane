@@ -14,6 +14,7 @@ test(
   async ({ baseURL, browser }) => {
     const guide = await UserGuideSession.start(browser, {
       baseURL: baseURL ?? 'http://127.0.0.1:4200',
+      order: 10,
       slug: 'sign-in',
       summary:
         'Use an existing Omoikane account to enter the authenticated application.',
@@ -31,8 +32,11 @@ test(
       const authenticatedShell = new AuthenticatedShellPage(guide);
       await expect(authenticatedShell.signOutButton()).toBeVisible();
       await authenticatedShell.documentAuthenticatedSession();
-    } finally {
+
       await guide.finish();
+    } catch (error: unknown) {
+      await guide.abort();
+      throw error;
     }
   }
 );

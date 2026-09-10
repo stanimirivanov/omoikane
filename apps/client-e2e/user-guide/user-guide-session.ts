@@ -11,6 +11,7 @@ import type {
 import { browserScenarioMode } from './guide-mode';
 
 interface GuideDefinition {
+  readonly order: number;
   readonly slug: string;
   readonly summary: string;
   readonly title: string;
@@ -32,20 +33,6 @@ interface StartGuideOptions extends GuideDefinition {
 const guideOutputRoot = path.join(workspaceRoot, 'dist/user-guide');
 const guideViewport = { height: 900, width: 1440 } as const;
 
-const markdown = (
-  definition: GuideDefinition,
-  steps: readonly RecordedGuideStep[]
-) => {
-  const renderedSteps = steps
-    .map(
-      (step, index) =>
-        `## ${index + 1}. ${step.title}\n\n${step.body}\n\n![${step.title}](./${step.image})`
-    )
-    .join('\n\n');
-
-  return `# ${definition.title}\n\n${definition.summary}\n\n<video controls src="./assets/${definition.slug}.webm">\n  Your browser does not support embedded video.\n</video>\n\n${renderedSteps}\n`;
-};
-
 /**
  * Adds optional documentation behavior to one executable browser scenario.
  *
@@ -62,6 +49,7 @@ export class UserGuideSession {
   private readonly isGuideMode: boolean;
   private readonly steps: RecordedGuideStep[] = [];
   private readonly video: Video | null;
+  private contextClosed = false;
 
   private constructor(
     context: BrowserContext,
@@ -107,11 +95,17 @@ export class UserGuideSession {
         : {}),
     });
     const page = await context.newPage();
+    const definition: GuideDefinition = {
+      order: options.order,
+      slug: options.slug,
+      summary: options.summary,
+      title: options.title,
+    };
 
     return new UserGuideSession(
       context,
       page,
-      options,
+      definition,
       isGuideMode,
       page.video()
     );
@@ -153,8 +147,7 @@ export class UserGuideSession {
   }
 
   async finish(): Promise<void> {
-    await this.clearAnnotation();
-    await this.context.close();
+    await this.closeContext();
 
     if (!this.isGuideMode) {
       return;
@@ -172,15 +165,27 @@ export class UserGuideSession {
     await this.video.saveAs(videoPath);
     await this.video.delete();
     await writeFile(
-      path.join(this.guideDirectory, 'README.md'),
-      markdown(this.definition, this.steps),
+      path.join(this.guideDirectory, 'guide.json'),
+      `${JSON.stringify(
+        {
+          schemaVersion: 1,
+          ...this.definition,
+          steps: this.steps,
+          video: `assets/${this.definition.slug}.webm`,
+        },
+        undefined,
+        2
+      )}\n`,
       'utf8'
     );
-    await writeFile(
-      path.join(guideOutputRoot, 'README.md'),
-      `# Omoikane User Guide\n\n- [${this.definition.title}](./${this.definition.slug}/README.md)\n`,
-      'utf8'
-    );
+  }
+
+  async abort(): Promise<void> {
+    await this.closeContext();
+
+    if (this.isGuideMode) {
+      await rm(this.guideDirectory, { force: true, recursive: true });
+    }
   }
 
   private async captureStep(step: GuideStepDefinition): Promise<void> {
@@ -255,5 +260,15 @@ export class UserGuideSession {
           annotation.remove();
         }
       });
+  }
+
+  private async closeContext(): Promise<void> {
+    if (this.contextClosed) {
+      return;
+    }
+
+    await this.clearAnnotation();
+    await this.context.close();
+    this.contextClosed = true;
   }
 }
