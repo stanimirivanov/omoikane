@@ -1,9 +1,10 @@
 # Product and Architecture Roadmap
 
 > **Document ID:** OMO-RMP-001  
-> **Version:** 1.0  
-> **Status:** Approved baseline, repository-reconciled 9 August 2026
+> **Version:** 1.1  
+> **Status:** Approved baseline, implemented through Phase 5  
 > **Date:** 2 August 2026  
+> **Updated:** 10 September 2026  
 > **Product:** Omoikane - The Collaborative Intelligence Platform
 
 ## 1. Roadmap rules
@@ -202,6 +203,8 @@ Exit criteria:
 
 ### 3.6 Phase 5 - Decision Forensics
 
+**Phase status: Complete.**
+
 Implementation scope:
 
 - Let a user select a channel and time range and start an authorized analysis.
@@ -218,17 +221,25 @@ Implementation scope:
   review actions append immutable facts, reconcile conflicts, and project the
   reviewed state without rewriting model output.**
 - Persist evidence-backed proposed findings with confidence and model and prompt
-  versions.
+  versions. **Completed with immutable, manifest-matched structured results and
+  recorded provider, model, prompt, schema, and processor versions.**
 - Provide a review UI where findings are confirmed, rejected, or superseded.
-  **Confirm and reject are complete; supersede is intentionally deferred until
-  a replacement-candidate workflow exists.**
+  **Completed for the Phase 5 review contract with confirm and reject.
+  Supersede is intentionally deferred until a replacement-candidate workflow
+  exists and is not a Phase 5 exit requirement.**
 - Add pgvector and hybrid retrieval only when semantic evidence retrieval needs
-  them.
+  them. **Deferred because the implemented bounded source snapshot does not
+  require semantic retrieval.**
 
 Exit criteria:
 
 - Every displayed claim links to source evidence and an Analysis Run.
 - Human review changes finding state without rewriting original model output.
+
+Phase 5 exit status: complete. The authorized runtime persists and renders
+evidence-backed proposed candidates with reproducible execution provenance.
+Members can confirm or reject them through immutable review facts, and every
+displayed assertion retains its Analysis Run and source-revision links.
 
 #### Product experience track - UI modernization
 

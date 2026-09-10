@@ -1,9 +1,10 @@
 # Omoikane UI/UX Redesign Plan
 
 > **Document ID:** OMO-UX-001  
-> **Version:** 1.0  
-> **Status:** Approved UI-0 design contract  
+> **Version:** 1.1  
+> **Status:** Completed UI-0 through UI-8 modernization track  
 > **Date:** 8 September 2026  
+> **Completed:** 10 September 2026  
 > **Related decision:** [ADR-0003](../architecture/adr/0003-angular-material-and-lucide-presentation-foundation.md)
 
 ## 1. Outcome
