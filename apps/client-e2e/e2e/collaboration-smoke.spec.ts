@@ -1,19 +1,22 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
-
-const seededOwner = {
-  email: 'owner@omoikane.local',
-  password: 'Password123!',
-} as const;
+import {
+  seededChannel,
+  seededOwner,
+  seededWorkspace,
+} from '../fixtures/seeded-collaboration';
+import { ChannelMessagesPage } from '../pages/channel-messages.page';
+import { ChannelNavigationPage } from '../pages/channel-navigation.page';
+import { SignInPage } from '../pages/sign-in.page';
+import { WorkspaceNavigationPage } from '../pages/workspace-navigation.page';
 
 const signInSeededOwner = async (page: Page) => {
-  await page.goto('/', { waitUntil: 'domcontentloaded' });
-
-  const signIn = page.getByRole('region', { name: 'Sign in to Omoikane' });
-  await expect(signIn).toBeVisible();
-  await signIn.getByLabel('Email').fill(seededOwner.email);
-  await signIn.getByLabel('Password').fill(seededOwner.password);
-  await signIn.getByRole('button', { name: 'Sign in', exact: true }).click();
+  const signIn = new SignInPage(page);
+  await signIn.open();
+  await expect(signIn.heading()).toBeVisible();
+  await signIn.enterEmail(seededOwner.email);
+  await signIn.enterPassword(seededOwner.password);
+  await signIn.submit();
 
   await expect(
     page.getByRole('heading', { name: 'Workspaces', exact: true })
@@ -36,27 +39,19 @@ test('a seeded member can collaborate through the browser and sign out', async (
   const message = `Browser smoke ${Date.now()}`;
 
   await signInSeededOwner(page);
-  await page
-    .getByRole('navigation', { name: 'Accessible workspaces' })
-    .getByRole('button', { name: 'Omoikane Development', exact: true })
-    .click();
+  const workspaces = new WorkspaceNavigationPage(page);
+  await workspaces.selectWorkspace(seededWorkspace);
 
-  await expect(
-    page.getByRole('heading', { name: 'Omoikane Development', exact: true })
-  ).toBeVisible();
-  await page
-    .getByRole('navigation', { name: 'Workspace channels' })
-    .getByRole('button', { name: /^General/u })
-    .click();
+  await expect(workspaces.heading(seededWorkspace)).toBeVisible();
+  const channels = new ChannelNavigationPage(page);
+  await channels.selectChannel(seededChannel);
 
-  const composer = page.getByRole('textbox', { name: 'Message', exact: true });
-  await expect(composer).toBeVisible();
-  await composer.fill(message);
-  await page.getByRole('button', { name: 'Send', exact: true }).click();
+  const messages = new ChannelMessagesPage(page);
+  await expect(messages.composer()).toBeVisible();
+  await messages.enterMessage(message);
+  await messages.sendMessage();
 
-  await expect(
-    page.getByRole('listitem').filter({ hasText: message })
-  ).toBeVisible();
+  await expect(messages.message(message)).toBeVisible();
 
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
 
