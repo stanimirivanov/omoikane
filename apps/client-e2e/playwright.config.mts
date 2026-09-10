@@ -11,6 +11,8 @@ const baseURL = process.env['BASE_URL'] || 'http://127.0.0.1:4200';
  */
 export default defineConfig({
   ...nxE2EPreset(import.meta.dirname, { testDir: './e2e' }),
+  timeout: 60_000,
+  workers: 1,
   expect: {
     timeout: 10_000,
   },

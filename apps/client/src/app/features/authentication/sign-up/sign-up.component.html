@@ -1,10 +1,11 @@
 <section class="auth-form" aria-labelledby="sign-up-heading">
   @let signUpView = store.signUpView();
+  @let signUpError = store.error();
 
   @switch (signUpView.kind) {
     @case ('confirmation-required') {
       <span class="auth-completion-icon" aria-hidden="true">
-        <svg lucideMailCheck [size]="24"></svg>
+        <svg lucideMailCheck [size]="24" aria-hidden="true"></svg>
       </span>
 
       <div class="auth-form__heading">
@@ -67,7 +68,7 @@
       >
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>Email</mat-label>
-          <svg matPrefix lucideMail [size]="18"></svg>
+          <svg matPrefix lucideMail [size]="18" aria-hidden="true"></svg>
           <input
             matInput
             #emailInput
@@ -76,13 +77,14 @@
             type="email"
             autocomplete="email"
             required
+            [attr.aria-describedby]="signUpError ? 'sign-up-error' : null"
             [disabled]="signUpView.isSubmitting"
           />
         </mat-form-field>
 
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>Password</mat-label>
-          <svg matPrefix lucideLockKeyhole [size]="18"></svg>
+          <svg matPrefix lucideLockKeyhole [size]="18" aria-hidden="true"></svg>
           <input
             matInput
             #passwordInput
@@ -91,6 +93,7 @@
             type="password"
             autocomplete="new-password"
             required
+            [attr.aria-describedby]="signUpError ? 'sign-up-error' : null"
             [disabled]="signUpView.isSubmitting"
           />
         </mat-form-field>
@@ -106,15 +109,19 @@
             Creating account...
           } @else {
             Create account
-            <svg lucideArrowRight [size]="17"></svg>
+            <svg lucideArrowRight [size]="17" aria-hidden="true"></svg>
           }
         </button>
       </form>
     }
   }
 
-  @if (store.error(); as error) {
-    <div class="auth-feedback auth-feedback--error" role="alert">
+  @if (signUpError; as error) {
+    <div
+      id="sign-up-error"
+      class="auth-feedback auth-feedback--error"
+      role="alert"
+    >
       <p>{{ error.message }}</p>
       <button mat-button type="button" (click)="store.clearError()">
         Dismiss

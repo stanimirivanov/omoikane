@@ -15,7 +15,7 @@
       @case ('error') {
         <p role="alert">{{ typingView.error.message }}</p>
         <button mat-button type="button" (click)="typingStore.retry()">
-          <svg lucideRefreshCw [size]="14"></svg>
+          <svg lucideRefreshCw [size]="14" aria-hidden="true"></svg>
           Retry typing
         </button>
       }

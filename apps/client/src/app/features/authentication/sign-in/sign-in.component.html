@@ -1,5 +1,6 @@
 <section class="auth-form" aria-labelledby="sign-in-heading">
   @let isSigningIn = store.isSigningIn();
+  @let signInError = store.error();
 
   <div class="auth-form__heading">
     <h1 id="sign-in-heading">Sign in to Omoikane</h1>
@@ -13,7 +14,7 @@
   >
     <mat-form-field appearance="outline" subscriptSizing="dynamic">
       <mat-label>Email</mat-label>
-      <svg matPrefix lucideMail [size]="18"></svg>
+      <svg matPrefix lucideMail [size]="18" aria-hidden="true"></svg>
       <input
         matInput
         #emailInput
@@ -22,13 +23,14 @@
         type="email"
         autocomplete="email"
         required
+        [attr.aria-describedby]="signInError ? 'sign-in-error' : null"
         [disabled]="isSigningIn"
       />
     </mat-form-field>
 
     <mat-form-field appearance="outline" subscriptSizing="dynamic">
       <mat-label>Password</mat-label>
-      <svg matPrefix lucideLockKeyhole [size]="18"></svg>
+      <svg matPrefix lucideLockKeyhole [size]="18" aria-hidden="true"></svg>
       <input
         matInput
         #passwordInput
@@ -37,6 +39,7 @@
         type="password"
         autocomplete="current-password"
         required
+        [attr.aria-describedby]="signInError ? 'sign-in-error' : null"
         [disabled]="isSigningIn"
       />
     </mat-form-field>
@@ -52,13 +55,17 @@
         Signing in…
       } @else {
         Sign in
-        <svg lucideArrowRight [size]="17"></svg>
+        <svg lucideArrowRight [size]="17" aria-hidden="true"></svg>
       }
     </button>
   </form>
 
-  @if (store.error(); as error) {
-    <div class="auth-feedback auth-feedback--error" role="alert">
+  @if (signInError; as error) {
+    <div
+      id="sign-in-error"
+      class="auth-feedback auth-feedback--error"
+      role="alert"
+    >
       <p>{{ error.message }}</p>
       <button mat-button type="button" (click)="store.clearError()">
         Dismiss

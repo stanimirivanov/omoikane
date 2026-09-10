@@ -241,9 +241,11 @@ Playwright screenshots and traces from failed CI runs remain build artifacts.
 7. **UI-6 — Decision Forensics. Completed.** Redesign Analysis Run initiation,
    lifecycle, results, evidence, and human-review states around an
    evidence-first reading experience.
-8. **UI-7 — Responsive and accessibility hardening.** Test the full state
-   matrix across breakpoints, keyboard-only operation, zoom, contrast, reduced
-   motion, announcements, and coarse pointers.
+8. **UI-7 — Responsive and accessibility hardening. Completed.** Test the full
+   state matrix across breakpoints, keyboard-only operation, zoom, contrast,
+   reduced motion, announcements, and coarse pointers. The review and browser
+   evidence are recorded in
+   [UI-7 responsive and accessibility review](ui-accessibility-review.md).
 9. **UI-8 — Visual regression and cleanup.** Add stable screenshot assertions
    only for deterministic critical paths, remove superseded styles, verify
    bundle budgets, and reconcile documentation.

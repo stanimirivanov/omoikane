@@ -15,6 +15,7 @@
       maxlength="4000"
       autocomplete="off"
       placeholder="Write a message"
+      [attr.aria-describedby]="view.error ? 'message-composer-error' : null"
       [value]="draft()"
       [disabled]="view.isSending"
       (input)="updateDraft(messageInput.value)"
@@ -22,7 +23,7 @@
     />
 
     <button mat-flat-button type="submit" [disabled]="view.isSending">
-      <svg lucideSendHorizontal [size]="17"></svg>
+      <svg lucideSendHorizontal [size]="17" aria-hidden="true"></svg>
       <span class="send-label">
         @if (view.isSending) {
           Sending&hellip;
@@ -34,7 +35,7 @@
   </form>
 
   @if (view.error; as error) {
-    <div class="composer-error" role="alert">
+    <div id="message-composer-error" class="composer-error" role="alert">
       <span>{{ error.message }}</span>
       <button mat-button type="button" (click)="store.clearSendError()">
         Dismiss

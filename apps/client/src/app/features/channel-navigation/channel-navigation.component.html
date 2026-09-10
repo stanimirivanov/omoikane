@@ -19,6 +19,7 @@
       [mode]="compactNavigation ? 'over' : 'side'"
       [opened]="!compactNavigation || channelNavigationOpen()"
       [autoFocus]="compactNavigation"
+      (closedStart)="closeChannelNavigation()"
       aria-label="Channel navigation"
     >
       <header class="channel-sidebar-header">
@@ -33,7 +34,7 @@
           aria-label="Close channel navigation"
           (click)="closeChannelNavigation()"
         >
-          <svg lucideX [size]="18"></svg>
+          <svg lucideX [size]="18" aria-hidden="true"></svg>
         </button>
       </header>
 
@@ -101,7 +102,7 @@
                   [disabled]="operations.isBusy"
                   (click)="beginChannelCreation()"
                 >
-                  <svg lucidePlus [size]="17"></svg>
+                  <svg lucidePlus [size]="17" aria-hidden="true"></svg>
                   <span class="visually-hidden">Create channel</span>
                 </button>
               }
@@ -265,7 +266,7 @@
                   aria-label="Open channel navigation"
                   (click)="toggleChannelNavigation()"
                 >
-                  <svg lucideMenu [size]="20"></svg>
+                  <svg lucideMenu [size]="20" aria-hidden="true"></svg>
                 </button>
 
                 <div class="channel-heading">

@@ -41,6 +41,7 @@
   --omo-text: #211f22;
   --omo-text-muted: #666166;
   --omo-border: #ded9df;
+  --omo-control-border: #766f76;
   --omo-accent: #b45309;
   --omo-accent-strong: #92400e;
   --omo-accent-soft: #fff4e8;
@@ -101,8 +102,8 @@ a {
 }
 
 :focus-visible {
-  outline: 3px solid var(--omo-focus);
-  outline-offset: 2px;
+  outline: 3px solid var(--omo-focus) !important;
+  outline-offset: 2px !important;
 }
 
 ::selection {
@@ -118,5 +119,27 @@ a {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+  }
+}
+
+@media (pointer: coarse) {
+  button,
+  summary,
+  input:not([type='checkbox']):not([type='radio']),
+  textarea,
+  select {
+    min-height: 2.75rem;
+  }
+
+  button,
+  summary {
+    min-width: 2.75rem;
+  }
+}
+
+@media (forced-colors: active) {
+  :focus-visible,
+  button[aria-current='page'] {
+    outline-color: Highlight;
   }
 }

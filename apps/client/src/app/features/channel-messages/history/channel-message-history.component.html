@@ -18,7 +18,7 @@
       <div class="focused-message focused-message--status" role="alert">
         <span>The selected search result is no longer available.</span>
         <button mat-button type="button" (click)="retryFocusedMessage()">
-          <svg lucideRefreshCw [size]="15"></svg>
+          <svg lucideRefreshCw [size]="15" aria-hidden="true"></svg>
           Retry result
         </button>
       </div>
@@ -237,7 +237,7 @@
                         [attr.aria-controls]="'message-revisions-' + message.id"
                         (click)="toggleRevisionHistory(message.id)"
                       >
-                        <svg lucideHistory [size]="14"></svg>
+                        <svg lucideHistory [size]="14" aria-hidden="true"></svg>
                         @if (
                           revisionView.kind !== 'closed' &&
                           revisionView.messageId === message.id
@@ -256,7 +256,7 @@
                         [disabled]="historyView.isDeleting"
                         (click)="beginEdit(message.id)"
                       >
-                        <svg lucidePencil [size]="14"></svg>
+                        <svg lucidePencil [size]="14" aria-hidden="true"></svg>
                         Edit
                       </button>
                     }
@@ -269,7 +269,7 @@
                       "
                       (click)="beginDelete(message.id)"
                     >
-                      <svg lucideTrash2 [size]="14"></svg>
+                      <svg lucideTrash2 [size]="14" aria-hidden="true"></svg>
                       Delete
                     </button>
                   </div>

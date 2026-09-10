@@ -62,6 +62,14 @@ server API. AI findings remain explicitly proposed; evidence precedes review
 controls, immutable revision identities remain visible, and source links still
 use the established channel-message query parameter.
 
+UI-7 hardens that presentation contract at the application boundary. Compact
+workspace and channel drawers reconcile Escape-driven closure with their local
+presentation signals, keyboard focus is consistently visible across native and
+Material controls, and coarse-pointer controls meet the 44 CSS-pixel target.
+Native form boundaries use a contrast-safe control token, decorative icons stay
+out of the accessibility tree, and operation errors are associated with the
+principal authentication, search, and composer inputs.
+
 ## Layer responsibilities
 
 - `core/`: application-wide runtime composition and thin Angular boundary
