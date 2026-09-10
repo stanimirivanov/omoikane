@@ -5,18 +5,31 @@ import {
   inject,
   input,
 } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { LucideSparkles } from '@lucide/angular';
 import type { WorkspaceId } from '@omoikane/domain/workspace';
 import type { ChannelId } from '@omoikane/domain/channel';
 import { AnalysisEvidenceLinksComponent } from './analysis-evidence-links.component';
 import { AnalysisRunsStore } from './analysis-runs.store';
 
-/** Minimal UI proving the authenticated server-backed Analysis Run path. */
+/** Presents one channel-scoped analysis workflow and its reviewable evidence. */
 @Component({
   selector: 'app-analysis-runs',
   standalone: true,
-  imports: [AnalysisEvidenceLinksComponent],
+  imports: [
+    AnalysisEvidenceLinksComponent,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatProgressBarModule,
+    LucideSparkles,
+  ],
   providers: [AnalysisRunsStore],
   templateUrl: './analysis-runs.component.html',
+  styleUrl: './analysis-runs.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AnalysisRunsComponent {
@@ -35,6 +48,17 @@ export class AnalysisRunsComponent {
 
   protected toUtcDateTime(date: Date): string {
     return date.toISOString();
+  }
+
+  protected toDisplayDateTime(date: Date): string {
+    return new Intl.DateTimeFormat(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(date);
+  }
+
+  protected toConfidencePercentage(confidence: number): number {
+    return Math.round(confidence * 100);
   }
 
   protected setTimeRangeStart(event: Event): void {

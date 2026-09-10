@@ -320,16 +320,28 @@
 }
 
 .analysis-disclosure summary {
-  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
   color: var(--omo-text-muted);
   cursor: pointer;
   font-size: 0.75rem;
   font-weight: 600;
 }
 
+.analysis-disclosure summary::marker {
+  color: var(--omo-accent);
+}
+
+.analysis-disclosure summary small {
+  font-size: 0.6875rem;
+  font-weight: 400;
+}
+
 .analysis-disclosure app-analysis-runs {
   display: block;
-  max-height: min(30rem, 50vh);
+  max-height: min(46rem, 72vh);
   padding: 0 1rem 1rem;
   overflow: auto;
 }
