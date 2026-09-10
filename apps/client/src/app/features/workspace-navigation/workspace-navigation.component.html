@@ -22,6 +22,7 @@
       [mode]="compactNavigation ? 'over' : 'side'"
       [opened]="!compactNavigation || workspaceNavigationOpen()"
       [autoFocus]="compactNavigation"
+      (closedStart)="closeWorkspaceNavigation()"
       aria-label="Workspace navigation"
     >
       <div class="rail-heading">
@@ -33,7 +34,7 @@
           aria-label="Close workspace navigation"
           (click)="closeWorkspaceNavigation()"
         >
-          <svg lucideX [size]="18"></svg>
+          <svg lucideX [size]="18" aria-hidden="true"></svg>
         </button>
       </div>
 
@@ -93,7 +94,7 @@
             [disabled]="operations.isBusy"
             (click)="beginWorkspaceCreation()"
           >
-            <svg lucidePlus [size]="19"></svg>
+            <svg lucidePlus [size]="19" aria-hidden="true"></svg>
             <span class="visually-hidden">Create workspace</span>
           </button>
         }
@@ -107,6 +108,7 @@
       mode="over"
       [opened]="contextPanelOpen()"
       [autoFocus]="true"
+      (closedStart)="closeContextPanel()"
       [attr.aria-label]="contextPanel.label"
     >
       <header class="context-header">
@@ -120,7 +122,7 @@
           [attr.aria-label]="contextPanel.closeLabel"
           (click)="closeContextPanel()"
         >
-          <svg lucideX [size]="19"></svg>
+          <svg lucideX [size]="19" aria-hidden="true"></svg>
         </button>
       </header>
 
@@ -175,7 +177,7 @@
                       [disabled]="operations.isBusy"
                       (click)="beginWorkspaceCreation()"
                     >
-                      <svg lucidePlus [size]="16"></svg>
+                      <svg lucidePlus [size]="16" aria-hidden="true"></svg>
                       Create
                     </button>
                   }
@@ -521,7 +523,7 @@
           aria-label="Open workspace navigation"
           (click)="toggleWorkspaceNavigation()"
         >
-          <svg lucideMenu [size]="20"></svg>
+          <svg lucideMenu [size]="20" aria-hidden="true"></svg>
         </button>
 
         @if (
@@ -554,7 +556,7 @@
             matTooltip="Search messages"
             (click)="toggleContextPanel('search')"
           >
-            <svg lucideSearch [size]="19"></svg>
+            <svg lucideSearch [size]="19" aria-hidden="true"></svg>
           </button>
         }
 
@@ -569,7 +571,7 @@
           matTooltip="Workspace management"
           (click)="toggleContextPanel('management')"
         >
-          <svg lucidePanelRight [size]="20"></svg>
+          <svg lucidePanelRight [size]="20" aria-hidden="true"></svg>
         </button>
       </header>
 

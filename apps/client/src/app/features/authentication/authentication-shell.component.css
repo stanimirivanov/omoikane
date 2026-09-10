@@ -63,7 +63,7 @@
   text-transform: uppercase;
 }
 
-.brand-message h2 {
+.brand-headline {
   max-width: 12ch;
   margin: 0;
   font-size: clamp(2.25rem, 5vw, 4.5rem);

@@ -60,10 +60,12 @@
 
       <div class="brand-message">
         <p class="brand-eyebrow">
-          <svg lucideSparkles [size]="17"></svg>
+          <svg lucideSparkles [size]="17" aria-hidden="true"></svg>
           Collaborative intelligence
         </p>
-        <h2>Turn everyday collaboration into shared understanding.</h2>
+        <p class="brand-headline">
+          Turn everyday collaboration into shared understanding.
+        </p>
         <p>
           Keep conversations, context, and evidence together in one focused
           workspace.
@@ -133,7 +135,7 @@
                   (click)="showAnonymousView('password-recovery')"
                 >
                   Forgot password?
-                  <svg lucideArrowRight [size]="16"></svg>
+                  <svg lucideArrowRight [size]="16" aria-hidden="true"></svg>
                 </button>
               }
 
@@ -151,7 +153,7 @@
                   (click)="showAnonymousView('sign-in')"
                 >
                   Back to sign in
-                  <svg lucideArrowRight [size]="16"></svg>
+                  <svg lucideArrowRight [size]="16" aria-hidden="true"></svg>
                 </button>
               }
             }
