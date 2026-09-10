@@ -57,7 +57,7 @@
 
   @if (store.run(); as run) {
     <div>
-      <p class="status-announcement" aria-live="polite">
+      <p class="visually-hidden" aria-live="polite">
         Analysis status: {{ run.status }}.
       </p>
       @switch (run.status) {

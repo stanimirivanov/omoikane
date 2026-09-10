@@ -12,5 +12,7 @@ credential, token, personal data, or hosted data.
 | `after-authentication-desktop.png`  | 1440 × 900 | UI-1 desktop review checkpoint |
 | `after-authentication-mobile.png`   | 390 × 844  | UI-1 mobile review checkpoint  |
 
-These are review references, not pixel-locking test fixtures. Stable visual
-assertions remain deferred to UI-8 as required by OMO-UX-001.
+These remain historical review references, not pixel-locking test fixtures.
+UI-8 introduced executable anonymous sign-in baselines under
+`apps/client-e2e/e2e/__screenshots__/visual-regression.spec.ts/`; the Playwright
+project README documents their controlled update workflow.
