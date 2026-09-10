@@ -1,12 +1,18 @@
 @let view = store.view();
 
 <section
+  class="profile-summary"
   aria-label="Current profile"
   [attr.aria-busy]="
     view.kind === 'loading' || (view.kind === 'profile' && view.isUpdating)
   "
 >
   @switch (view.kind) {
+    @case ('loading') {
+      <span class="profile-fallback" role="status"
+        >Loading profile&hellip;</span
+      >
+    }
     @case ('profile') {
       @let profile = view.profile;
 
@@ -14,92 +20,127 @@
         [avatarUrl]="profile.avatarUrl"
         [displayName]="profile.displayName"
       />
-
-      @if (isEditing()) {
-        <form
-          class="profile-editor"
-          (submit)="
-            $event.preventDefault();
-            saveProfile(
-              displayNameInput.value,
-              usernameInput.value,
-              avatarUrlInput.value
-            )
-          "
-        >
-          <label for="profile-display-name">Display name</label>
-          <input
-            #displayNameInput
-            id="profile-display-name"
-            name="profile-display-name"
-            type="text"
-            required
-            [value]="profile.displayName"
-            [disabled]="view.isUpdating"
-          />
-
-          <label for="profile-username">Username</label>
-          <input
-            #usernameInput
-            id="profile-username"
-            name="profile-username"
-            type="text"
-            [value]="profile.username ?? ''"
-            [disabled]="view.isUpdating"
-          />
-
-          <label for="profile-avatar-url">Avatar HTTPS URL</label>
-          <input
-            #avatarUrlInput
-            id="profile-avatar-url"
-            name="profile-avatar-url"
-            type="url"
-            inputmode="url"
-            [value]="profile.avatarUrl ?? ''"
-            [disabled]="view.isUpdating"
-          />
-
-          <button type="submit" [disabled]="view.isUpdating">
-            @if (view.isUpdating) {
-              Saving&hellip;
-            } @else {
-              Save profile
-            }
-          </button>
-
-          <button
-            type="button"
-            [disabled]="view.isUpdating"
-            (click)="cancelEdit()"
-          >
-            Cancel
-          </button>
-        </form>
-      } @else {
+      <div class="profile-identity">
         <strong class="profile-name">{{ profile.displayName }}</strong>
-
         @if (profile.username; as username) {
           <span class="profile-username">{{ '@' + username }}</span>
         }
+      </div>
 
-        <button class="profile-edit" type="button" (click)="beginEdit()">
-          Edit profile
-        </button>
-      }
+      <button
+        mat-button
+        class="profile-edit"
+        type="button"
+        [attr.aria-expanded]="isEditing()"
+        aria-controls="current-profile-editor"
+        (click)="beginEdit()"
+      >
+        <svg lucidePencil [size]="14" aria-hidden="true"></svg>
+        <span>Edit profile</span>
+      </button>
 
-      @if (view.updateError; as error) {
-        <span role="alert">{{ error.message }}</span>
-        <button type="button" (click)="store.clearUpdateError()">
-          Dismiss
-        </button>
+      @if (isEditing()) {
+        <section
+          id="current-profile-editor"
+          class="profile-popover"
+          aria-labelledby="current-profile-editor-heading"
+        >
+          <header>
+            <h2 id="current-profile-editor-heading">Edit profile</h2>
+            <p>{{ fallbackEmail() }}</p>
+          </header>
+
+          <form
+            class="profile-editor"
+            (submit)="
+              $event.preventDefault();
+              saveProfile(
+                displayNameInput.value,
+                usernameInput.value,
+                avatarUrlInput.value
+              )
+            "
+          >
+            <label for="profile-display-name">Display name</label>
+            <input
+              #displayNameInput
+              id="profile-display-name"
+              name="profile-display-name"
+              type="text"
+              autocomplete="name"
+              required
+              [value]="profile.displayName"
+              [disabled]="view.isUpdating"
+            />
+
+            <label for="profile-username">Username</label>
+            <input
+              #usernameInput
+              id="profile-username"
+              name="profile-username"
+              type="text"
+              autocomplete="username"
+              [value]="profile.username ?? ''"
+              [disabled]="view.isUpdating"
+            />
+
+            <label for="profile-avatar-url">Avatar HTTPS URL</label>
+            <input
+              #avatarUrlInput
+              id="profile-avatar-url"
+              name="profile-avatar-url"
+              type="url"
+              inputmode="url"
+              autocomplete="url"
+              [value]="profile.avatarUrl ?? ''"
+              [disabled]="view.isUpdating"
+            />
+
+            <div class="profile-actions">
+              <button
+                mat-button
+                type="button"
+                [disabled]="view.isUpdating"
+                (click)="cancelEdit()"
+              >
+                Cancel
+              </button>
+              <button
+                mat-flat-button
+                type="submit"
+                [disabled]="view.isUpdating"
+              >
+                @if (view.isUpdating) {
+                  Saving&hellip;
+                } @else {
+                  Save profile
+                }
+              </button>
+            </div>
+          </form>
+
+          @if (view.updateError; as error) {
+            <div class="profile-alert" role="alert">
+              <span>{{ error.message }}</span>
+              <button
+                mat-button
+                type="button"
+                (click)="store.clearUpdateError()"
+              >
+                Dismiss
+              </button>
+            </div>
+          }
+        </section>
       }
     }
-
     @case ('error') {
-      <span role="alert">{{ view.error.message }}</span>
-      <button type="button" (click)="store.load(userId())">
-        Retry profile
-      </button>
+      <div class="profile-fallback">
+        <span role="alert">{{ view.error.message }}</span>
+        <button mat-button type="button" (click)="store.load(userId())">
+          Retry profile
+        </button>
+      </div>
     }
   }
 

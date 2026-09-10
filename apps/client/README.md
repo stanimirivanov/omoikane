@@ -46,6 +46,14 @@ Potentially disruptive operations keep explicit inline confirmation and
 descriptive status text; Material controls improve interaction consistency but
 do not replace database authorization or application validation.
 
+UI-5 separates workspace discovery from administration through two
+presentation modes of the existing context drawer. Search retains its own
+feature store and navigates through the established channel and message query
+parameters. Presence remains advisory, unread counts remain channel-navigation
+state, and current-profile editing retains its dedicated store. Their compact
+header and navigation treatments do not promote any of those concerns into a
+global shell store.
+
 ## Layer responsibilities
 
 - `core/`: application-wide runtime composition and thin Angular boundary

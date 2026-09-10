@@ -2,6 +2,7 @@
 @let operations = view.operations;
 @let workspaceInteraction = interaction();
 @let compactNavigation = compactWorkspaceNavigation();
+@let contextPanel = contextPanelView();
 
 <section
   class="workspace-frame"
@@ -106,17 +107,17 @@
       mode="over"
       [opened]="contextPanelOpen()"
       [autoFocus]="true"
-      aria-label="Workspace management"
+      [attr.aria-label]="contextPanel.label"
     >
       <header class="context-header">
         <div>
-          <p>Collaboration</p>
-          <h2>Workspace management</h2>
+          <p>{{ contextPanel.eyebrow }}</p>
+          <h2>{{ contextPanel.title }}</h2>
         </div>
         <button
           mat-icon-button
           type="button"
-          aria-label="Close workspace management"
+          [attr.aria-label]="contextPanel.closeLabel"
           (click)="closeContextPanel()"
         >
           <svg lucideX [size]="19"></svg>
@@ -124,364 +125,390 @@
       </header>
 
       <div class="context-content">
-        <app-workspace-invitations
-          [workspaceId]="store.selectedWorkspaceId()"
-          [canInvite]="canManageSelectedWorkspace()"
-          (invitationAccepted)="handleInvitationAccepted($event)"
-        />
-
-        @if (view.realtimeError; as error) {
-          <div class="inline-alert" role="alert">
-            <p>{{ error.message }}</p>
-            <button mat-button type="button" (click)="store.retryRealtime()">
-              Retry live updates
-            </button>
-          </div>
-        }
-
-        @if (view.content.kind === 'ready') {
-          <section
-            class="context-section"
-            aria-labelledby="workspace-create-heading"
-          >
-            <div class="section-heading">
-              <h3 id="workspace-create-heading">Workspaces</h3>
-              @if (workspaceInteraction !== 'creating') {
-                <button
-                  mat-button
-                  type="button"
-                  [disabled]="operations.isBusy"
-                  (click)="beginWorkspaceCreation()"
-                >
-                  <svg lucidePlus [size]="16"></svg>
-                  Create
-                </button>
-              }
-            </div>
-
-            <p class="context-description">
-              Create a separate space for another team or initiative.
-            </p>
-
-            @if (workspaceInteraction === 'creating') {
-              <form
-                class="stacked-form"
-                (submit)="
-                  $event.preventDefault();
-                  saveWorkspace(
-                    nameInput.value,
-                    slugInput.value,
-                    descriptionInput.value
-                  )
-                "
-              >
-                <label for="workspace-name">Workspace name</label>
-                <input
-                  #nameInput
-                  id="workspace-name"
-                  name="workspace-name"
-                  type="text"
-                  required
-                  [disabled]="operations.isCreating || operations.isLeaving"
-                />
-
-                <label for="workspace-slug">Workspace URL</label>
-                <input
-                  #slugInput
-                  id="workspace-slug"
-                  name="workspace-slug"
-                  type="text"
-                  required
-                  aria-describedby="workspace-slug-help"
-                  [disabled]="operations.isCreating || operations.isLeaving"
-                />
-                <small id="workspace-slug-help">
-                  Lowercase letters, numbers, and single hyphens.
-                </small>
-
-                <label for="workspace-description">Description</label>
-                <textarea
-                  #descriptionInput
-                  id="workspace-description"
-                  name="workspace-description"
-                  [disabled]="operations.isCreating || operations.isLeaving"
-                ></textarea>
-
-                <div class="form-actions">
-                  <button
-                    mat-flat-button
-                    type="submit"
-                    [disabled]="operations.isCreating || operations.isLeaving"
-                  >
-                    @if (operations.isCreating) {
-                      Creating&hellip;
-                    } @else {
-                      Create workspace
-                    }
-                  </button>
-                  <button
-                    mat-button
-                    type="button"
-                    [disabled]="operations.isCreating || operations.isLeaving"
-                    (click)="cancelWorkspaceCreation()"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
+        @switch (contextPanel.kind) {
+          @case ('search') {
+            @if (
+              view.content.kind === 'ready' && view.content.selectedWorkspace;
+              as workspace
+            ) {
+              <app-workspace-message-search
+                [workspaceId]="workspace.id"
+                (resultSelected)="handleMessageSearchResult($event)"
+              />
+            } @else {
+              <p class="context-empty-state">
+                Select a workspace before searching its messages.
+              </p>
             }
+          }
+          @case ('management') {
+            <app-workspace-invitations
+              [workspaceId]="store.selectedWorkspaceId()"
+              [canInvite]="canManageSelectedWorkspace()"
+              (invitationAccepted)="handleInvitationAccepted($event)"
+            />
 
-            @if (view.creationError; as error) {
+            @if (view.realtimeError; as error) {
               <div class="inline-alert" role="alert">
                 <p>{{ error.message }}</p>
                 <button
                   mat-button
                   type="button"
-                  (click)="store.clearCreationError()"
+                  (click)="store.retryRealtime()"
                 >
-                  Dismiss
+                  Retry live updates
                 </button>
               </div>
             }
-          </section>
 
-          @if (view.content.selectedWorkspace; as workspace) {
-            <section
-              class="context-section"
-              aria-labelledby="workspace-settings-heading"
-            >
-              <div class="section-heading">
-                <h3 id="workspace-settings-heading">Workspace settings</h3>
-              </div>
+            @if (view.content.kind === 'ready') {
+              <section
+                class="context-section"
+                aria-labelledby="workspace-create-heading"
+              >
+                <div class="section-heading">
+                  <h3 id="workspace-create-heading">Workspaces</h3>
+                  @if (workspaceInteraction !== 'creating') {
+                    <button
+                      mat-button
+                      type="button"
+                      [disabled]="operations.isBusy"
+                      (click)="beginWorkspaceCreation()"
+                    >
+                      <svg lucidePlus [size]="16"></svg>
+                      Create
+                    </button>
+                  }
+                </div>
 
-              <p class="context-description">
-                Manage the selected workspace identity and lifecycle.
-              </p>
+                <p class="context-description">
+                  Create a separate space for another team or initiative.
+                </p>
 
-              @if (
-                canManageSelectedWorkspace() &&
-                workspaceInteraction !== 'confirming-departure'
-              ) {
-                @if (workspaceInteraction === 'editing') {
+                @if (workspaceInteraction === 'creating') {
                   <form
                     class="stacked-form"
                     (submit)="
                       $event.preventDefault();
-                      saveWorkspaceChanges(
-                        workspace,
-                        editNameInput.value,
-                        editSlugInput.value,
-                        editDescriptionInput.value
+                      saveWorkspace(
+                        nameInput.value,
+                        slugInput.value,
+                        descriptionInput.value
                       )
                     "
                   >
-                    <label for="workspace-edit-name">Workspace name</label>
+                    <label for="workspace-name">Workspace name</label>
                     <input
-                      #editNameInput
-                      id="workspace-edit-name"
-                      name="workspace-edit-name"
+                      #nameInput
+                      id="workspace-name"
+                      name="workspace-name"
                       type="text"
                       required
-                      [value]="workspace.name"
-                      [disabled]="operations.isBusy"
+                      [disabled]="operations.isCreating || operations.isLeaving"
                     />
 
-                    <label for="workspace-edit-slug">Workspace URL</label>
+                    <label for="workspace-slug">Workspace URL</label>
                     <input
-                      #editSlugInput
-                      id="workspace-edit-slug"
-                      name="workspace-edit-slug"
+                      #slugInput
+                      id="workspace-slug"
+                      name="workspace-slug"
                       type="text"
                       required
-                      aria-describedby="workspace-edit-slug-help"
-                      [value]="workspace.slug"
-                      [disabled]="operations.isBusy"
+                      aria-describedby="workspace-slug-help"
+                      [disabled]="operations.isCreating || operations.isLeaving"
                     />
-                    <small id="workspace-edit-slug-help">
+                    <small id="workspace-slug-help">
                       Lowercase letters, numbers, and single hyphens.
                     </small>
 
-                    <label for="workspace-edit-description">Description</label>
+                    <label for="workspace-description">Description</label>
                     <textarea
-                      #editDescriptionInput
-                      id="workspace-edit-description"
-                      name="workspace-edit-description"
-                      [value]="workspace.description ?? ''"
-                      [disabled]="operations.isBusy"
+                      #descriptionInput
+                      id="workspace-description"
+                      name="workspace-description"
+                      [disabled]="operations.isCreating || operations.isLeaving"
                     ></textarea>
 
                     <div class="form-actions">
                       <button
                         mat-flat-button
                         type="submit"
-                        [disabled]="operations.isBusy"
+                        [disabled]="
+                          operations.isCreating || operations.isLeaving
+                        "
                       >
-                        @if (operations.isUpdating) {
-                          Saving&hellip;
+                        @if (operations.isCreating) {
+                          Creating&hellip;
                         } @else {
-                          Save changes
+                          Create workspace
                         }
                       </button>
                       <button
                         mat-button
                         type="button"
-                        [disabled]="operations.isBusy"
-                        (click)="cancelWorkspaceEditing()"
+                        [disabled]="
+                          operations.isCreating || operations.isLeaving
+                        "
+                        (click)="cancelWorkspaceCreation()"
                       >
                         Cancel
                       </button>
                     </div>
                   </form>
-                } @else if (workspaceInteraction === 'confirming-archive') {
-                  <div class="confirmation-panel">
-                    <p>
-                      Archive {{ workspace.name }}? It will be removed from
-                      active navigation, while its history is preserved.
-                    </p>
-                    <div class="form-actions">
-                      <button
-                        mat-flat-button
-                        type="button"
-                        [disabled]="operations.isBusy"
-                        (click)="confirmWorkspaceArchive(workspace)"
-                      >
-                        @if (operations.isArchiving) {
-                          Archiving&hellip;
-                        } @else {
-                          Confirm archive
-                        }
-                      </button>
-                      <button
-                        mat-button
-                        type="button"
-                        [disabled]="operations.isBusy"
-                        (click)="cancelWorkspaceArchive()"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                } @else {
-                  <div class="button-row">
+                }
+
+                @if (view.creationError; as error) {
+                  <div class="inline-alert" role="alert">
+                    <p>{{ error.message }}</p>
                     <button
                       mat-button
                       type="button"
-                      [disabled]="operations.isBusy"
-                      (click)="beginWorkspaceEditing()"
+                      (click)="store.clearCreationError()"
                     >
-                      Edit workspace
+                      Dismiss
                     </button>
+                  </div>
+                }
+              </section>
+
+              @if (view.content.selectedWorkspace; as workspace) {
+                <section
+                  class="context-section"
+                  aria-labelledby="workspace-settings-heading"
+                >
+                  <div class="section-heading">
+                    <h3 id="workspace-settings-heading">Workspace settings</h3>
+                  </div>
+
+                  <p class="context-description">
+                    Manage the selected workspace identity and lifecycle.
+                  </p>
+
+                  @if (
+                    canManageSelectedWorkspace() &&
+                    workspaceInteraction !== 'confirming-departure'
+                  ) {
+                    @if (workspaceInteraction === 'editing') {
+                      <form
+                        class="stacked-form"
+                        (submit)="
+                          $event.preventDefault();
+                          saveWorkspaceChanges(
+                            workspace,
+                            editNameInput.value,
+                            editSlugInput.value,
+                            editDescriptionInput.value
+                          )
+                        "
+                      >
+                        <label for="workspace-edit-name">Workspace name</label>
+                        <input
+                          #editNameInput
+                          id="workspace-edit-name"
+                          name="workspace-edit-name"
+                          type="text"
+                          required
+                          [value]="workspace.name"
+                          [disabled]="operations.isBusy"
+                        />
+
+                        <label for="workspace-edit-slug">Workspace URL</label>
+                        <input
+                          #editSlugInput
+                          id="workspace-edit-slug"
+                          name="workspace-edit-slug"
+                          type="text"
+                          required
+                          aria-describedby="workspace-edit-slug-help"
+                          [value]="workspace.slug"
+                          [disabled]="operations.isBusy"
+                        />
+                        <small id="workspace-edit-slug-help">
+                          Lowercase letters, numbers, and single hyphens.
+                        </small>
+
+                        <label for="workspace-edit-description"
+                          >Description</label
+                        >
+                        <textarea
+                          #editDescriptionInput
+                          id="workspace-edit-description"
+                          name="workspace-edit-description"
+                          [value]="workspace.description ?? ''"
+                          [disabled]="operations.isBusy"
+                        ></textarea>
+
+                        <div class="form-actions">
+                          <button
+                            mat-flat-button
+                            type="submit"
+                            [disabled]="operations.isBusy"
+                          >
+                            @if (operations.isUpdating) {
+                              Saving&hellip;
+                            } @else {
+                              Save changes
+                            }
+                          </button>
+                          <button
+                            mat-button
+                            type="button"
+                            [disabled]="operations.isBusy"
+                            (click)="cancelWorkspaceEditing()"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    } @else if (workspaceInteraction === 'confirming-archive') {
+                      <div class="confirmation-panel">
+                        <p>
+                          Archive {{ workspace.name }}? It will be removed from
+                          active navigation, while its history is preserved.
+                        </p>
+                        <div class="form-actions">
+                          <button
+                            mat-flat-button
+                            type="button"
+                            [disabled]="operations.isBusy"
+                            (click)="confirmWorkspaceArchive(workspace)"
+                          >
+                            @if (operations.isArchiving) {
+                              Archiving&hellip;
+                            } @else {
+                              Confirm archive
+                            }
+                          </button>
+                          <button
+                            mat-button
+                            type="button"
+                            [disabled]="operations.isBusy"
+                            (click)="cancelWorkspaceArchive()"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    } @else {
+                      <div class="button-row">
+                        <button
+                          mat-button
+                          type="button"
+                          [disabled]="operations.isBusy"
+                          (click)="beginWorkspaceEditing()"
+                        >
+                          Edit workspace
+                        </button>
+                        <button
+                          mat-button
+                          class="danger-action"
+                          type="button"
+                          [disabled]="operations.isBusy"
+                          (click)="beginWorkspaceArchive()"
+                        >
+                          Archive workspace
+                        </button>
+                      </div>
+                    }
+                  }
+
+                  @if (workspaceInteraction === 'confirming-departure') {
+                    <div class="confirmation-panel">
+                      <p>
+                        Leave {{ workspace.name }}? You will lose access to its
+                        channels and messages.
+                      </p>
+                      <div class="form-actions">
+                        <button
+                          mat-flat-button
+                          type="button"
+                          [disabled]="operations.isBusy"
+                          (click)="confirmWorkspaceDeparture(workspace)"
+                        >
+                          @if (operations.isLeaving) {
+                            Leaving&hellip;
+                          } @else {
+                            Confirm leave
+                          }
+                        </button>
+                        <button
+                          mat-button
+                          type="button"
+                          [disabled]="operations.isBusy"
+                          (click)="cancelWorkspaceDeparture()"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  } @else if (
+                    workspaceInteraction !== 'editing' &&
+                    workspaceInteraction !== 'confirming-archive'
+                  ) {
                     <button
                       mat-button
                       class="danger-action"
                       type="button"
                       [disabled]="operations.isBusy"
-                      (click)="beginWorkspaceArchive()"
+                      (click)="beginWorkspaceDeparture()"
                     >
-                      Archive workspace
+                      Leave workspace
                     </button>
-                  </div>
-                }
-              }
+                  }
 
-              @if (workspaceInteraction === 'confirming-departure') {
-                <div class="confirmation-panel">
-                  <p>
-                    Leave {{ workspace.name }}? You will lose access to its
-                    channels and messages.
-                  </p>
-                  <div class="form-actions">
-                    <button
-                      mat-flat-button
-                      type="button"
-                      [disabled]="operations.isBusy"
-                      (click)="confirmWorkspaceDeparture(workspace)"
-                    >
-                      @if (operations.isLeaving) {
-                        Leaving&hellip;
-                      } @else {
-                        Confirm leave
-                      }
-                    </button>
-                    <button
-                      mat-button
-                      type="button"
-                      [disabled]="operations.isBusy"
-                      (click)="cancelWorkspaceDeparture()"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              } @else if (
-                workspaceInteraction !== 'editing' &&
-                workspaceInteraction !== 'confirming-archive'
-              ) {
-                <button
-                  mat-button
-                  class="danger-action"
-                  type="button"
-                  [disabled]="operations.isBusy"
-                  (click)="beginWorkspaceDeparture()"
-                >
-                  Leave workspace
-                </button>
-              }
+                  @if (view.updateError; as error) {
+                    <div class="inline-alert" role="alert">
+                      <p>{{ error.message }}</p>
+                      <button
+                        mat-button
+                        type="button"
+                        (click)="store.clearUpdateError()"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  }
+                  @if (view.archiveError; as error) {
+                    <div class="inline-alert" role="alert">
+                      <p>{{ error.message }}</p>
+                      <button
+                        mat-button
+                        type="button"
+                        (click)="store.clearArchiveError()"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  }
+                  @if (view.departureError; as error) {
+                    <div class="inline-alert" role="alert">
+                      <p>{{ error.message }}</p>
+                      <button
+                        mat-button
+                        type="button"
+                        (click)="store.clearDepartureError()"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  }
+                </section>
 
-              @if (view.updateError; as error) {
-                <div class="inline-alert" role="alert">
-                  <p>{{ error.message }}</p>
-                  <button
-                    mat-button
-                    type="button"
-                    (click)="store.clearUpdateError()"
-                  >
-                    Dismiss
-                  </button>
-                </div>
+                <app-workspace-member-directory
+                  [workspaceId]="workspace.id"
+                  (canManageMembersChange)="
+                    handleCanManageMembersChange($event)
+                  "
+                />
               }
-              @if (view.archiveError; as error) {
-                <div class="inline-alert" role="alert">
-                  <p>{{ error.message }}</p>
-                  <button
-                    mat-button
-                    type="button"
-                    (click)="store.clearArchiveError()"
-                  >
-                    Dismiss
-                  </button>
-                </div>
-              }
-              @if (view.departureError; as error) {
-                <div class="inline-alert" role="alert">
-                  <p>{{ error.message }}</p>
-                  <button
-                    mat-button
-                    type="button"
-                    (click)="store.clearDepartureError()"
-                  >
-                    Dismiss
-                  </button>
-                </div>
-              }
-            </section>
+            }
 
-            <app-workspace-message-search
-              [workspaceId]="workspace.id"
-              (resultSelected)="handleMessageSearchResult($event)"
-            />
-
-            <app-workspace-member-directory
-              [workspaceId]="workspace.id"
-              (canManageMembersChange)="handleCanManageMembersChange($event)"
+            <app-archived-workspace-list
+              [refreshVersion]="archivedWorkspaceRefreshVersion()"
+              (workspaceRestored)="handleWorkspaceRestored($event)"
             />
           }
         }
-
-        <app-archived-workspace-list
-          [refreshVersion]="archivedWorkspaceRefreshVersion()"
-          (workspaceRestored)="handleWorkspaceRestored($event)"
-        />
       </div>
     </mat-drawer>
 
@@ -515,14 +542,32 @@
           </div>
         }
 
+        @if (view.content.kind === 'ready' && view.content.selectedWorkspace) {
+          <button
+            mat-icon-button
+            type="button"
+            [attr.aria-expanded]="
+              contextPanelOpen() && contextPanel.kind === 'search'
+            "
+            aria-controls="workspace-context-panel"
+            aria-label="Search workspace messages"
+            matTooltip="Search messages"
+            (click)="toggleContextPanel('search')"
+          >
+            <svg lucideSearch [size]="19"></svg>
+          </button>
+        }
+
         <button
           mat-icon-button
           type="button"
-          [attr.aria-expanded]="contextPanelOpen()"
+          [attr.aria-expanded]="
+            contextPanelOpen() && contextPanel.kind === 'management'
+          "
           aria-controls="workspace-context-panel"
           aria-label="Open workspace management"
           matTooltip="Workspace management"
-          (click)="toggleContextPanel()"
+          (click)="toggleContextPanel('management')"
         >
           <svg lucidePanelRight [size]="20"></svg>
         </button>

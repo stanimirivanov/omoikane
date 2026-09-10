@@ -248,6 +248,36 @@ describe('WorkspaceNavigationComponent', () => {
     });
   });
 
+  it('opens workspace search independently from management tools', async () => {
+    const { fixture } = await configureComponent({
+      queryParams: { workspace: workspace.slug },
+      selectedWorkspace: workspace,
+    });
+
+    expect(
+      fixture.debugElement.query(
+        By.directive(WorkspaceMessageSearchStubComponent)
+      )
+    ).toBeNull();
+
+    const searchButton = fixture.nativeElement.querySelector(
+      'button[aria-label="Search workspace messages"]'
+    ) as HTMLButtonElement;
+    searchButton.click();
+    fixture.detectChanges();
+
+    expect(
+      fixture.debugElement.query(
+        By.directive(WorkspaceMessageSearchStubComponent)
+      )
+    ).not.toBeNull();
+    expect(
+      fixture.nativeElement
+        .querySelector('#workspace-context-panel')
+        .getAttribute('aria-label')
+    ).toBe('Workspace message search');
+  });
+
   it('removes an inaccessible workspace slug from the URL', async () => {
     const { route, router, store } = await configureComponent({
       queryParams: {
