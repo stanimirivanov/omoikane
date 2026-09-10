@@ -29,7 +29,11 @@ Desktop and mobile anonymous sign-in screenshots are committed under
 `e2e/__screenshots__/visual-regression.spec.ts/`. They are the only executable
 pixel baselines because that state is deterministic and contains no account or
 hosted data. Screenshot comparison fixes locale, timezone, light color scheme,
-and reduced motion, while allowing a small cross-platform rendering tolerance.
+and reduced motion. The desktop baseline is platform-specific because its large
+typography exposes material Chromium font-rasterization differences between
+Windows development machines and the Linux CI runner. The smaller mobile
+baseline remains shared while it stays within the configured rendering
+tolerance.
 
 After an intentional visual change, review the generated images before updating
 them with:
@@ -39,4 +43,6 @@ pnpm e2e --grep=visual --update-snapshots
 ```
 
 Run `pnpm e2e --grep=visual` afterward to prove that normal comparison mode
-passes. Do not update snapshots merely to make an unexplained failure green.
+passes. Snapshot updates affect only the platform on which the command runs;
+review Linux failures from the uploaded CI artifact before replacing the Linux
+baseline. Do not update snapshots merely to make an unexplained failure green.
