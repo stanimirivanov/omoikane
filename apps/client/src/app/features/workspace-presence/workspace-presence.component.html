@@ -1,15 +1,24 @@
-<section aria-labelledby="workspace-presence-heading">
-  @let view = store.view();
+@let view = store.view();
 
-  <h3 id="workspace-presence-heading">Presence</h3>
+<section
+  class="presence"
+  [class.presence--online]="view.kind === 'online'"
+  [class.presence--error]="view.kind === 'error'"
+  aria-labelledby="workspace-presence-heading"
+>
+  <h3 id="workspace-presence-heading" class="visually-hidden">Presence</h3>
+  <span class="presence-dot" aria-hidden="true"></span>
 
   @switch (view.kind) {
     @case ('connecting') {
-      <p>Connecting presence&hellip;</p>
+      <p role="status">Connecting&hellip;</p>
     }
     @case ('error') {
       <p role="alert">{{ view.error.message }}</p>
-      <button type="button" (click)="store.retry()">Retry presence</button>
+      <button mat-button type="button" (click)="store.retry()">
+        <svg lucideRefreshCw [size]="13" aria-hidden="true"></svg>
+        Retry
+      </button>
     }
     @case ('online') {
       <p aria-live="polite">

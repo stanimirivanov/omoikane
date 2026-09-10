@@ -1,24 +1,45 @@
-<section aria-labelledby="workspace-message-search-heading">
-  @let view = store.view();
+@let view = store.view();
 
-  <h3 id="workspace-message-search-heading">Search messages</h3>
+<section
+  class="search-section"
+  aria-labelledby="workspace-message-search-heading"
+>
+  <header class="search-heading">
+    <svg lucideSearch [size]="18" aria-hidden="true"></svg>
+    <div>
+      <h3 id="workspace-message-search-heading">Workspace messages</h3>
+      <p>Find messages across channels you can access.</p>
+    </div>
+  </header>
 
   <form
+    class="search-form"
     role="search"
     (submit)="$event.preventDefault(); submit(queryInput.value)"
   >
-    <label for="workspace-message-search-query">Search this workspace</label>
-    <input
-      #queryInput
-      id="workspace-message-search-query"
-      type="search"
-      minlength="2"
-      maxlength="200"
-      required
-      [value]="view.query"
+    <label class="visually-hidden" for="workspace-message-search-query">
+      Search this workspace
+    </label>
+    <div class="search-control">
+      <svg lucideSearch [size]="16" aria-hidden="true"></svg>
+      <input
+        #queryInput
+        id="workspace-message-search-query"
+        type="search"
+        minlength="2"
+        maxlength="200"
+        autocomplete="off"
+        required
+        placeholder="Search messages"
+        [value]="view.query"
+        [disabled]="view.kind === 'searching'"
+      />
+    </div>
+    <button
+      mat-flat-button
+      type="submit"
       [disabled]="view.kind === 'searching'"
-    />
-    <button type="submit" [disabled]="view.kind === 'searching'">
+    >
       @if (view.kind === 'searching') {
         Searching&hellip;
       } @else {
@@ -28,24 +49,41 @@
   </form>
 
   @switch (view.kind) {
+    @case ('idle') {
+      <p class="search-state">
+        Enter at least two characters to search the selected workspace.
+      </p>
+    }
+    @case ('searching') {
+      <p class="search-state" role="status">Searching messages&hellip;</p>
+    }
     @case ('error') {
-      <p role="alert">{{ view.message }}</p>
+      <p class="search-alert" role="alert">{{ view.message }}</p>
     }
     @case ('empty') {
-      <p>No matching messages were found.</p>
+      <p class="search-state">No matching messages were found.</p>
     }
     @case ('results') {
-      <ol aria-label="Message search results">
+      <ol class="result-list" aria-label="Message search results">
         @for (result of view.results; track result.message.id) {
           <li>
-            <button type="button" (click)="resultSelected.emit(result)">
-              <strong>#{{ result.channel.name }}</strong>
-              <span>{{ result.message.content }}</span>
+            <button
+              class="result-button"
+              type="button"
+              (click)="resultSelected.emit(result)"
+            >
+              <span class="result-metadata">
+                <strong>#{{ result.channel.name }}</strong>
+                <time [attr.datetime]="result.message.createdAt.toISOString()">
+                  {{ result.message.createdAt | date: 'mediumDate' }}
+                </time>
+              </span>
+              <span class="result-content">{{ result.message.content }}</span>
             </button>
           </li>
         }
       </ol>
-      <p>Showing the 20 most relevant matches at most.</p>
+      <p class="result-limit">Showing up to the 20 most relevant matches.</p>
     }
   }
 </section>

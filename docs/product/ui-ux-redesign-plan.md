@@ -236,7 +236,7 @@ Playwright screenshots and traces from failed CI runs remain build artifacts.
 5. **UI-4 — Collaboration management. Completed.** Redesign workspace/channel lifecycle,
    member directory, invitations, archive history, and confirmations using
    context surfaces.
-6. **UI-5 — Discovery and identity.** Integrate search, unread navigation,
+6. **UI-5 — Discovery and identity. Completed.** Integrate search, unread navigation,
    presence, current profile, and supporting empty/error/reconnect states.
 7. **UI-6 — Decision Forensics.** Redesign Analysis Run initiation, lifecycle,
    results, evidence, and human-review states around an evidence-first reading

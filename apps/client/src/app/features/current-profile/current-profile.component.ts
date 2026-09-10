@@ -6,6 +6,8 @@ import {
   input,
   signal,
 } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { LucidePencil } from '@lucide/angular';
 import { CurrentProfileStore } from './current-profile.store';
 import { ProfileAvatarComponent } from '@client/shared/profile-avatar/profile-avatar.component';
 
@@ -16,7 +18,7 @@ import { ProfileAvatarComponent } from '@client/shared/profile-avatar/profile-av
 @Component({
   selector: 'app-current-profile',
   standalone: true,
-  imports: [ProfileAvatarComponent],
+  imports: [ProfileAvatarComponent, MatButtonModule, LucidePencil],
   providers: [CurrentProfileStore],
   templateUrl: './current-profile.component.html',
   styleUrl: './current-profile.component.css',

@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   effect,
   inject,
   signal,
@@ -15,6 +16,7 @@ import {
   LucideMenu,
   LucidePanelRight,
   LucidePlus,
+  LucideSearch,
   LucideX,
 } from '@lucide/angular';
 import type { WorkspaceMessageSearchResult } from '@omoikane/application/message';
@@ -36,6 +38,16 @@ type WorkspaceInteraction =
   | 'confirming-archive'
   | 'confirming-departure';
 
+type WorkspaceContextView = 'search' | 'management';
+
+interface WorkspaceContextPanelView {
+  readonly kind: WorkspaceContextView;
+  readonly label: string;
+  readonly closeLabel: string;
+  readonly eyebrow: string;
+  readonly title: string;
+}
+
 /**
  * Lists accessible workspaces and owns one feature-scoped selection store.
  */
@@ -55,6 +67,7 @@ type WorkspaceInteraction =
     LucideMenu,
     LucidePanelRight,
     LucidePlus,
+    LucideSearch,
     LucideX,
   ],
   providers: [WorkspaceNavigationStore],
@@ -69,6 +82,25 @@ export class WorkspaceNavigationComponent {
   protected readonly canManageSelectedWorkspace = signal(false);
   protected readonly workspaceNavigationOpen = signal(false);
   protected readonly contextPanelOpen = signal(false);
+  protected readonly contextView = signal<WorkspaceContextView>('management');
+  protected readonly contextPanelView = computed<WorkspaceContextPanelView>(
+    () =>
+      this.contextView() === 'search'
+        ? {
+            kind: 'search',
+            label: 'Workspace message search',
+            closeLabel: 'Close workspace message search',
+            eyebrow: 'Discovery',
+            title: 'Search messages',
+          }
+        : {
+            kind: 'management',
+            label: 'Workspace management',
+            closeLabel: 'Close workspace management',
+            eyebrow: 'Collaboration',
+            title: 'Workspace management',
+          }
+  );
   private readonly breakpointObserver = inject(BreakpointObserver);
   protected readonly compactWorkspaceNavigation = toSignal(
     this.breakpointObserver
@@ -144,8 +176,14 @@ export class WorkspaceNavigationComponent {
     this.workspaceNavigationOpen.set(false);
   }
 
-  protected toggleContextPanel(): void {
-    this.contextPanelOpen.update((open) => !open);
+  protected toggleContextPanel(view: WorkspaceContextView): void {
+    if (this.contextPanelOpen() && this.contextView() === view) {
+      this.contextPanelOpen.set(false);
+      return;
+    }
+
+    this.contextView.set(view);
+    this.contextPanelOpen.set(true);
   }
 
   protected closeContextPanel(): void {
@@ -158,6 +196,7 @@ export class WorkspaceNavigationComponent {
     this.store.clearArchiveError();
     this.store.clearDepartureError();
     this.interaction.set('creating');
+    this.contextView.set('management');
     this.contextPanelOpen.set(true);
   }
 
@@ -305,6 +344,7 @@ export class WorkspaceNavigationComponent {
   protected handleMessageSearchResult(
     result: WorkspaceMessageSearchResult
   ): void {
+    this.contextPanelOpen.set(false);
     void this.router.navigate([], {
       relativeTo: this.route,
       queryParams: {
