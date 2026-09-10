@@ -48,7 +48,7 @@ passes. Snapshot updates affect only the platform on which the command runs;
 review Linux failures from the uploaded CI artifact before replacing the Linux
 baseline. Do not update snapshots merely to make an unexplained failure green.
 
-## Executable user-guide proof of concept
+## Executable user guides
 
 The tagged sign-in scenario runs as an ordinary assertion-first browser test
 during `pnpm e2e`. Generate its narrated artifacts with:
@@ -62,9 +62,13 @@ installed, and runs only `@user-guide` scenarios in `user-guide` mode. The
 scenario creates `dist/user-guide/sign-in/README.md`, annotated step images,
 and a WebM recording. Calling `UserGuideSession.start()` and `finish()` creates
 and closes the dedicated Playwright browser context, so those calls define the
-recording boundary without CDP or FFmpeg.
+recording boundary without CDP or FFmpeg. A failed scenario calls `abort()` and
+removes its incomplete artifacts.
 
 Guide prose is source-controlled beside the executable scenario and its page
-objects. Generated Markdown and media remain disposable build output under
-`dist/`; publishing and a multi-page book generator are intentionally outside
-this proof of concept.
+objects. Each successful recording writes a versioned `guide.json` manifest.
+After all guide scenarios pass, the book assembler validates those manifests,
+writes each Markdown page, and creates deterministic ordered navigation without
+letting independently recorded guides overwrite one another. Generated
+Markdown and media remain disposable build output under `dist/`; publishing is
+intentionally outside this slice.
