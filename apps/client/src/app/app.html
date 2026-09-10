@@ -1,1 +1,20 @@
-<router-outlet />
+@if (!hasActivatedRoute()) {
+<main
+  class="application-startup"
+  aria-label="Loading Omoikane"
+  aria-busy="true"
+>
+  <div class="application-startup__content">
+    <span class="application-startup__mark" aria-hidden="true">O</span>
+    <div>
+      <p class="application-startup__product">Omoikane</p>
+      <p class="application-startup__status" role="status">
+        Loading application…
+      </p>
+    </div>
+    <span class="application-startup__progress" aria-hidden="true"></span>
+  </div>
+</main>
+}
+
+<router-outlet (activate)="onRouteActivated()" />

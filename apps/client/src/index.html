@@ -24,6 +24,28 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   </head>
   <body>
-    <app-root></app-root>
+    <!--
+      This content is deliberately framework-free. It is the only UI available
+      while the browser downloads and starts Angular, and Angular replaces it
+      when AppComponent is bootstrapped.
+    -->
+    <app-root>
+      <main
+        class="application-startup"
+        aria-label="Starting Omoikane"
+        aria-busy="true"
+      >
+        <div class="application-startup__content">
+          <span class="application-startup__mark" aria-hidden="true">O</span>
+          <div>
+            <p class="application-startup__product">Omoikane</p>
+            <p class="application-startup__status" role="status">
+              Starting application…
+            </p>
+          </div>
+          <span class="application-startup__progress" aria-hidden="true"></span>
+        </div>
+      </main>
+    </app-root>
   </body>
 </html>

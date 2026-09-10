@@ -5,7 +5,6 @@ import {
   signal,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { LucideArrowRight, LucideSparkles } from '@lucide/angular';
 import { SignInComponent } from './sign-in/sign-in.component';
 import { SignUpComponent } from './sign-up/sign-up.component';
@@ -35,7 +34,6 @@ type AnonymousAuthenticationView = 'sign-in' | 'sign-up' | 'password-recovery';
     CurrentProfileComponent,
     WorkspaceNavigationComponent,
     MatButtonModule,
-    MatProgressSpinnerModule,
     LucideArrowRight,
     LucideSparkles,
   ],
