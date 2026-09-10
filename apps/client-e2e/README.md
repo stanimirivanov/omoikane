@@ -72,3 +72,15 @@ writes each Markdown page, and creates deterministic ordered navigation without
 letting independently recorded guides overwrite one another. Generated
 Markdown and media remain disposable build output under `dist/`; publishing is
 intentionally outside this slice.
+
+The sign-in guide records the complete anonymous workflow. The channel-message
+guide authenticates in a temporary setup context, transfers only Playwright
+storage state, and starts its guide context afterward. Its video therefore
+contains only workspace, channel, and message interactions. This pattern keeps
+test setup executable while making recording boundaries deliberate.
+
+Page objects accept an optional `GuideNarrator`. Without one, the same methods
+perform ordinary smoke-test interactions with no guide delays or output. With
+one, they add documentation metadata around those interactions. Scenarios keep
+their own assertions; page objects own semantic locators and cohesive user
+actions.

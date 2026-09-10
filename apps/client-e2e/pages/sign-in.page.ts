@@ -1,13 +1,16 @@
 import type { Locator, Page } from '@playwright/test';
-import type { UserGuideSession } from '../user-guide/user-guide-session';
+import {
+  performDocumentedAction,
+  type GuideNarrator,
+} from '../user-guide/guide-narrator';
 
 export class SignInPage {
   private readonly page: Page;
-  private readonly guide: UserGuideSession;
+  private readonly narrator: GuideNarrator | undefined;
 
-  constructor(guide: UserGuideSession) {
-    this.guide = guide;
-    this.page = guide.page;
+  constructor(page: Page, narrator?: GuideNarrator) {
+    this.narrator = narrator;
+    this.page = page;
   }
 
   async open(): Promise<this> {
@@ -24,7 +27,8 @@ export class SignInPage {
 
   async enterEmail(email: string): Promise<this> {
     const input = this.signInRegion().getByLabel('Email');
-    await this.guide.action(
+    await performDocumentedAction(
+      this.narrator,
       input,
       {
         body: 'Enter the email address associated with your Omoikane account.',
@@ -37,7 +41,8 @@ export class SignInPage {
 
   async enterPassword(password: string): Promise<this> {
     const input = this.signInRegion().getByLabel('Password');
-    await this.guide.action(
+    await performDocumentedAction(
+      this.narrator,
       input,
       {
         body: 'Enter your password. Omoikane masks it while you type.',
@@ -53,7 +58,8 @@ export class SignInPage {
       exact: true,
       name: 'Sign in',
     });
-    await this.guide.action(
+    await performDocumentedAction(
+      this.narrator,
       button,
       {
         body: 'Sign in to load the workspaces available to your account.',

@@ -1,12 +1,8 @@
 import { expect, test } from '@playwright/test';
+import { seededOwner } from '../fixtures/seeded-collaboration';
 import { AuthenticatedShellPage } from '../pages/authenticated-shell.page';
 import { SignInPage } from '../pages/sign-in.page';
 import { UserGuideSession } from '../user-guide/user-guide-session';
-
-const seededOwner = {
-  email: 'owner@omoikane.local',
-  password: 'Password123!',
-} as const;
 
 test(
   'sign in with an existing account',
@@ -22,14 +18,14 @@ test(
     });
 
     try {
-      const signIn = new SignInPage(guide);
+      const signIn = new SignInPage(guide.page, guide);
       await signIn.open();
       await expect(signIn.heading()).toBeVisible();
       await signIn.enterEmail(seededOwner.email);
       await signIn.enterPassword(seededOwner.password);
       await signIn.submit();
 
-      const authenticatedShell = new AuthenticatedShellPage(guide);
+      const authenticatedShell = new AuthenticatedShellPage(guide.page, guide);
       await expect(authenticatedShell.signOutButton()).toBeVisible();
       await authenticatedShell.documentAuthenticatedSession();
 

@@ -1,13 +1,16 @@
 import type { Locator, Page } from '@playwright/test';
-import type { UserGuideSession } from '../user-guide/user-guide-session';
+import {
+  documentResult,
+  type GuideNarrator,
+} from '../user-guide/guide-narrator';
 
 export class AuthenticatedShellPage {
   private readonly page: Page;
-  private readonly guide: UserGuideSession;
+  private readonly narrator: GuideNarrator | undefined;
 
-  constructor(guide: UserGuideSession) {
-    this.guide = guide;
-    this.page = guide.page;
+  constructor(page: Page, narrator?: GuideNarrator) {
+    this.narrator = narrator;
+    this.page = page;
   }
 
   signOutButton(): Locator {
@@ -18,7 +21,7 @@ export class AuthenticatedShellPage {
   }
 
   async documentAuthenticatedSession(): Promise<void> {
-    await this.guide.result(this.signOutButton(), {
+    await documentResult(this.narrator, this.signOutButton(), {
       body: 'You are signed in. Your profile and account controls are now available in the application header.',
       title: 'Continue in the authenticated application',
     });

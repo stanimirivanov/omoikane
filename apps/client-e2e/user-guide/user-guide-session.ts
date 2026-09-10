@@ -4,21 +4,18 @@ import { workspaceRoot } from '@nx/devkit';
 import type {
   Browser,
   BrowserContext,
+  BrowserContextOptions,
   Locator,
   Page,
   Video,
 } from '@playwright/test';
 import { browserScenarioMode } from './guide-mode';
+import type { GuideNarrator, GuideStepDefinition } from './guide-narrator';
 
 interface GuideDefinition {
   readonly order: number;
   readonly slug: string;
   readonly summary: string;
-  readonly title: string;
-}
-
-interface GuideStepDefinition {
-  readonly body: string;
   readonly title: string;
 }
 
@@ -28,6 +25,7 @@ interface RecordedGuideStep extends GuideStepDefinition {
 
 interface StartGuideOptions extends GuideDefinition {
   readonly baseURL: string;
+  readonly storageState?: BrowserContextOptions['storageState'];
 }
 
 const guideOutputRoot = path.join(workspaceRoot, 'dist/user-guide');
@@ -40,7 +38,7 @@ const guideViewport = { height: 900, width: 1440 } as const;
  * mode owns a dedicated BrowserContext so start() and finish() are also the
  * exact native Playwright video boundaries.
  */
-export class UserGuideSession {
+export class UserGuideSession implements GuideNarrator {
   readonly page: Page;
 
   private readonly context: BrowserContext;
@@ -83,6 +81,7 @@ export class UserGuideSession {
       colorScheme: 'light',
       locale: 'en-US',
       reducedMotion: 'reduce',
+      storageState: options.storageState,
       timezoneId: 'UTC',
       viewport: guideViewport,
       ...(isGuideMode

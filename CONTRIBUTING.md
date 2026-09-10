@@ -159,6 +159,19 @@ Test behavior at the narrowest owner:
   test; otherwise replace children with focused stubs to avoid accidental
   feature integration.
 
+For Playwright scenarios:
+
+- Keep assertions in the scenario and place reusable semantic locators and
+  cohesive user actions in feature-shaped page objects.
+- Page objects may accept the optional executable-guide narrator, but their
+  ordinary behavior must not depend on guide mode.
+- Perform authentication or other prerequisite setup before starting a guide
+  recording when that setup is not part of the documented workflow.
+- Use Playwright storage state to cross that recording boundary; do not persist
+  credentials or provider tokens as generated guide metadata.
+- Reserve fixed waits for intentional guide narration. Functional
+  synchronization must continue to use observable UI conditions.
+
 ## Before opening a pull request
 
 Run the checks proportionate to the change and finish with the repository's
