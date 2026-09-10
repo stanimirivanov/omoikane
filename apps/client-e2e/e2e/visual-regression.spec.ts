@@ -17,9 +17,12 @@ test.describe('anonymous visual contract', () => {
   test('matches the desktop sign-in baseline', async ({ page }) => {
     await openAnonymousSignIn(page, { width: 1440, height: 900 });
 
-    await expect(page).toHaveScreenshot('anonymous-sign-in-desktop.png', {
-      fullPage: true,
-    });
+    await expect(page).toHaveScreenshot(
+      `anonymous-sign-in-desktop-${process.platform}.png`,
+      {
+        fullPage: true,
+      }
+    );
   });
 
   test('matches the mobile sign-in baseline', async ({ page }) => {

@@ -1,6 +1,23 @@
 @let shellView = store.shellView();
 
-@if (shellView.kind === 'authenticated') {
+@if (shellView.kind === 'initializing') {
+  <main
+    class="application-startup"
+    aria-label="Restoring your Omoikane session"
+    aria-busy="true"
+  >
+    <div class="application-startup__content">
+      <span class="application-startup__mark" aria-hidden="true">O</span>
+      <div>
+        <p class="application-startup__product">Omoikane</p>
+        <p class="application-startup__status" role="status">
+          Restoring your session…
+        </p>
+      </div>
+      <span class="application-startup__progress" aria-hidden="true"></span>
+    </div>
+  </main>
+} @else if (shellView.kind === 'authenticated') {
   <a class="skip-link" href="#omoikane-main-content">Skip to main content</a>
 
   <div class="application-shell">
@@ -81,16 +98,6 @@
 
       <div class="account-card">
         @switch (shellView.kind) {
-          @case ('initializing') {
-            <section class="session-loading" aria-labelledby="session-heading">
-              <mat-spinner diameter="34" />
-              <div>
-                <h1 id="session-heading">Welcome back</h1>
-                <p role="status">Restoring session…</p>
-              </div>
-            </section>
-          }
-
           @case ('password-recovery') {
             <app-password-recovery />
           }

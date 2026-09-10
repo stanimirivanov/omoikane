@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 
 @Component({
@@ -8,4 +8,10 @@ import { RouterOutlet } from '@angular/router';
   templateUrl: './app.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AppComponent {}
+export class AppComponent {
+  protected readonly hasActivatedRoute = signal(false);
+
+  protected onRouteActivated(): void {
+    this.hasActivatedRoute.set(true);
+  }
+}

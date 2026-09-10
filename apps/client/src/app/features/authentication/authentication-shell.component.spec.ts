@@ -110,11 +110,19 @@ describe('AuthenticationShellComponent', () => {
   };
 
   it('initializes authentication once when created', async () => {
-    const { store } = await configureComponent({
+    const { fixture, store } = await configureComponent({
       view: { kind: 'initializing' },
     });
 
     expect(store.initialize).toHaveBeenCalledOnce();
+    expect(fixture.nativeElement.textContent).toContain(
+      'Restoring your session…'
+    );
+    expect(
+      fixture.nativeElement
+        .querySelector('.application-startup')
+        ?.getAttribute('aria-busy')
+    ).toBe('true');
   });
 
   it('renders the restored session email', async () => {
