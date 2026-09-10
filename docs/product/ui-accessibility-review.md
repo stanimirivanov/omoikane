@@ -46,8 +46,11 @@ The browser checks intentionally use role and accessible-name locators rather
 than visual selectors, except where a CSS property or drawer focus boundary is
 the subject of the assertion.
 
-## Deferred to UI-8
+## Completed in UI-8
 
-- Deterministic screenshot assertions for selected critical states.
-- Removal of styles proven to be superseded after visual comparison.
-- Final bundle-budget and documentation reconciliation.
+- Deterministic desktop and mobile screenshot assertions protect the anonymous
+  sign-in state. Mutable authenticated fixtures remain review-only.
+- The repeated visually-hidden declarations were replaced by one global
+  presentation utility while feature-specific responsive overrides stayed
+  local.
+- The final production build verifies the initial and component-style budgets.

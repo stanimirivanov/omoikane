@@ -246,13 +246,20 @@ Playwright screenshots and traces from failed CI runs remain build artifacts.
    reduced motion, announcements, and coarse pointers. The review and browser
    evidence are recorded in
    [UI-7 responsive and accessibility review](ui-accessibility-review.md).
-9. **UI-8 — Visual regression and cleanup.** Add stable screenshot assertions
-   only for deterministic critical paths, remove superseded styles, verify
-   bundle budgets, and reconcile documentation.
+9. **UI-8 — Visual regression and cleanup. Completed.** Add stable screenshot
+   assertions only for deterministic critical paths, remove superseded styles,
+   verify bundle budgets, and reconcile documentation. The anonymous desktop
+   and mobile sign-in states are executable Playwright baselines; authenticated
+   screenshots remain review artifacts until their fixtures can be isolated
+   from mutable collaboration data.
 
 Each pull request has one presentation purpose. A UI slice may refactor markup
 needed for its layout, but changes to application behavior are separated into a
 normal vertical slice with the owning tests and architecture layers.
+
+All slices in this redesign plan are complete. Subsequent presentation changes
+should begin with a new, bounded product outcome instead of extending this plan
+indefinitely.
 
 ## 12. UI-0 acceptance
 

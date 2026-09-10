@@ -70,6 +70,14 @@ Native form boundaries use a contrast-safe control token, decorative icons stay
 out of the accessibility tree, and operation errors are associated with the
 principal authentication, search, and composer inputs.
 
+UI-8 completes the redesign track with executable desktop and mobile visual
+baselines for the deterministic anonymous sign-in state. Screenshot comparison
+uses fixed locale, timezone, color scheme, viewport, and motion preferences.
+Authenticated collaboration remains behaviorally covered but is not
+pixel-locked while its shared real-backend fixture is mutable. Repeated
+visually-hidden CSS now lives in one global presentation utility, and the
+production build remains the authority for initial and component-style budgets.
+
 ## Layer responsibilities
 
 - `core/`: application-wide runtime composition and thin Angular boundary
