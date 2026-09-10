@@ -54,6 +54,14 @@ state, and current-profile editing retains its dedicated store. Their compact
 header and navigation treatments do not promote any of those concerns into a
 global shell store.
 
+UI-6 turns the selected channel's Analysis Run disclosure into an
+evidence-first Decision Forensics surface. Run setup, processing lifecycle,
+result provenance, model confidence, source revisions, and human review have
+distinct visual roles while retaining the existing feature-scoped store and
+server API. AI findings remain explicitly proposed; evidence precedes review
+controls, immutable revision identities remain visible, and source links still
+use the established channel-message query parameter.
+
 ## Layer responsibilities
 
 - `core/`: application-wide runtime composition and thin Angular boundary

@@ -1,71 +1,136 @@
-<section aria-labelledby="analysis-runs-title">
-  <h3 id="analysis-runs-title">Analysis Runs</h3>
-  <p>Start a trusted analysis workflow for this channel.</p>
-
-  <fieldset [disabled]="!store.canEditTimeRange()">
-    <legend>Message time range</legend>
-    <p>
-      The start is included, the end is excluded, and the maximum is 31 days.
+<section class="analysis-run" aria-labelledby="analysis-runs-title">
+  <header class="analysis-heading">
+    <p class="eyebrow">Decision intelligence</p>
+    <h3 id="analysis-runs-title">Decision Forensics</h3>
+    <p class="supporting-copy">
+      Examine a bounded period of this conversation and review every proposed
+      finding against its source evidence.
     </p>
-    <label>
-      Start
-      <input
-        type="datetime-local"
-        [value]="toLocalDateTime(store.timeRangeStart())"
-        (change)="setTimeRangeStart($event)"
-      />
-    </label>
-    <label>
-      End
-      <input
-        type="datetime-local"
-        [value]="toLocalDateTime(store.timeRangeEnd())"
-        (change)="setTimeRangeEnd($event)"
-      />
-    </label>
-  </fieldset>
+  </header>
 
-  <button type="button" [disabled]="!store.canStart()" (click)="store.start()">
-    @if (store.status() === 'starting') {
-      Starting&hellip;
-    } @else {
-      Start Analysis Run
-    }
-  </button>
+  <div class="run-setup">
+    <fieldset class="time-range" [disabled]="!store.canEditTimeRange()">
+      <legend>Analysis period</legend>
+      <p class="range-help">
+        Start is included, end is excluded. Choose up to 31 days in the past.
+      </p>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Start</mat-label>
+        <input
+          matInput
+          type="datetime-local"
+          [value]="toLocalDateTime(store.timeRangeStart())"
+          (change)="setTimeRangeStart($event)"
+        />
+      </mat-form-field>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>End</mat-label>
+        <input
+          matInput
+          type="datetime-local"
+          [value]="toLocalDateTime(store.timeRangeEnd())"
+          (change)="setTimeRangeEnd($event)"
+        />
+      </mat-form-field>
+    </fieldset>
+
+    <button
+      class="start-button"
+      mat-flat-button
+      type="button"
+      [disabled]="!store.canStart()"
+      (click)="store.start()"
+    >
+      <svg
+        class="button-icon"
+        lucideSparkles
+        [size]="16"
+        aria-hidden="true"
+      ></svg>
+      @if (store.status() === 'starting') {
+        Starting analysis&hellip;
+      } @else {
+        Start analysis
+      }
+    </button>
+  </div>
 
   @if (store.run(); as run) {
-    <div aria-live="polite" aria-atomic="true">
-      @if (run.timeRange; as timeRange) {
-        <p>
-          Source interval:
-          <time [attr.datetime]="toUtcDateTime(timeRange.start)">
-            {{ toUtcDateTime(timeRange.start) }}
-          </time>
-          through
-          <time [attr.datetime]="toUtcDateTime(timeRange.end)">
-            {{ toUtcDateTime(timeRange.end) }}
-          </time>
-          (end excluded).
-        </p>
-      }
+    <div>
+      <p class="status-announcement" aria-live="polite">
+        Analysis status: {{ run.status }}.
+      </p>
       @switch (run.status) {
         @case ('created') {
-          <p>Run {{ run.id }} was accepted and is waiting to be queued.</p>
+          <article class="run-status">
+            <div class="status-heading">
+              <h4>Analysis accepted</h4>
+              <span class="status-badge">Created</span>
+            </div>
+            <p class="supporting-copy">
+              Waiting to enter the processing queue.
+            </p>
+            <mat-progress-bar class="run-progress" mode="indeterminate" />
+            <p class="run-detail">Run {{ run.id }}</p>
+          </article>
         }
         @case ('queued') {
-          <p>Run {{ run.id }} is queued for processing.</p>
+          <article class="run-status">
+            <div class="status-heading">
+              <h4>Analysis queued</h4>
+              <span class="status-badge">Queued</span>
+            </div>
+            <p class="supporting-copy">
+              The request is waiting for an available processor.
+            </p>
+            <mat-progress-bar class="run-progress" mode="indeterminate" />
+            <p class="run-detail">Run {{ run.id }}</p>
+          </article>
         }
         @case ('running') {
-          <p>Run {{ run.id }} is being processed.</p>
+          <article class="run-status">
+            <div class="status-heading">
+              <h4>Examining conversation</h4>
+              <span class="status-badge">Running</span>
+            </div>
+            <p class="supporting-copy">
+              Building traceable findings from the selected messages.
+            </p>
+            <mat-progress-bar class="run-progress" mode="indeterminate" />
+            <p class="run-detail">Run {{ run.id }}</p>
+          </article>
+        }
+        @case ('failed') {
+          <article class="run-status">
+            <div class="status-heading">
+              <h4>Analysis could not be completed</h4>
+              <span class="status-badge" data-status="failed">Failed</span>
+            </div>
+            <p class="supporting-copy">
+              Failure category: {{ run.failureCategory }}. The conversation was
+              not changed.
+            </p>
+            <p class="run-detail">Run {{ run.id }}</p>
+          </article>
         }
         @case ('succeeded') {
-          <p>Run {{ run.id }} completed successfully.</p>
           @if (run.result; as result) {
             @switch (result.kind) {
               @case ('workspace-message-inventory') {
-                <article aria-labelledby="analysis-result-title">
-                  <h4 id="analysis-result-title">{{ result.finding.title }}</h4>
-                  <p>{{ result.finding.summary }}</p>
+                <article
+                  class="result-card"
+                  aria-labelledby="analysis-result-title"
+                >
+                  <div class="result-heading">
+                    <div>
+                      <p class="eyebrow">Analysis complete</p>
+                      <h4 id="analysis-result-title">
+                        {{ result.finding.title }}
+                      </h4>
+                    </div>
+                    <span class="status-badge">Proposed</span>
+                  </div>
+                  <p class="result-summary">{{ result.finding.summary }}</p>
                   <p>
                     Evidence: {{ result.sourceCount }} immutable message
                     {{ result.sourceCount === 1 ? 'revision' : 'revisions' }}.
@@ -74,150 +139,285 @@
                       messages.
                     }
                   </p>
-                  <p>Status: proposed</p>
+                  <p class="trust-note">
+                    Proposed output remains informational until a person reviews
+                    it.
+                  </p>
+                  <details class="provenance">
+                    <summary>Analysis provenance</summary>
+                    @if (run.timeRange; as timeRange) {
+                      <p>
+                        Source interval
+                        <time [attr.datetime]="toUtcDateTime(timeRange.start)">
+                          {{ toDisplayDateTime(timeRange.start) }}
+                        </time>
+                        to
+                        <time [attr.datetime]="toUtcDateTime(timeRange.end)">
+                          {{ toDisplayDateTime(timeRange.end) }}
+                        </time>
+                        (end excluded).
+                      </p>
+                    }
+                    <p>Run {{ run.id }}</p>
+                  </details>
                 </article>
               }
               @case ('decision-forensics') {
-                <section aria-labelledby="decision-forensics-title">
-                  <h4 id="decision-forensics-title">Decision Forensics</h4>
-                  <p>
+                <section
+                  class="result-card"
+                  aria-labelledby="decision-forensics-title"
+                >
+                  <div class="result-heading">
+                    <div>
+                      <p class="eyebrow">Analysis complete</p>
+                      <h4 id="decision-forensics-title">Decision candidates</h4>
+                    </div>
+                    <span class="status-badge">AI proposed</span>
+                  </div>
+                  <p class="trust-note">
                     This is AI-generated proposed output requiring human review.
+                    Open the cited messages before confirming a finding.
                   </p>
-                  <p>{{ result.summary }}</p>
-                  <p>
-                    Model: {{ result.model }}. Usage:
-                    {{ result.usage.inputUnits ?? 'unreported' }} input units,
-                    {{ result.usage.outputUnits ?? 'unreported' }} output units.
-                  </p>
+                  <p class="result-summary">{{ result.summary }}</p>
+
+                  <details class="provenance">
+                    <summary>Analysis provenance</summary>
+                    <p>
+                      Model {{ result.model }} &middot;
+                      {{ result.usage.inputUnits ?? 'unreported' }} input units
+                      &middot;
+                      {{ result.usage.outputUnits ?? 'unreported' }} output
+                      units
+                    </p>
+                    @if (run.timeRange; as timeRange) {
+                      <p>
+                        Source interval
+                        <time [attr.datetime]="toUtcDateTime(timeRange.start)">
+                          {{ toDisplayDateTime(timeRange.start) }}
+                        </time>
+                        to
+                        <time [attr.datetime]="toUtcDateTime(timeRange.end)">
+                          {{ toDisplayDateTime(timeRange.end) }}
+                        </time>
+                        (end excluded).
+                      </p>
+                    }
+                    <p>Run {{ run.id }}</p>
+                  </details>
+
                   @if (result.candidates.length === 0) {
-                    <p>No supported decision candidates were found.</p>
+                    <p class="empty-result">
+                      No supported decision candidates were found in this
+                      period.
+                    </p>
                   } @else {
-                    <ol>
+                    <ol class="candidate-list">
                       @for (
                         candidate of result.candidates;
-                        track candidate.id
+                        track candidate.id;
+                        let candidateNumber = $index
                       ) {
                         <li>
                           <article
+                            class="candidate-card"
                             [attr.aria-labelledby]="
                               'decision-candidate-' + candidate.id
                             "
                           >
-                            <h5 [id]="'decision-candidate-' + candidate.id">
-                              {{ candidate.title }}
-                            </h5>
+                            <div class="candidate-heading">
+                              <div class="candidate-title">
+                                <p class="candidate-number">
+                                  Candidate {{ candidateNumber + 1 }}
+                                </p>
+                                <h5 [id]="'decision-candidate-' + candidate.id">
+                                  {{ candidate.title }}
+                                </h5>
+                              </div>
+                              <span
+                                class="status-badge"
+                                [attr.data-status]="candidate.status"
+                              >
+                                {{ candidate.status }}
+                              </span>
+                            </div>
+
                             <p>{{ candidate.summary }}</p>
-                            <p>Disposition: {{ candidate.disposition }}.</p>
-                            <p>
-                              Model-assessed confidence:
-                              {{ candidate.confidence }} (0 to 1).
-                            </p>
-                            <p>Status: {{ candidate.status }}.</p>
-                            @if (candidate.review; as review) {
-                              <p>
-                                Reviewed by {{ review.reviewerId }} on
-                                <time
-                                  [attr.datetime]="
-                                    toUtcDateTime(review.occurredAt)
+                            <div class="confidence">
+                              <span class="disposition-badge">
+                                {{ candidate.disposition }}
+                              </span>
+                              <span
+                                class="confidence-meter"
+                                role="meter"
+                                aria-label="Model-assessed confidence"
+                                aria-valuemin="0"
+                                aria-valuemax="100"
+                                [attr.aria-valuenow]="
+                                  toConfidencePercentage(candidate.confidence)
+                                "
+                              >
+                                <span
+                                  [style.width.%]="
+                                    toConfidencePercentage(candidate.confidence)
                                   "
-                                >
-                                  {{ toUtcDateTime(review.occurredAt) }} </time
-                                >.
-                                @if (review.reason) {
-                                  Reason: {{ review.reason }}
-                                }
-                              </p>
-                            } @else {
-                              <label>
-                                Optional review reason
-                                <textarea
-                                  #reviewReason
-                                  maxlength="500"
-                                ></textarea>
-                              </label>
-                              <button
-                                type="button"
-                                [disabled]="!store.canReview(candidate)"
-                                (click)="
-                                  store.reviewCandidate(
-                                    candidate.id,
-                                    'confirm',
-                                    reviewReason.value
-                                  )
-                                "
-                              >
-                                Confirm candidate
-                              </button>
-                              <button
-                                type="button"
-                                [disabled]="!store.canReview(candidate)"
-                                (click)="
-                                  store.reviewCandidate(
-                                    candidate.id,
-                                    'reject',
-                                    reviewReason.value
-                                  )
-                                "
-                              >
-                                Reject candidate
-                              </button>
-                              @if (
-                                store.reviewingCandidateId() === candidate.id
-                              ) {
-                                <p aria-live="polite">Saving review&hellip;</p>
-                              }
-                            }
+                                ></span>
+                              </span>
+                              <span>
+                                {{
+                                  toConfidencePercentage(candidate.confidence)
+                                }}% confidence
+                              </span>
+                            </div>
 
-                            <h6>Claims</h6>
-                            <ul>
-                              @for (claim of candidate.claims; track $index) {
-                                <li>
-                                  <p>{{ claim.text }}</p>
-                                  <app-analysis-evidence-links
-                                    [sources]="claim.evidence"
-                                  />
-                                </li>
-                              }
-                            </ul>
-
-                            @if (candidate.assumptions.length > 0) {
-                              <h6>Assumptions</h6>
-                              <ul>
-                                @for (
-                                  assumption of candidate.assumptions;
-                                  track $index
-                                ) {
-                                  <li>
-                                    <p>{{ assumption.text }}</p>
+                            <section class="finding-section">
+                              <h6 class="section-label">Claims and evidence</h6>
+                              <ul class="evidence-list">
+                                @for (claim of candidate.claims; track $index) {
+                                  <li class="evidence-item">
+                                    <p>{{ claim.text }}</p>
                                     <app-analysis-evidence-links
-                                      [sources]="assumption.evidence"
+                                      [sources]="claim.evidence"
                                     />
                                   </li>
                                 }
                               </ul>
+                            </section>
+
+                            @if (candidate.assumptions.length > 0) {
+                              <section class="finding-section">
+                                <h6 class="section-label">Assumptions</h6>
+                                <ul class="evidence-list">
+                                  @for (
+                                    assumption of candidate.assumptions;
+                                    track $index
+                                  ) {
+                                    <li class="evidence-item">
+                                      <p>{{ assumption.text }}</p>
+                                      <app-analysis-evidence-links
+                                        [sources]="assumption.evidence"
+                                      />
+                                    </li>
+                                  }
+                                </ul>
+                              </section>
                             }
 
                             @if (candidate.participants.length > 0) {
-                              <h6>Participants</h6>
-                              <ul>
-                                @for (
-                                  participant of candidate.participants;
-                                  track participant.profileId +
-                                    '/' +
-                                    participant.role
-                                ) {
-                                  <li>
-                                    <p>
-                                      {{ participant.profileId }}:
-                                      {{ participant.role }}
-                                    </p>
-                                    <app-analysis-evidence-links
-                                      [sources]="participant.evidence"
-                                    />
-                                  </li>
-                                }
-                              </ul>
+                              <section class="finding-section">
+                                <h6 class="section-label">Participants</h6>
+                                <ul class="evidence-list">
+                                  @for (
+                                    participant of candidate.participants;
+                                    track participant.profileId +
+                                      '/' +
+                                      participant.role
+                                  ) {
+                                    <li class="evidence-item">
+                                      <p>
+                                        <span class="participant-name">
+                                          {{ participant.profileId }}
+                                        </span>
+                                        &middot; {{ participant.role }}
+                                      </p>
+                                      <app-analysis-evidence-links
+                                        [sources]="participant.evidence"
+                                      />
+                                    </li>
+                                  }
+                                </ul>
+                              </section>
                             }
+
+                            <section
+                              class="review-panel"
+                              [attr.aria-labelledby]="
+                                'review-heading-' + candidate.id
+                              "
+                            >
+                              <div class="review-heading">
+                                <h6 [id]="'review-heading-' + candidate.id">
+                                  Human review
+                                </h6>
+                                <span
+                                  class="status-badge"
+                                  [attr.data-status]="candidate.status"
+                                >
+                                  {{ candidate.status }}
+                                </span>
+                              </div>
+                              @if (candidate.review; as review) {
+                                <p class="review-metadata">
+                                  {{
+                                    review.action === 'confirm'
+                                      ? 'Confirmed'
+                                      : 'Rejected'
+                                  }}
+                                  by {{ review.reviewerId }} on
+                                  <time
+                                    [attr.datetime]="
+                                      toUtcDateTime(review.occurredAt)
+                                    "
+                                  >
+                                    {{
+                                      toDisplayDateTime(review.occurredAt)
+                                    }} </time
+                                  >.
+                                  @if (review.reason) {
+                                    Reason: {{ review.reason }}
+                                  }
+                                </p>
+                              } @else {
+                                <mat-form-field
+                                  appearance="outline"
+                                  subscriptSizing="dynamic"
+                                >
+                                  <mat-label>Optional review reason</mat-label>
+                                  <textarea
+                                    #reviewReason
+                                    matInput
+                                    maxlength="500"
+                                    rows="2"
+                                  ></textarea>
+                                </mat-form-field>
+                                <div class="review-actions">
+                                  <button
+                                    mat-flat-button
+                                    type="button"
+                                    [disabled]="!store.canReview(candidate)"
+                                    (click)="
+                                      store.reviewCandidate(
+                                        candidate.id,
+                                        'confirm',
+                                        reviewReason.value
+                                      )
+                                    "
+                                  >
+                                    Confirm candidate
+                                  </button>
+                                  <button
+                                    mat-stroked-button
+                                    type="button"
+                                    [disabled]="!store.canReview(candidate)"
+                                    (click)="
+                                      store.reviewCandidate(
+                                        candidate.id,
+                                        'reject',
+                                        reviewReason.value
+                                      )
+                                    "
+                                  >
+                                    Reject candidate
+                                  </button>
+                                </div>
+                                @if (
+                                  store.reviewingCandidateId() === candidate.id
+                                ) {
+                                  <p class="review-pending" aria-live="polite">
+                                    Saving review&hellip;
+                                  </p>
+                                }
+                              }
+                            </section>
                           </article>
                         </li>
                       }
@@ -228,17 +428,11 @@
             }
           }
         }
-        @case ('failed') {
-          <p>
-            Run {{ run.id }} could not be completed. Failure category:
-            {{ run.failureCategory }}.
-          </p>
-        }
       }
     </div>
   }
 
   @if (store.error(); as error) {
-    <p role="alert">{{ error.message }}</p>
+    <p class="analysis-error" role="alert">{{ error.message }}</p>
   }
 </section>

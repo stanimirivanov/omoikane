@@ -238,9 +238,9 @@ Playwright screenshots and traces from failed CI runs remain build artifacts.
    context surfaces.
 6. **UI-5 — Discovery and identity. Completed.** Integrate search, unread navigation,
    presence, current profile, and supporting empty/error/reconnect states.
-7. **UI-6 — Decision Forensics.** Redesign Analysis Run initiation, lifecycle,
-   results, evidence, and human-review states around an evidence-first reading
-   experience.
+7. **UI-6 — Decision Forensics. Completed.** Redesign Analysis Run initiation,
+   lifecycle, results, evidence, and human-review states around an
+   evidence-first reading experience.
 8. **UI-7 — Responsive and accessibility hardening.** Test the full state
    matrix across breakpoints, keyboard-only operation, zoom, contrast, reduced
    motion, announcements, and coarse pointers.

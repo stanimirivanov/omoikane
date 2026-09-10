@@ -94,14 +94,15 @@ describe('AnalysisRunsComponent', () => {
     expect(fixture.nativeElement.textContent).toContain(
       'Evidence: 2 immutable message revisions.'
     );
-    expect(fixture.nativeElement.textContent).toContain('Status: proposed');
-    expect(fixture.nativeElement.textContent).toContain(
+    expect(fixture.nativeElement.textContent).toContain('Proposed');
+    const sourceTimes = fixture.nativeElement.querySelectorAll('time');
+    expect(sourceTimes).toHaveLength(2);
+    expect(sourceTimes[0].getAttribute('datetime')).toBe(
       '2026-08-04T12:00:00.000Z'
     );
-    expect(fixture.nativeElement.textContent).toContain(
+    expect(sourceTimes[1].getAttribute('datetime')).toBe(
       '2026-08-11T12:00:00.000Z'
     );
-    expect(fixture.nativeElement.querySelectorAll('time')).toHaveLength(2);
   });
 
   it('renders proposed Decision Forensics output and resolvable evidence', async () => {
@@ -211,8 +212,22 @@ describe('AnalysisRunsComponent', () => {
     expect(text).toContain('Release on Friday.');
     expect(text).toContain('The date is this Friday.');
     expect(text).toContain('decision-maker');
-    expect(text).toContain('42 input units, 17 output units');
+    expect(text).toContain('42 input units');
+    expect(text).toContain('17 output units');
     expect(text).toContain(source.messageRevisionId);
+    expect(
+      fixture.nativeElement
+        .querySelector('[role="meter"]')
+        ?.getAttribute('aria-valuenow')
+    ).toBe('90');
+    const sourceTimes = fixture.nativeElement.querySelectorAll('time');
+    expect(sourceTimes).toHaveLength(2);
+    expect(sourceTimes[0].getAttribute('datetime')).toBe(
+      '2026-09-01T12:00:00.000Z'
+    );
+    expect(sourceTimes[1].getAttribute('datetime')).toBe(
+      '2026-09-08T12:00:00.000Z'
+    );
     expect(fixture.nativeElement.querySelector('a')?.getAttribute('href')).toBe(
       `/?message=${source.messageId}`
     );
