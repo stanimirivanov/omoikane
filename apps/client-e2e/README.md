@@ -2,8 +2,9 @@
 
 This Nx project owns focused Chromium end-to-end checks for the existing
 Angular-to-Supabase collaboration boundary and the responsive accessibility
-contract. It deliberately contains no page objects or reusable browser-testing
-layer.
+contract. Feature-shaped page objects are introduced only for executable guide
+scenarios; they own semantic locators and interactions, not assertions about
+application policy.
 
 Run the complete deterministic path with:
 
@@ -46,3 +47,24 @@ Run `pnpm e2e --grep=visual` afterward to prove that normal comparison mode
 passes. Snapshot updates affect only the platform on which the command runs;
 review Linux failures from the uploaded CI artifact before replacing the Linux
 baseline. Do not update snapshots merely to make an unexplained failure green.
+
+## Executable user-guide proof of concept
+
+The tagged sign-in scenario runs as an ordinary assertion-first browser test
+during `pnpm e2e`. Generate its narrated artifacts with:
+
+```bash
+pnpm guide:generate
+```
+
+The command resets the deterministic local database, ensures Chromium is
+installed, and runs only `@user-guide` scenarios in `user-guide` mode. The
+scenario creates `dist/user-guide/sign-in/README.md`, annotated step images,
+and a WebM recording. Calling `UserGuideSession.start()` and `finish()` creates
+and closes the dedicated Playwright browser context, so those calls define the
+recording boundary without CDP or FFmpeg.
+
+Guide prose is source-controlled beside the executable scenario and its page
+objects. Generated Markdown and media remain disposable build output under
+`dist/`; publishing and a multi-page book generator are intentionally outside
+this proof of concept.
