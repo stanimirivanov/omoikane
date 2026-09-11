@@ -25,6 +25,9 @@ rmSync(guideOutputRoot, { force: true, recursive: true });
 runStep('Preparing the deterministic local database', pnpmCommand, [
   'db:prepare',
 ]);
+runStep('Waiting for the local platform', process.execPath, [
+  fileURLToPath(new URL('./wait-for-local-platform.mjs', import.meta.url)),
+]);
 runStep('Installing the guide browser', pnpmCommand, ['e2e:install']);
 runStep(
   'Generating the executable user guide',

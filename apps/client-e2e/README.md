@@ -58,12 +58,15 @@ pnpm guide:generate
 ```
 
 The command resets the deterministic local database, ensures Chromium is
-installed, and runs only `@user-guide` scenarios in `user-guide` mode. The
-scenario creates `dist/user-guide/sign-in/README.md`, annotated step images,
-and a WebM recording. Calling `UserGuideSession.start()` and `finish()` creates
-and closes the dedicated Playwright browser context, so those calls define the
-recording boundary without CDP or FFmpeg. A failed scenario calls `abort()` and
-removes its incomplete artifacts.
+installed, waits for the restarted Auth and REST endpoints to remain stable,
+starts the Angular development server, and runs only `@user-guide` scenarios in
+`user-guide` mode. A separate `pnpm start` process is not required. Cold Angular
+builds may take more than one minute, so this path has a three-minute web-server
+startup allowance. The scenario creates `dist/user-guide/sign-in/README.md`,
+annotated step images, and a WebM recording. Calling `UserGuideSession.start()`
+and `finish()` creates and closes the dedicated Playwright browser context, so
+those calls define the recording boundary without CDP or FFmpeg. A failed
+scenario calls `abort()` and removes its incomplete artifacts.
 
 Guide prose is source-controlled beside the executable scenario and its page
 objects. Each successful recording writes a versioned `guide.json` manifest.
