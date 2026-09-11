@@ -85,9 +85,21 @@ pnpm guide:preview
 
 The preview server binds only to `127.0.0.1` and defaults to port `4173`. Set
 `GUIDE_PORT` to use another local port. All site links and media references are
-relative, so the complete `dist/user-guide` directory can later be deployed to
-a static host without rebuilding application code. Provider selection and
-automated publication remain outside this slice.
+relative, so the complete `dist/user-guide` directory is also the deployment
+artifact; publishing does not rebuild application code.
+
+The `User guide` GitHub Actions workflow publishes that artifact to GitHub
+Pages only after the `CI` workflow succeeds for a push to `main`. Pull requests
+continue to execute the tagged scenarios in test-only mode as part of the
+regular browser suite, but they do not record or publish guide media. A manual
+run is restricted to `main` and provides a recovery path when publication must
+be repeated without changing source.
+
+Repository administrators must select **GitHub Actions** as the Pages source
+under **Settings > Pages** before the first deployment. The build job retains
+read-only repository access. Only the isolated deployment job receives
+`pages: write` and OIDC token permissions, and the standard `github-pages`
+environment owns any deployment protection rules.
 
 The sign-in guide records the complete anonymous workflow. The channel-message
 guide authenticates in a temporary setup context, transfers only Playwright
