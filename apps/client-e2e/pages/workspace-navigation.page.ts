@@ -1,5 +1,6 @@
 import type { Locator, Page } from '@playwright/test';
 import {
+  documentResult,
   performDocumentedAction,
   type GuideNarrator,
 } from '../user-guide/guide-narrator';
@@ -12,6 +13,10 @@ export class WorkspaceNavigationPage {
 
   heading(name: string): Locator {
     return this.page.getByRole('heading', { exact: true, name });
+  }
+
+  channelSelectionPrompt(): Locator {
+    return this.page.getByRole('heading', { name: 'Select a channel' });
   }
 
   workspace(name: string): Locator {
@@ -31,6 +36,14 @@ export class WorkspaceNavigationPage {
       },
       () => workspace.click()
     );
+    return this;
+  }
+
+  async documentSelectedWorkspace(name: string): Promise<this> {
+    await documentResult(this.narrator, this.channelSelectionPrompt(), {
+      body: `${name} is now selected. Choose one of its channels to continue into a conversation.`,
+      title: 'Use the selected workspace',
+    });
     return this;
   }
 }

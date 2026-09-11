@@ -2,7 +2,7 @@ import type { Browser } from '@playwright/test';
 import { AuthenticatedShellPage } from '../pages/authenticated-shell.page';
 import { SignInPage } from '../pages/sign-in.page';
 
-interface Credentials {
+export interface AuthenticationCredentials {
   readonly email: string;
   readonly password: string;
 }
@@ -10,7 +10,7 @@ interface Credentials {
 export const authenticatedStorageState = async (
   browser: Browser,
   baseURL: string,
-  credentials: Credentials
+  credentials: AuthenticationCredentials
 ) => {
   const context = await browser.newContext({ baseURL });
   const page = await context.newPage();

@@ -8,8 +8,7 @@ import { AuthenticatedShellPage } from '../pages/authenticated-shell.page';
 import { ChannelMessagesPage } from '../pages/channel-messages.page';
 import { ChannelNavigationPage } from '../pages/channel-navigation.page';
 import { WorkspaceNavigationPage } from '../pages/workspace-navigation.page';
-import { authenticatedStorageState } from '../support/authenticated-storage-state';
-import { UserGuideSession } from '../user-guide/user-guide-session';
+import { startAuthenticatedGuide } from '../user-guide/start-authenticated-guide';
 
 const guideMessage = 'Hello from the Omoikane user guide.';
 const applicationURL = (baseURL: string | undefined) =>
@@ -20,16 +19,11 @@ test(
   { tag: '@user-guide' },
   async ({ baseURL, browser }) => {
     const resolvedApplicationURL = applicationURL(baseURL);
-    const storageState = await authenticatedStorageState(
-      browser,
-      resolvedApplicationURL,
-      seededOwner
-    );
-    const guide = await UserGuideSession.start(browser, {
+    const guide = await startAuthenticatedGuide(browser, {
       baseURL: resolvedApplicationURL,
-      order: 20,
+      credentials: seededOwner,
+      order: 40,
       slug: 'send-channel-message',
-      storageState,
       summary:
         'Choose a workspace channel and publish a message to its conversation.',
       title: 'Send a channel message',

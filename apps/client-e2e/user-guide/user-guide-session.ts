@@ -23,7 +23,7 @@ interface RecordedGuideStep extends GuideStepDefinition {
   readonly image: string;
 }
 
-interface StartGuideOptions extends GuideDefinition {
+export interface StartGuideOptions extends GuideDefinition {
   readonly baseURL: string;
   readonly storageState?: BrowserContextOptions['storageState'];
 }
@@ -125,6 +125,13 @@ export class UserGuideSession implements GuideNarrator {
     // eslint-disable-next-line playwright/no-wait-for-timeout
     await this.page.waitForTimeout(900);
     await perform();
+    await this.page.mouse.move(
+      guideViewport.width / 2,
+      guideViewport.height / 2
+    );
+    await this.page
+      .locator('[role="tooltip"]:visible')
+      .waitFor({ state: 'hidden' });
     await this.captureStep(step);
     // Intentional narration dwell time; this is not synchronization.
     // eslint-disable-next-line playwright/no-wait-for-timeout
