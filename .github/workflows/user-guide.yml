@@ -1,0 +1,97 @@
+name: User guide
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: user-guide-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build executable user guide
+    # workflow_run is privileged; accept only a successful main-branch push
+    # from the named verification workflow, never a pull-request run.
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pages: read
+
+    steps:
+      - name: Check out the verified revision
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .node-version
+
+      - name: Enable the pinned package manager
+        run: corepack enable
+
+      - name: Bootstrap local platform
+        id: platform-bootstrap
+        run: pnpm dev:bootstrap
+
+      - name: Install Chromium system dependencies
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Generate executable user guide
+        run: pnpm guide:generate
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist/user-guide
+
+      - name: Upload guide failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-user-guide-${{ github.run_attempt }}
+          path: |
+            dist/.playwright/apps/client-e2e
+            dist/user-guide
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Stop local Supabase
+        if: always() && steps.platform-bootstrap.outcome == 'success'
+        run: pnpm dev:down
+
+  deploy:
+    name: Publish executable user guide
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy GitHub Pages artifact
+        id: deployment
+        uses: actions/deploy-pages@v5
