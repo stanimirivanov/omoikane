@@ -34,6 +34,7 @@
     "e2e:install": "playwright install chromium",
     "e2e:verify": "pnpm db:prepare && pnpm e2e:install && pnpm e2e",
     "guide:generate": "node tools/user-guide/generate.mjs",
+    "guide:preview": "node tools/user-guide/preview.mjs",
     "typecheck": "nx run-many -t typecheck",
     "typecheck:test": "nx run-many -t typecheck:test",
     "lint": "nx run-many -t lint && eslint tools",

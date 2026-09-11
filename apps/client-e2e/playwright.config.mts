@@ -35,6 +35,7 @@ export default defineConfig({
   webServer: {
     command: 'pnpm nx serve client --host=127.0.0.1',
     url: baseURL,
+    timeout: 180_000,
     reuseExistingServer: !process.env['CI'],
     cwd: workspaceRoot,
   },
