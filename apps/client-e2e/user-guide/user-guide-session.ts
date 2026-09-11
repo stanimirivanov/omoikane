@@ -1,4 +1,4 @@
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { workspaceRoot } from '@nx/devkit';
 import type {
@@ -168,8 +168,8 @@ export class UserGuideSession implements GuideNarrator {
       'assets',
       `${this.definition.slug}.webm`
     );
-    await this.video.saveAs(videoPath);
-    await this.video.delete();
+    const recordedVideoPath = await this.video.path();
+    await rename(recordedVideoPath, videoPath);
     await writeFile(
       path.join(this.guideDirectory, 'guide.json'),
       `${JSON.stringify(
@@ -270,6 +270,11 @@ export class UserGuideSession implements GuideNarrator {
 
   private async closeContext(): Promise<void> {
     if (this.contextClosed) {
+      return;
+    }
+
+    if (this.page.isClosed()) {
+      this.contextClosed = true;
       return;
     }
 

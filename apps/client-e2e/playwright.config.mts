@@ -3,6 +3,7 @@ import { nxE2EPreset } from '@nx/playwright/preset';
 import { workspaceRoot } from '@nx/devkit';
 
 const baseURL = process.env['BASE_URL'] || 'http://127.0.0.1:4200';
+const recordsUserGuides = process.env['OMOIKANE_E2E_MODE'] === 'user-guide';
 
 /**
  * Runs one Chromium smoke path against the real Angular development server.
@@ -12,10 +13,10 @@ const baseURL = process.env['BASE_URL'] || 'http://127.0.0.1:4200';
 export default defineConfig({
   ...nxE2EPreset(import.meta.dirname, { testDir: './e2e' }),
   snapshotPathTemplate: '{testDir}/__screenshots__/{testFileName}/{arg}{ext}',
-  timeout: 60_000,
+  timeout: recordsUserGuides ? 600_000 : 60_000,
   workers: 1,
   expect: {
-    timeout: 10_000,
+    timeout: recordsUserGuides ? 30_000 : 10_000,
     toHaveScreenshot: {
       animations: 'disabled',
       caret: 'hide',
@@ -23,7 +24,9 @@ export default defineConfig({
       threshold: 0.3,
     },
   },
-  retries: process.env['CI'] ? 1 : 0,
+  // Recorded scenarios mutate the shared deterministic seed. Retrying one
+  // scenario without resetting that seed could document a different state.
+  retries: process.env['CI'] && !recordsUserGuides ? 1 : 0,
   use: {
     baseURL,
     colorScheme: 'light',

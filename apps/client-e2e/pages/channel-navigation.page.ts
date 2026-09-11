@@ -1,5 +1,6 @@
 import type { Locator, Page } from '@playwright/test';
 import {
+  documentResult,
   performDocumentedAction,
   type GuideNarrator,
 } from '../user-guide/guide-narrator';
@@ -33,5 +34,16 @@ export class ChannelNavigationPage {
       () => channel.click()
     );
     return this;
+  }
+
+  heading(name: string): Locator {
+    return this.page.getByRole('heading', { exact: true, name });
+  }
+
+  async documentSelectedChannel(name: string): Promise<void> {
+    await documentResult(this.narrator, this.heading(name), {
+      body: `The ${name} conversation is open. You can read its history and compose a message.`,
+      title: 'Use the selected channel',
+    });
   }
 }

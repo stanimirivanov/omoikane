@@ -50,8 +50,8 @@ baseline. Do not update snapshots merely to make an unexplained failure green.
 
 ## Executable user guides
 
-The tagged sign-in scenario runs as an ordinary assertion-first browser test
-during `pnpm e2e`. Generate its narrated artifacts with:
+Tagged guide scenarios run as ordinary assertion-first browser tests during
+`pnpm e2e`. Generate their narrated artifacts with:
 
 ```bash
 pnpm guide:generate
@@ -62,10 +62,9 @@ installed, waits for the restarted Auth and REST endpoints to remain stable,
 starts the Angular development server, and runs only `@user-guide` scenarios in
 `user-guide` mode. A separate `pnpm start` process is not required. Cold Angular
 builds may take more than one minute, so this path has a three-minute web-server
-startup allowance. The scenario creates `dist/user-guide/sign-in/README.md`,
-annotated step images, and a WebM recording. Calling `UserGuideSession.start()`
-and `finish()` creates and closes the dedicated Playwright browser context, so
-those calls define the recording boundary without CDP or FFmpeg. A failed
+startup allowance. Every scenario creates a page under `dist/user-guide/` with
+annotated step images and a WebM recording. Calling `UserGuideSession.start()`
+and `finish()` defines the recording boundary without CDP or FFmpeg. A failed
 scenario calls `abort()` and removes its incomplete artifacts.
 
 Guide prose is source-controlled beside the executable scenario and its page
@@ -101,16 +100,55 @@ read-only repository access. Only the isolated deployment job receives
 `pages: write` and OIDC token permissions, and the standard `github-pages`
 environment owns any deployment protection rules.
 
-The sign-in guide records the complete anonymous workflow. Authenticated guides
-sign in through a temporary setup context, transfer only Playwright storage
-state, and start their guide context afterward. Their videos therefore contain
-only the workflow being documented. The workspace guide demonstrates entering
-an accessible collaboration context; the channel-message guide continues
-through channel selection and message publication. This pattern keeps test
-setup executable while making recording boundaries deliberate.
+Anonymous guides cover sign-in, registration requests, and password-reset
+requests. Authenticated guides sign in through a temporary setup context,
+transfer only Playwright storage state, and start their guide context afterward.
+Their videos therefore contain only the workflow being documented. The catalog
+also covers sign-out, profile editing, workspace and channel navigation,
+messaging, search, lifecycle administration, invitations, member roles, and the
+configuration boundary of Decision Forensics.
 
 Page objects accept an optional `GuideNarrator`. Without one, the same methods
 perform ordinary smoke-test interactions with no guide delays or output. With
 one, they add documentation metadata around those interactions. Scenarios keep
 their own assertions; page objects own semantic locators and cohesive user
 actions.
+
+### Coverage boundary
+
+The generated catalog documents every deterministic, user-initiated outcome
+that the current guide runtime can execute safely:
+
+- sign in, request registration, request password recovery, and sign out;
+- edit the current profile;
+- open a workspace and a channel;
+- send, edit, audit, delete, and search messages;
+- create, edit, and archive workspaces; create, edit, archive, and restore
+  channels;
+- create and cancel invitations, and change member roles; and
+- open Decision Forensics and define its bounded evidence period.
+
+The following application behavior is intentionally not represented as a
+generated guide yet:
+
+- email confirmation and password replacement require consuming secret,
+  one-time links. Publishing those URLs in screenshots or videos is unsafe;
+- invitation acceptance and decline, leaving a workspace, and member suspension
+  or removal require dedicated disposable identities and collaboration fixtures
+  so the shared catalog remains independent and repeatable;
+- pagination needs more than the current five seeded messages or two seeded
+  members to expose its controls;
+- workspace restoration is blocked by a reproduced integration defect: after a
+  successful archive, the authenticated archived-workspace projection remains
+  empty, including after an application reload;
+- presence, typing, unread counts, and realtime access/channel reconciliation
+  need a deterministic multi-browser actor harness rather than a single recorded
+  user; and
+- starting and completing Decision Forensics needs the trusted server, worker,
+  and a configured Ollama model. The guide generator currently owns only
+  Supabase and the Angular client. Consequently it cannot truthfully document
+  queued/running/failed/succeeded runs, inventory fallback, extracted decisions,
+  evidence navigation, candidate confirmation/rejection, or reviewed results.
+
+These are executable-environment gaps, not mocked documentation TODOs. Add the
+required fixture or runtime boundary before adding each corresponding guide.

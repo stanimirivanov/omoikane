@@ -22,7 +22,7 @@ test(
     const guide = await startAuthenticatedGuide(browser, {
       baseURL: resolvedApplicationURL,
       credentials: seededOwner,
-      order: 40,
+      order: 80,
       slug: 'send-channel-message',
       summary:
         'Choose a workspace channel and publish a message to its conversation.',
