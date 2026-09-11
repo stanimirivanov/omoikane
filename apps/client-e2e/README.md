@@ -101,11 +101,13 @@ read-only repository access. Only the isolated deployment job receives
 `pages: write` and OIDC token permissions, and the standard `github-pages`
 environment owns any deployment protection rules.
 
-The sign-in guide records the complete anonymous workflow. The channel-message
-guide authenticates in a temporary setup context, transfers only Playwright
-storage state, and starts its guide context afterward. Its video therefore
-contains only workspace, channel, and message interactions. This pattern keeps
-test setup executable while making recording boundaries deliberate.
+The sign-in guide records the complete anonymous workflow. Authenticated guides
+sign in through a temporary setup context, transfer only Playwright storage
+state, and start their guide context afterward. Their videos therefore contain
+only the workflow being documented. The workspace guide demonstrates entering
+an accessible collaboration context; the channel-message guide continues
+through channel selection and message publication. This pattern keeps test
+setup executable while making recording boundaries deliberate.
 
 Page objects accept an optional `GuideNarrator`. Without one, the same methods
 perform ordinary smoke-test interactions with no guide delays or output. With
