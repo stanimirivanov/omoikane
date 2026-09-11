@@ -5,7 +5,7 @@ import {
 } from '../support/authenticated-storage-state';
 import { UserGuideSession, type StartGuideOptions } from './user-guide-session';
 
-interface StartAuthenticatedGuideOptions
+export interface StartAuthenticatedGuideOptions
   extends Omit<StartGuideOptions, 'storageState'> {
   readonly credentials: AuthenticationCredentials;
 }
